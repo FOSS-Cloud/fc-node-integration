@@ -1,0 +1,2890 @@
+#!/usr/bin/perl -w
+######################################################################################################
+# /usr/local/bin/node-configuration
+######################################################################################################
+#
+# Copyright (C) 2012 FOSS-Group
+#                    Germany
+#                    http://www.foss-group.de
+#                    support@foss-group.de
+#
+# Authors:
+#   Pat Kläy  <pat.klaey@stepping-stone.ch>
+#   Michael Eichenberger <michael.eichenberger@stepping-stone.ch>
+#
+# Licensed under the EUPL, Version 1.1 or – as soon they
+# will be approved by the European Commission - subsequent
+# versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the
+# Licence.
+# You may obtain a copy of the Licence at:
+#
+# http://www.osor.eu/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+#
+# 
+#
+######################################################################################################
+
+######################################################################################################
+# Incorporate code with use (evaluates the included file at compile time).
+######################################################################################################
+use warnings;
+use strict;
+
+use Getopt::Long;
+Getopt::Long::Configure("no_auto_abbrev");
+use Term::ReadKey;
+use Sys::Syslog;
+use JSON::XS;
+use File::Path;
+use Net::OpenSSH;
+use NetAddr::IP;
+use Cwd "abs_path";
+use File::Basename;
+use Config::IniFiles;
+
+$| = 1;                        # Turn buffering off, so that the output is flushed immediately
+
+######################################################################################################
+# Start the POD documentation information
+######################################################################################################
+=pod
+ 
+=head1 NAME
+ 
+node-configuration
+ 
+=head1 DESCRIPTION
+ 
+This script gets the arguments from  ...
+  
+The script uses syslog for logging purposes.
+
+Command Line Interface (CLI) parameters:
+ 
+=over
+ 
+=item -h|--help
+
+Displays the help text
+
+=item -n|--node-type TYPE
+
+TYPE is either "primary-storage-node", "secondary-storage-node", "primary-master-node", "secondary-master-node" or "vm-node".
+
+=item --dry-run
+
+Runs script in dry-run, what means that no changes are done, only the output
+is generated and displayed.
+
+=item -d debug
+
+Shows debug information.
+
+=back
+
+=head1 USAGE
+
+./node-configuration --node-type primary-master-node
+
+./node-configuration --node-type secondary-master-node
+
+./node-configuration --node-type primary-storage-node 
+
+./node-configuration --node-type secondary-storage-node
+
+./node-configuration --node-type vm-node
+
+./node-configuration --node-type demo-system
+
+=head1 TESTING
+
+To check the exit code manually:
+
+=over
+
+echo $?
+
+=back
+
+Note, that the exit code 0 means success. 1 or larger means failure. 
+
+=head1 CREATED
+ 
+2011-11-30 pat.klaey@stepping-stone.ch created
+ 
+=head1 VERSION
+ 
+=over
+ 
+=item 2011-11-30 pat.klaey@stepping-stone.ch created
+
+=item 2011-12-04 michael.eichenberger@stepping-stone.ch updated
+ 
+=back
+ 
+=head1 INCORPORATED CODE
+ 
+Incorporated code with use:
+ 
+=over
+ 
+=over
+ 
+=item warnings;
+ 
+=item strict;
+ 
+=item Getopt::Long;
+
+=item Term::ReadKey;
+ 
+=item Sys::Syslog;
+
+=item JSON::XS;
+
+=item Net::OpenSSH;
+
+=back
+ 
+=back
+ 
+=cut
+######################################################################################################
+# End the POD documentation information
+######################################################################################################
+
+######################################################################################################
+# Read the configuration file
+######################################################################################################
+my $location=dirname(abs_path($0));
+
+my $cfg = Config::IniFiles->new( -file => "$location/../etc/foss-cloud/node-configuration.conf");
+
+######################################################################################################
+# Process the single character or long command line arguments.
+######################################################################################################
+my %opts;
+GetOptions (
+  \%opts,
+  "dry-run",        # If passed to the script via CLI, then true.
+  "d",              # Shows debugging information.
+  "help|h",         # This option will display a short help message.
+  "node-type|n:s",  # The type name, is mandatory.
+  "password|p:s",   # Password for phpldapadmin
+); 
+
+######################################################################################################
+# Variable definitions
+######################################################################################################
+my $debug = 0;      # Debug modus: 0: off, 1: on
+my $dryrun = 0;     # Dry-Run modus: 0: off, 1: on
+
+my $password = "";
+
+my $modus = "";
+
+######################################################################################################
+# Constant definitions
+######################################################################################################
+use constant SUCCESS_CODE                         => 0;
+use constant SUCCESS_STRING                       => "The script was executed successfully.";
+use constant ERROR_UNDEFINED_CODE                 => 1;
+use constant ERROR_UNDEFINED_STRING               => "The script ended in an undefined state.";
+use constant ERROR_NO_NODETYPE_NAME_CODE          => 2;
+use constant ERROR_NO_NODETYPE_NAME_STRING        => "No node-type name was passed.";
+use constant ERROR_NETWORK_CHECK_FAILED_CODE      => 3;
+use constant ERROR_NETWORK_CHECK_FAILED_STRING    => "The node-configuration-check failed.";
+use constant ERROR_UNKNOWN_NODETYPE_CODE          => 4;
+use constant ERROR_UNKNOWN_NODETYPE_STRING        => "Unknown node-type passed.";
+use constant ERROR_NO_SSH_CONNECTION_CODE         => 5;
+use constant ERROR_NO_SSH_CONNECTION_STRING       => "Unable to estalbish ssh connection.";
+use constant ERROR_SSH_CMD_FAILED_CODE            => 6;
+use constant ERROR_SSH_CMD_FAILED_STRING          => "Could not execute ssh command.";
+use constant ERROR_RCUPDATE_FAILED_CODE           => 7;
+use constant ERROR_RCUPDATE_FAILED_STRING         => "The command rc-update failed.";
+use constant ERROR_UNKNOWN_STORAGENODETYPE_CODE   => 8;
+use constant ERROR_UNKNOWN_STORAGENODETYPE_STRING => "Unknown Storage-Node type passed.";
+use constant ERROR_PASSWORD_NOT_CREATED_CODE      => 9;
+use constant ERROR_PASSWORD_NOT_CREATED_STRING    => "Could not create the password.";
+use constant ERROR_DAEMON_START_FAILED_CODE       => 10;
+use constant ERROR_DAEMON_START_FAILED_STRING     => "Could not start the desired daemon.";
+use constant ERROR_DAEMON_STOP_FAILED_CODE        => 11;
+use constant ERROR_DAEMON_STOP_FAILED_STRING      => "Could not stop the desired daemon.";
+use constant ERROR_MISSING_DIRECTORY_CODE         => 12;
+use constant ERROR_MISSING_DIRECTORY_STRING       => "Neccessary directory missing.";
+use constant ERROR_LOADING_LDIF_CODE              => 13;
+use constant ERROR_LOADING_LDIF_STRING            => "Could not add LDIF to directory.";
+use constant ERROR_UNPACKING_TARBALL_CODE         => 14;
+use constant ERROR_UNPACKING_TARBALL_STRING       => "Could not unpack the tarball.";
+use constant ERROR_MISSING_FILE_CODE              => 15;
+use constant ERROR_MISSING_FILE_STRING            => "Neccessary file missing.";
+use constant ERROR_NO_PASSWORD_PASSED_CODE        => 16;
+use constant ERROR_NO_PASSWORD_PASSED_STRING      => "Password parameter not specified or empty";
+use constant ERROR_DELETE_FILE_CODE               => 17;
+use constant ERROR_DELETE_FILE_STRING             => "Could not delete file";
+use constant ERROR_EXECUTE_COMMAND_CODE           => 18;
+use constant ERROR_EXECUTE_COMMAND_STRING         => "Could not execute a CLI command";
+
+
+######################################################################################################
+# Help text
+######################################################################################################
+my $help = "\nPlease use pod2text $0 for the online help\n\n";
+ 
+######################################################################################################
+# Main Programme
+######################################################################################################
+
+openlog($0,"ndelay,pid","local0");
+
+# Check the command line arguments
+checkCommandLineArguments();
+
+SWITCH: {
+  $opts{'node-type'} eq "primary-storage-node" and do {
+    $modus = "primary-storage";
+    primaryStorageNode();
+    last;
+  };
+  $opts{'node-type'} eq "secondary-storage-node" and do {
+    $modus = "secondary-storage";
+    secondaryStorageNode();
+    last;
+  };
+  $opts{'node-type'} eq "primary-master-node" and do {
+    $modus = "primary-master";
+    primaryMasterNode();
+    last;
+  };
+  $opts{'node-type'} eq "secondary-master-node" and do {
+    $modus = "secondary-master";
+    secondaryMasterNode();
+    last;
+  };
+  $opts{'node-type'} eq "vm-node" and do {
+    $modus = "vm-node";
+    vmNode();
+    last;
+  };
+  $opts{'node-type'} eq "demo-system" and do {
+    $modus = "demo-system";
+    demoSystem( $password );
+    last;
+  };
+
+  # If we reach this point we have a non valid type.
+  returnError(ERROR_UNKNOWN_NODETYPE_CODE,ERROR_UNKNOWN_NODETYPE_STRING);
+} # End of SWITCH
+
+closelog();
+
+
+######################################################################################################
+# Subroutines
+######################################################################################################
+
+######################################################################################################
+# checkCommandLineArguments
+######################################################################################################
+# Description:
+#  Check the command line arguments.
+######################################################################################################
+sub checkCommandLineArguments {
+ 
+  # Check, if help was chosen. If yes, display help and exit
+  if ($opts{'help'}){
+    print $help;
+    exit SUCCESS_CODE;
+  } # End of if ($opts{'help'})
+
+  # Check, if the debug modus was chosen.
+  if ($opts{'d'}){
+    $debug = 1;   # Debug modus: 0: off, 1: on
+  } # End of if (opts{'d'})
+
+  # Check, if the dry-run modus was chosen.
+  if ($opts{'dry-run'}){
+    $dryrun = 1;   # Dry-run modus: 0: off, 1: on
+  } # End of if (opts{'dry-run'})
+ 
+  # Check, if a type was passed to the script.
+  if ((!$opts{'node-type'}) || ($opts{'node-type'} le "")) {
+    returnError(ERROR_NO_NODETYPE_NAME_CODE,ERROR_NO_NODETYPE_NAME_STRING);
+  }
+
+  # Check if a password was passed
+  if ( $opts{'password'} && $opts{'password'} ne " " )
+  {
+      # Set the password which will be passed to the demo system method
+      $password = $opts{'password'};
+  }
+
+  # For the demo-system we need to pass the password by command line
+  if ( $opts{'node-type'} eq "demo-system" && !$opts{'password'} )
+  {
+      returnError(ERROR_NO_PASSWORD_PASSED_CODE,ERROR_NO_PASSWORD_PASSED_STRING);
+  }
+} # End of sub checkCommandLineArguments
+
+
+######################################################################################################
+# returnError
+######################################################################################################
+# Description:
+#   Returns the error code as a JSON string.
+######################################################################################################
+sub returnError {
+  my $error_code = $_[0];
+  my $error_string = $_[1];
+  my $error_reason = $_[2];
+
+  # Write the syslog error message.
+  syslog("LOG_ERR",$error_string);
+
+  # Create a thing (called $json) that will be used to encode JSON strings
+  my $json = JSON::XS->new->utf8->pretty();
+
+  # Print the JSON Message and exit with the proper exit code.
+  if($error_reason){
+    print $json->encode({
+      "Return Code" => $error_code,
+      "Return String" => $error_string,
+      "Reason" => $error_reason,
+    });
+  }
+  else{
+    print $json->encode({
+      "Return Code" => $error_code,
+      "Return String" => $error_string,
+    });
+  }
+  exit $error_code;
+
+} # End of sub returnError
+
+
+######################################################################################################
+# primaryStorageNode
+######################################################################################################
+# Description:
+#   Performs the necessary tasks to set up the first storage-node.
+######################################################################################################
+sub primaryStorageNode{
+
+  # Display a nice title
+  header("First Storage-Node Installation");
+
+  # Asks the user, if the installation should really proceed
+  proceed("primary-storage-node");
+
+  # Start with step one and check the network configuration
+  my $localNetworkHash = checkLocalNetwork();
+
+  # Configure the ClusterFS deamon
+  configureGlusterFS("primary",$localNetworkHash);
+
+  # Tell the administrator, that the installation and configuration of this node is complete.
+  print "\nCongratulations, you have finished the installation and configuration of this Node!\n\n"
+
+} # End of sub primaryStorageNode
+
+
+######################################################################################################
+# secondaryStorageNode
+######################################################################################################
+# Description:
+#   Performs the necessary tasks to set up the second storage-node.
+######################################################################################################
+sub secondaryStorageNode{
+
+  # Display a nice title
+  header("Second Storage-Node Installation");
+
+  # Asks the user, if the installation should really proceed
+  proceed("secondary-storage-node");
+
+  # Start with step one and check the network configuration
+  my $localNetworkHash = checkLocalNetwork();
+
+  # The the user what is happinging
+  header("Retrieving remote network configuration ...");
+
+  # Ask the user for the information of the first storage Node.
+  my ($host,$user,$password)=askRemoteHostInfo("primary Storage-Node","admin",$localNetworkHash->{"admin"}->{"id"});
+
+  # Retreive the network information of the first Storage-Node
+  my $remoteNetworkHash = checkRemoteNetwork($host,$user,$password);
+
+  # Configure the ClusterFS deamon
+  configureGlusterFS("secondary",$localNetworkHash,$remoteNetworkHash);
+
+  # Tell the administrator, that the installation and configuration of this node is complete.
+  print "\nCongratulations, you have finished the installation and configuration of this Node!\n\n"
+
+} # End of sub secondaryStorageNode
+
+
+######################################################################################################
+# primaryMasterNode
+######################################################################################################
+# Description:
+#   Performs the necessary tasks to set up the primary-master-node.
+######################################################################################################
+sub primaryMasterNode{
+
+  # Display a nice title
+  header("Primary-Master-Node Installation");
+
+  # TBD: Workaround
+  #print "Before proceeding, with the Primary-Master-Node Installation, you need to edit the \n";
+  #print "sstNode=<your Primary-Master-Nod>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org LDIF:\n";
+  #print "  cp /etc/openldap/data/16_primary-master-node.template /etc/openldap/data/16_primary-master-node.ldif\n";
+  #print "Now open the copied file and replace the existing values with your setup:\n";
+  #print "  vi /etc/openldap/data/16_primary-master-node.ldif\n";
+  #print "The values should be self explaining.\n";
+  #print "\n";
+
+  # Asks the user, if the installation should really proceed
+  proceed("primary-master-node");
+
+  # Start with step one and check the network configuration
+  my $localNetworkHash = checkLocalNetwork();
+
+  # Tell the user, that we need to collect the data of the storage Nodes.
+  header("Collecting data from the Storage-Nodes");
+
+  # Ask the user for the information of the first storage Node.
+  my ($host1,$user1,$password1)=askRemoteHostInfo("primary Storage-Node","admin",$localNetworkHash->{"admin"}->{"id"});
+
+  # Retreive the network information of the first Storage-Node
+  my $remoteNetworkHash1 = checkRemoteNetwork($host1,$user1,$password1);
+
+  # Ask the user for the information of the second storage Node.
+  my ($host2,$user2,$password2)=askRemoteHostInfo("secondary Storage-Node","admin",$localNetworkHash->{"admin"}->{"id"});
+
+  # Retreive the network information of the second Storage-Node
+  my $remoteNetworkHash2 = checkRemoteNetwork($host2,$user2,$password2);
+
+  # Mount the GlusterFS volume
+  mountGlusterFS($remoteNetworkHash1,$remoteNetworkHash2);
+
+  # Unpack virtualization data tarball and test if it's ok
+  my $tarball = $cfg->val($modus,"file_tarball_source");
+  my $destination = $cfg->val($modus,"file_tarball_destination");
+  if ( unpackVirtualizationDataTarball($tarball, $destination) )
+  {
+      returnError(ERROR_UNPACKING_TARBALL_CODE,ERROR_UNPACKING_TARBALL_STRING);
+  }
+
+  # Configure the libvirtd daemon
+  configureLibvirt($localNetworkHash);
+
+  # Configure the slapd daemon
+  my $unencrypted_password = configureOpenLDAP($localNetworkHash);
+
+  # Configure the VM-Manger
+  configureVMManager($localNetworkHash,$unencrypted_password);
+
+  # Configure phpLDAPadmin
+  configurePhpLDAPadmin($localNetworkHash);
+
+  # Configure DHCP
+  configureDHCP($localNetworkHash);
+
+  # Configure the apache2 daemon
+  configureApache2($localNetworkHash);
+
+  # Start the dhcp daemon and add it to the default runlevel
+  startDaemon("dhcpd");
+  rcUpdate("dhcpd","default");
+
+  # Tell the administrator, that the installation and configuration of this node is complete.
+  print "\nCongratulations, you have finished the installation and configuration of this Node!\n\n"
+
+} # End of sub primaryMasterNode
+
+
+######################################################################################################
+# secondaryMasterNode
+######################################################################################################
+# Description:
+#   Performs the necessary tasks to set up the secondary-master-node.
+######################################################################################################
+sub secondaryMasterNode{
+
+  # Display a nice title
+  header("Secondary-Master-Node Installation");
+
+  # Asks the user, if the installation should really proceed
+  # proceed("secondary-master-node");
+
+  # Start with step one and check the network configuration
+  # my $localNetworkHash = checkLocalNetwork();
+
+  # Configure the libvirtd daemon
+  # configureLibvirt($localNetworkHash);
+
+  # Tell the administrator, that the installation and configuration of this node is complete.
+  #print "\nCongratulations, you have finished the installation and configuration of this Node!\n\n"
+  print "Not implemented yet.\n";
+
+} # End of sub secondaryMasterNode
+
+
+######################################################################################################
+# vmNode
+######################################################################################################
+# Description:
+#   Performs the necessary tasks to set up vm-node.
+######################################################################################################
+sub vmNode{
+
+  # Display a nice title
+  header("VM-Node Installation");
+
+  # Asks the user, if the installation should really proceed
+  proceed("vm-node");
+
+  # Start with step one and create the demo-system network configuration
+  my $localNetworkHash = checkLocalNetwork();
+
+  # Tell the user, that we need to collect the data of the storage Nodes.
+  header("Collecting data from the Storage-Nodes");
+
+  # Ask the user for the information of the first storage Node.
+  my ($host1,$user1,$password1)=askRemoteHostInfo("primary Storage-Node","admin",$localNetworkHash->{"admin"}->{"id"});
+
+  # Retreive the network information of the first Storage-Node
+  my $remoteNetworkHash1 = checkRemoteNetwork($host1,$user1,$password1);
+
+  # Ask the user for the information of the second storage Node.
+  my ($host2,$user2,$password2)=askRemoteHostInfo("secondary Storage-Node","admin",$localNetworkHash->{"admin"}->{"id"});
+
+  # Retreive the network information of the second Storage-Node
+  my $remoteNetworkHash2 = checkRemoteNetwork($host2,$user2,$password2);
+
+  # Mount the GlusterFS volume
+  mountGlusterFS($remoteNetworkHash1,$remoteNetworkHash2);
+
+  # Configure the libvirtd daemon
+  configureLibvirt($localNetworkHash);
+
+  # Start the ksm daemon and add it to the default runlevel
+  startDaemon("ksm");
+  rcUpdate("ksm","default");
+
+  # Start the ksmtuned daemon and add it to the default runlevel
+  startDaemon("ksmtuned");
+  rcUpdate("ksmtuned","default");
+
+  # Tell the administrator, that the installation and configuration of this node is complete.
+  print "\nCongratulations, you have finished the installation and configuration of this Node!\n\n"
+
+} # End of sub vmNode
+
+
+######################################################################################################
+# demoSystem
+######################################################################################################
+# Description:
+#   Performs the necessary tasks to set up vm-node.
+######################################################################################################
+sub demoSystem{
+
+  my $password = shift;
+
+  # Display a nice title
+  header("Demo-System Installation");
+
+  # Start with step one and check the network configuration
+  my $localNetworkHash = checkLocalNetwork();
+
+  # Unpack virtualization storage data tarball and test if it's ok
+  my $tarball = $cfg->val($modus,"file_tarball_storage_source");
+  my $destination = $cfg->val($modus,"file_tarball_storage_destination");
+  if ( unpackVirtualizationDataTarball($tarball,$destination) )
+  {
+      returnError(ERROR_UNPACKING_TARBALL_CODE,ERROR_UNPACKING_TARBALL_STRING);
+  }
+
+
+  # Unpack virtualization iso data tarball if it exists and test if it's ok
+  $tarball = $cfg->val($modus,"file_tarball_iso_source");
+  $destination = $cfg->val($modus,"file_tarball_iso_destination");
+
+  # Check if the tarball exists or not
+  if ( -r $tarball )
+  {
+      # Unpack the tarball and check for success
+      if ( unpackVirtualizationDataTarball($tarball,$destination) )
+      {
+          returnError(ERROR_UNPACKING_TARBALL_CODE,ERROR_UNPACKING_TARBALL_STRING);
+      }
+  } else
+  {
+      # If the tarball is does not exists, tell the user
+      print "Tarball $tarball does not exist\n\n";
+  }
+
+
+  # Configure the libvirtd daemon
+  configureLibvirt($localNetworkHash);
+
+  # Configure the slapd daemon
+  my $unencrypted_password = configureOpenLDAP($localNetworkHash,$password);
+
+  # Configure the VM-Manger
+  configureVMManager($localNetworkHash,$unencrypted_password);
+
+  # Configure phpLDAPadmin
+  configurePhpLDAPadmin($localNetworkHash);
+
+  # Configure DHCP
+  configureDHCP($localNetworkHash);
+
+  # Configure the apache2 daemon
+  configureApache2($localNetworkHash);
+
+  # Configure the iptables
+  configureIPtables($cfg);
+
+  # Start and add the PowerDNS recursor to the default runlevel
+  startDaemon("precursor");
+  rcUpdate("precursor","default");
+
+  # Start the dhcp daemon and add it to the default runlevel
+  startDaemon("dhcpd");
+  rcUpdate("dhcpd","default");
+
+  # Remove the firstboot file
+  my $first_boot_file = $cfg->val($modus,"file_first_boot");
+  unless ( unlink($first_boot_file) )
+  {
+      returnError(ERROR_DELETE_FILE_CODE,ERROR_DELETE_FILE_STRING,"$first_boot_file: $!");
+  } else
+  {
+      print "File $first_boot_file deleted\n\n";
+  }
+
+  # Tell the administrator, that the installation and configuration of this node is complete.
+  print "\nCongratulations, you have finished the installation and configuration of this Node!\n\n"
+
+} # End of sub demoSystem
+
+
+######################################################################################################
+# checkLocalNetwork
+######################################################################################################
+# Description:
+#   Checks the local network configuration and tells the user the status of the check
+######################################################################################################
+sub checkLocalNetwork {
+  my $hash;
+
+  header("Retrieving local network configuration ...");
+
+  # Execute the node-configuration-check script and check the return value 
+  # and catch the output. 
+  my $output = `/usr/local/bin/node-integration-check --module network`;
+  my $errorCode = $? >> 8;
+
+  # check the exit code of the node-configuration-check. If it is different to
+  # zero the check failed so we have to report it. 
+  if($errorCode == 0){
+
+    $hash = JSON::XS->new->utf8->decode ($output);
+
+    # If the check succeeded we can print out the network configuration.
+    if($debug == 1){
+      print "Local network configuration is:\n\n$output\n";
+
+      print "Node Name:        ".$hash->{"Node Name"}."\n\n";
+
+      print "Data Domain Name: ".$hash->{"admin"}->{"domain"}."\n";
+      print "Data VLAN name:   admin\n";
+      print "Data VLAN ID:     ".$hash->{"admin"}->{"id"}."\n";
+      print "Data IP:          ".$hash->{"admin"}->{"ip"}."\n\n";
+
+      print "Data Domain Name: ".$hash->{"data"}->{"domain"}."\n";
+      print "Data VLAN name:   data\n";
+      print "Data VLAN ID:     ".$hash->{"data"}->{"id"}."\n";
+      print "Data IP:          ".$hash->{"data"}->{"ip"}."\n\n";
+
+      print "Data Domain Name: ".$hash->{"int"}->{"domain"}."\n";
+      print "Data VLAN name:   int\n";
+      print "Data VLAN ID:     ".$hash->{"int"}->{"id"}."\n";
+      print "Data IP:          ".$hash->{"int"}->{"ip"}."\n\n";
+
+      print "Data Domain Name: ".$hash->{"pub"}->{"domain"}."\n";
+      print "Data VLAN name:   pub\n";
+      print "Data VLAN ID:     ".$hash->{"pub"}->{"id"}."\n";
+      print "Data IP:          ".$hash->{"pub"}->{"ip"}."\n\n";
+
+    } # End of if($debug == 1)
+    print "Local network configuration retrieval ok!\n\n";
+
+    # Return the JSON hash
+    return $hash;
+  }
+  else{
+
+    # If we reach this point, it means that the node-configuration-check failed.
+    # Report this and also give the reason why the check failed.
+    my $reason = JSON::XS->new->utf8->decode ($output);
+    returnError(ERROR_NETWORK_CHECK_FAILED_CODE,ERROR_NETWORK_CHECK_FAILED_STRING,$reason->{"Return String"});
+  }
+
+} # End of sub checkLocalNetwork
+
+
+######################################################################################################
+# checkRemoteNetwork
+######################################################################################################
+# Description:
+#   Checks the remote network configuration and tells the user the status of the check
+######################################################################################################
+sub checkRemoteNetwork {
+  my ($host,$user,$password)=@_;
+  my $hash;
+  my $strict_host_key_check;
+  
+  my $cmd = "/usr/local/bin/node-integration-check --module network";
+
+  # Check if the known_hosts file exists or not
+  if ( -e "~/.ssh/known_hosts" ) {
+      
+      # If it exists, set the StrictHostKeyChecking option for SSH to yes which
+      # means that we check if we connect to the correct host
+      $strict_host_key_check = "StrictHostKeyChecking=yes";
+
+  }
+  else {
+
+      # If it does not exist, set the StrictHostKeyChecking option to no, which
+      # means that we add the host key to the file
+      # This is actually not a very good idea, but up to now the only
+      # way to ensure that the script completes its tasks
+      $strict_host_key_check = "StrictHostKeyChecking=no";
+
+  }
+
+  # Establish the ssh connection to the remote host $host
+  my $ssh = Net::OpenSSH->new($host,
+                              user => $user,
+			      password => $password,
+			      master_opts => [-o => $strict_host_key_check],
+			      master_stderr_discard => 1 # quiet
+                             );
+
+  if($ssh->error){
+    returnError(ERROR_NO_SSH_CONNECTION_CODE,ERROR_NO_SSH_CONNECTION_STRING,$ssh->error);
+  }
+
+  my $output = $ssh->capture($cmd);
+
+  # check the exit code of the remote node-configuration-check. If it is different to
+  # zero the check failed so we have to report it. 
+  if(!$ssh->error){
+
+    $hash = JSON::XS->new->utf8->decode ($output);
+
+    # If the check succeeded we can print out the network configuration.
+    if($debug == 1){
+      print "Network configuration is:\n\n$output\n";
+
+      print "Node Name:        ".$hash->{"Node Name"}."\n\n";
+
+      print "Data Domain Name: ".$hash->{"admin"}->{"domain"}."\n";
+      print "Data VLAN name:   admin\n";
+      print "Data VLAN ID:     ".$hash->{"admin"}->{"id"}."\n";
+      print "Data IP:          ".$hash->{"admin"}->{"ip"}."\n\n";
+
+      print "Data Domain Name: ".$hash->{"data"}->{"domain"}."\n";
+      print "Data VLAN name:   data\n";
+      print "Data VLAN ID:     ".$hash->{"data"}->{"id"}."\n";
+      print "Data IP:          ".$hash->{"data"}->{"ip"}."\n\n";
+
+      print "Data Domain Name: ".$hash->{"int"}->{"domain"}."\n";
+      print "Data VLAN name:   int\n";
+      print "Data VLAN ID:     ".$hash->{"int"}->{"id"}."\n";
+      print "Data IP:          ".$hash->{"int"}->{"ip"}."\n\n";
+
+      print "Data Domain Name: ".$hash->{"pub"}->{"domain"}."\n";
+      print "Data VLAN name:   pub\n";
+      print "Data VLAN ID:     ".$hash->{"pub"}->{"id"}."\n";
+      print "Data IP:          ".$hash->{"pub"}->{"ip"}."\n\n";
+
+    } # End of if($debug == 1)
+    print "\nRemote network configuration retrieval ok!\n\n";
+
+    # Return the JSON hash
+    return $hash;
+
+  }
+  else{
+
+    # If we reach this point, it means that the ssh command could not be executed.
+    returnError(ERROR_SSH_CMD_FAILED_CODE,ERROR_SSH_CMD_FAILED_STRING,$ssh->error);
+  }
+
+} # End of sub checkRemoteNetwork
+
+
+######################################################################################################
+# mountGlusterFS
+######################################################################################################
+# Description:
+#   Configures the GlusterFS client and mounts it.
+######################################################################################################
+# Usage:
+#   mountGlusterFS($remoteNetworkHash1,$remoteNetworkHash2);
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+sub mountGlusterFS {
+  my ($remoteNetworkHash1,$remoteNetworkHash2)=@_;
+
+  my $remoteDataIP1 = $remoteNetworkHash1->{"data"}->{"ip"};
+  my $remoteDataIP2 = $remoteNetworkHash2->{"data"}->{"ip"};
+  my $file = $cfg->val($modus,"mount_glusterFS_file");
+  my $daemon = $cfg->val($modus,"mount_glusterFS_daemon");
+  my $output;
+  my $errorCode;
+  my @output;
+  my $line;
+  my $error = 1;
+
+  # Configuring the GlusterFS client and mounting it
+  header("Configuring the local GlusterFS client and mounting it ...");
+
+
+  # Working on the file /etc/libvirt/libvirtd.conf
+  print "Working on $file ...\n";
+  print "Original:   GLUSTERMOUNT_SERVERS_virtualization=\"192.0.2.85 192.0.2.86\"\n";
+  print "Calculated: GLUSTERMOUNT_SERVERS_virtualization=\"$remoteDataIP1 $remoteDataIP2\"\n";
+
+  # Replace:
+  # GLUSTERMOUNT_SERVERS_virtualization="<FOSS-CLOUD-GLUSTERFS-SERVERS>"
+  # Or:
+  # GLUSTERMOUNT_SERVERS_virtualization="192.0.2.85 192.0.2.86"
+  # With: 
+  # GLUSTERMOUNT_SERVERS_virtualization="192.0.2.85 192.0.2.86"
+  open(FILE,$file) || die("Could not open $file for reading.");
+  @output = <FILE>;
+  close FILE;
+
+  foreach $line (@output) {
+    if ($line =~ "^GLUSTERMOUNT_SERVERS_virtualization") {
+      print "Found:          $line";
+      $line =~ s/GLUSTERMOUNT_SERVERS_virtualization=.*/GLUSTERMOUNT_SERVERS_virtualization=\"$remoteDataIP1 $remoteDataIP2\"/g;
+      print "Replacing with: GLUSTERMOUNT_SERVERS_virtualization=\"$remoteDataIP1 $remoteDataIP2\"\n";
+      $error = 0;
+    } # End of if ($line =~ "^GLUSTERMOUNT_SERVERS_virtualization")
+  } # End of foreach $line (@output)
+
+  if (!$dryrun) {
+    print "Writing:        GLUSTERMOUNT_SERVERS_virtualization=\"$remoteDataIP1 $remoteDataIP2\"\n";
+    print "To the file:    $file\n";
+    open(FOUT,">$file") || die("Could not open $file for writing.");
+    foreach $line (@output) {
+      print FOUT $line;
+    } # End of foreach $line (@output)
+    close FOUT;
+  } else {
+    if ($debug) {
+      foreach $line (@output) {
+        print $line;
+      } # End of foreach $line (@output)
+    } # End of if ($debug)
+    print "--dry-run: Would write 'GLUSTERMOUNT_SERVERS_virtualization=\"$remoteDataIP1 $remoteDataIP2\"' to the file $file!\n";
+  } # End of if (!$dryrun)
+
+  # Start the glusterd daemon
+  startDaemon($daemon);
+
+  # Add the glusterd daemon to the default runlevel
+  rcUpdate($daemon,"default");
+
+} # End of sub mountGlusterFS
+
+######################################################################################################
+# configureGlusterFS
+######################################################################################################
+# Description:
+#   Configures the GlusterFS Deamon depending on the output of the checkNetwork
+#   subroutine. 
+######################################################################################################
+sub configureGlusterFS {
+  my ($type,$localNetworkHash,$remoteNetworkHash)=@_;
+
+  my $localDataIP;
+  my $remoteDataIP;
+  my $output;
+  my $errorCode;
+  my $glusterCmd;
+
+  SWITCH: {
+    $type eq "primary" and do {
+      header("Configuring GlusterFS on the primary Storage-Node ...");
+      $localDataIP = $localNetworkHash->{"data"}->{"ip"};
+      print "Local Data IP (used for the primary glusterd daemon): $localDataIP\n";
+
+      last;
+    };
+    $type eq "secondary" and do {
+      header("Configuring GlusterFS on the secondary Storage-Node ...");
+      $localDataIP = $localNetworkHash->{"data"}->{"ip"};
+      $remoteDataIP = $remoteNetworkHash->{"data"}->{"ip"};
+      print "Remote Data IP (used for the primary glusterd daemon): $remoteDataIP\n";
+      print "Local Data IP (used for the secondary glusterd daemon): $localDataIP\n";
+      last;
+    };
+
+    # If we reach this point we have a non valid type.
+    returnError(ERROR_UNKNOWN_STORAGENODETYPE_CODE,ERROR_UNKNOWN_STORAGENODETYPE_STRING,"Unknown Storage-Node type ($type) passed to sub configureGlusterFS");
+  } # End of SWITCH
+
+  # Start the glusterd daemon
+  startDaemon("glusterd");
+
+  # Add the glusterd daemon to the default runlevel
+  rcUpdate("glusterd","default");
+
+  # If we are installing the second storage-node, we have some more work to do
+  if ($type eq "secondary") {
+
+    # Initial peer and volume configuration 
+    print "\n";
+    print "Working on the initial peer and volume configuration ...\n";
+
+    # Add the peer node to the trusted storage pool
+    print "\n";
+    print "Adding the remote storage-node with the IP address $remoteDataIP to the trusted storage pool ...\n";
+    if (!$dryrun) {
+      print "Executing: gluster peer probe $remoteDataIP ...\n";
+      $output = `gluster peer probe $remoteDataIP`;
+      $errorCode = $? >> 8;
+
+      if($errorCode == 0) {
+        print "Added the gluster peer with the IP address $remoteDataIP successfully!\n";
+      } else {
+        returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+      }
+    } else {
+      print "--dry-run: gluster peer probe $remoteDataIP\n";
+    } # End of if (!$dryrun)
+
+    # Verify the peer status
+    print "\n";
+    print "Verifying the peer status ...\n";
+
+    $output = `gluster peer status`;
+    $errorCode = $? >> 8;
+
+    if($errorCode == 0) {
+      print "$output\n";
+    } else {
+      returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+    } # End of if($errorCode == 0)
+
+    # Creating the distributed replicated volume
+    print "Creating the distributed replicated volume ...\n";
+    if (!$dryrun) {
+      print "Executing: gluster volume create virtualization replica 2 transport tcp $localDataIP:/var/data/gluster-volume-01 $remoteDataIP:/var/data/gluster-volume-01 ...\n";
+      $output = `gluster volume create virtualization replica 2 transport tcp $localDataIP:/var/data/gluster-volume-01 $remoteDataIP:/var/data/gluster-volume-01`;
+      $errorCode = $? >> 8;
+
+      if($errorCode == 0) {
+        print "Creating the distributed replicated volume successfully!\n";
+      } else {
+        returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+      }
+    } else {
+      print "--dry-run: gluster volume create virtualization replica 2 transport tcp $localDataIP:/var/data/gluster-volume-01 $remoteDataIP:/var/data/gluster-volume-01\n";
+    } # End of if (!$dryrun)
+
+
+    # Configure the distributed replicated volume
+    print "Configuring the distributed replicated volume ...\n";
+    if (!$dryrun) {
+      $glusterCmd = "gluster volume set virtualization nfs.disable On";
+      print "Executing: $glusterCmd ...\n";
+      $output = `$glusterCmd`;
+      $errorCode = $? >> 8;
+
+      if ($errorCode == 0) {
+        print "Configured the distributed replicated volume successfully!\n";
+      } else {
+        returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+      }
+    } else {
+      print "--dry-run: $glusterCmd\n";
+    } # End of if (!$dryrun)
+
+
+    # Start the volume
+    print "\n";
+    print "Trying to start the newly created volume ...\n";
+    if (!$dryrun) {
+      print "Executing: gluster volume start virtualization ...\n";
+      $output = `gluster volume start virtualization`;
+      $errorCode = $? >> 8;
+
+      if($errorCode == 0) {
+        print "Started the newly created volume successfully!\n";
+      } else {
+        returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+      }
+    } else {
+      print "--dry-run: gluster volume start virtualization\n";
+    } # End of if (!$dryrun)
+
+
+    # Display the volume information
+    print "Displaying the volume information ...";
+    $output = `gluster volume info`;
+    $errorCode = $? >> 8;
+
+    if($errorCode == 0) {
+      print "$output";
+    } else {
+      returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+    } # End of if($errorCode == 0)
+
+  } # End of if ($type == "secondary")
+
+} # End of sub configureGlusterFS
+
+
+######################################################################################################
+# askRemoteHostInfo
+######################################################################################################
+# Description:
+#   Asks the user for several informaion (IP,username,password) concerning the remote host
+######################################################################################################
+# Usage:
+#   ($host,$user,$password)=askRemoteHostInfo("first Storage-Node","admin",$hash->{"admin"}->{"id"});
+######################################################################################################
+# Return Values:
+#   ($IP,$user,$password)
+######################################################################################################
+sub askRemoteHostInfo {
+
+  my ($server_type,$segment,$vlan_id,$hash)=@_;
+
+  # Define default var later used for user input
+  my $IP = "";
+  my $user = "";
+  my $password = "";
+
+
+  print "Please enter the following information for the $server_type with the OpenSSH daemon listening on the VLAN with the name '$segment' and with the VLAN ID '$vlan_id':\n\n";
+  
+  # Ask for the IP address and save it, we check if it is a real IP, if not ask
+  # again until we have a real IP
+  while($IP !~ m/^([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])$/){
+    print "IP address: ";
+    chomp($IP = <STDIN>);
+  }
+
+  # Ask for the username and save it
+  print "Username (default: root): ";
+  chomp($user = <STDIN>);
+
+  # If no user was specified, take default one (root)
+  unless($user){
+    $user = "root";
+  }
+
+  # Ask for the users password
+  print "Password for $user: ";
+  
+  # Disable the echo on the terminal, so noone can see your top secret password
+  system('stty','-echo');
+  chomp($password = <STDIN>);
+  # Enable the echo on the terminal for all following output 
+  system('stty','echo');
+
+  # Print out a newline, for esthetical reasons only
+  print "\n";
+
+  return ($IP,$user,$password);
+
+} # End of sub askRemoteHostInfo
+
+
+######################################################################################################
+# startDaemon
+######################################################################################################
+# Description:
+#   Starts the desired daemon.
+######################################################################################################
+# Usage:
+#   startDaemon($daemon,$delay);
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+sub startDaemon {
+  my ($daemon, $delay)=@_;
+  my $n;
+  my $output;
+  my $errorCode;
+
+  print "\nStarting the daemon $daemon ...\n";
+
+  # Check, if the daemon isn't already running in the desired runlevel.
+  $output = `/etc/init.d/$daemon status`;
+
+  if ($output =~ "started") {
+    print "The daemon $daemon is already running, restarting...\n";
+
+    restartDaemon($daemon);
+
+  } else {
+    if (!$dryrun) {
+      print "Executing: /etc/init.d/$daemon start...\n";
+      system("/etc/init.d/$daemon start");
+      $errorCode = $? >> 8;
+
+      if($errorCode == 0) {
+        print "Started $daemon successfully!\n";
+        unless ($delay) {
+          $delay = 0;
+        } # End of unless ($delay)
+        for ($n =0; $n < $delay; $n++) {
+          print ".";
+          sleep(1);
+        } # End of for ($n =0; $n < $delay; $n++)
+      } else {
+        returnError(ERROR_DAEMON_START_FAILED_CODE,ERROR_DAEMON_START_FAILED_STRING,"Could not start the daemon $daemon.");
+      }
+    } else {
+      print "--dry-run: /etc/init.d/$daemon start\n";
+    }
+  }
+
+} # End of sub startDaemon
+
+
+######################################################################################################
+# stopDaemon
+######################################################################################################
+# Description:
+#   Stops the desired daemon (if running).
+######################################################################################################
+# Usage:
+#   stopDaemon($daemon);
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+sub stopDaemon {
+  my ($daemon)=@_;
+  my $output;
+  my $errorCode;
+
+  print "\nStopping the daemon $daemon ...\n";
+
+  # Check, if the daemon is running.
+  $output = `/etc/init.d/$daemon status`;
+
+  if ($output =~ "started") {
+    if (!$dryrun) {
+      print "Executing: /etc/init.d/$daemon stop...\n";
+      system("/etc/init.d/$daemon stop");
+      $errorCode = $? >> 8;
+
+      if($errorCode == 0) {
+        print "Stopped $daemon successfully!\n";
+      } else {
+        returnError(ERROR_DAEMON_STOP_FAILED_CODE,ERROR_DAEMON_STOP_FAILED_STRING,"Could not stop the daemon $daemon.");
+      }
+    } else {
+      print "--dry-run: /etc/init.d/$daemon stop\n";
+    }
+  } else {
+     print "The daemon $daemon is not running, doing nothing.\n";
+  } # End of 
+
+} # End of sub stopDaemon
+
+
+######################################################################################################
+# restartDaemon
+######################################################################################################
+# Description:
+#   Restarts the desired daemon.
+######################################################################################################
+# Usage:
+#   restartDaemon($daemon,$delay);
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+sub restartDaemon {
+  my ($daemon, $delay)=@_;
+
+  # Test if the daemon is the mount_glusterFS_daemon, this one we do not have to 
+  # restart
+  if ( $daemon eq $cfg->val($modus,"mount_glusterFS_daemon") )
+  {
+      print "We do not have to restart the daemon $daemon\n";
+      return;
+  }
+
+  # Test if a reaload is sufficient
+  if ( $daemon eq "libvirtd" )
+  {
+      # Reload is enough
+      print "Reloading daemon $daemon...\n";
+      if ( !$dryrun )
+      {
+        system("/etc/init.d/$daemon reload");
+      } else
+      {
+          print "--dry-run /etc/init.d/$daemon reload\n";
+      }
+
+      return;
+  }
+
+  print "\nRestarting the daemon $daemon ...\n";
+
+  stopDaemon($daemon,$delay);
+
+  startDaemon($daemon,$delay);
+
+} # End of sub restartDaemon
+
+######################################################################################################
+# rcUpate
+######################################################################################################
+# Description:
+#   Adds the desired daemon to the desired runlevel.
+######################################################################################################
+# Usage:
+#   rcUpdate($daemon,$runlevel);
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+sub rcUpdate {
+  my ($daemon,$runlevel)=@_;
+  my $output;
+  my $errorCode;
+
+  print "\nAdding the daemon $daemon to the runlevel $runlevel ...\n";
+
+  # Check, if the daemon isn't already running in the desired runlevel.
+  $output = `rc-update show $runlevel`;
+
+  if ($output =~ $daemon) {
+    print "The daemon $daemon is already in the runlevel $runlevel, doing nothing.\n";
+  } else {
+    if (!$dryrun) {
+      print "Executing: rc-update add $daemon $runlevel ...\n";
+      $output = `rc-update add $daemon $runlevel`;
+      $errorCode = $? >> 8;
+
+      if($errorCode == 0) {
+        print "Added $daemon successfully to runlevel $runlevel!\n";
+      } else {	
+        returnError(ERROR_RCUPDATE_FAILED_CODE,ERROR_RCUPDATE_FAILED_STRING,"Could not add daemon $daemon to runlevel $runlevel.");
+      }
+    } else {
+      print "--dry-run: rc-update add $daemon $runlevel\n";
+    }
+  } 
+
+} # End of sub rcUpdate
+
+
+######################################################################################################
+# configureLibvirt
+######################################################################################################
+# Description:
+#   Configures the libvirtd daemon on the local host.
+######################################################################################################
+# Usage:
+#   configureLibvirt($localNetworkHash);
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+sub configureLibvirt {
+  my ($localNetworkHash)=@_;
+  my $file = $cfg->val($modus,"configure_libvirt_file");
+  my @output;
+  my $error = 1;
+  my $localIntIP = $localNetworkHash->{"int"}->{"ip"};
+
+  # Nicer Output
+  print "\n";
+
+  # Configuring the libvirtd daemon
+  header("Configuring the libvirtd daemon ...");
+
+  # The file /etc/conf.d/libvirtd doesn't need to be modified
+
+  # Working on the file /etc/libvirt/libvirtd.conf
+  print "Working on $file ...\n";
+
+  # Replacing #listen_addr = "127.0.0.1" with listen_addr = "$localIntIP"
+  open(FILE,$file) || die("Could not open $file for reading.");
+  @output = <FILE>;
+  close FILE;
+
+  my $line;
+  foreach $line (@output) {
+    if ($line =~ "^#listen_addr") { 
+      print  "Found:          $line";
+      $line =~ s/\#listen_addr = .*/listen_addr = "$localIntIP"/g;
+      print "Replacing with: listen_addr = \"$localIntIP\"\n";
+      $error = 0;
+    } elsif ($line =~ "^listen_addr") { 
+      print  "Found:          $line";
+      $line =~ s/listen_addr = .*/listen_addr = "$localIntIP"/g;
+      print "Replacing with: listen_addr = \"$localIntIP\"\n";
+      $error = 0;
+    } # End of if ($line =~ "listen_addr")
+  } # End of foreach $line (@output)
+
+  if (!$dryrun) {
+    print "\n";
+    print "Writing 'listen_addr = \"$localIntIP\"' to the file $file ...\n";
+    open(FOUT,">$file") || die("Could not open $file for writing.");
+    foreach $line (@output) {
+      print FOUT $line;
+    } # End of foreach $line (@output)
+    close FOUT;
+  } else {
+    print "\n";
+    print "--dry-run: Would write 'listen_addr = \"$localIntIP\"' to the file $file!\n";
+  } # End of if (!$dryrun)
+
+  # Start the libvirtd daemon
+  startDaemon("libvirtd");
+
+  # Add the libvirtd daemon to the default runlevel
+  rcUpdate("libvirtd","default");
+
+} # End of sub configureLibvirt
+
+
+######################################################################################################
+# Description:
+#   Configures the slapd daemon on the local host.
+######################################################################################################
+# Usage:
+#   configureOpenLDAP($localNetworkHash);
+######################################################################################################
+# Return Values:
+#   $unencrypted_password : The unencrypted OpenLDAP Manager password.
+######################################################################################################
+sub configureOpenLDAP {
+  my ($localNetworkHash,$password)=@_;
+
+  # Retake the modus, we need it to deal with the ldifs later on
+  my $local_modus = $modus;
+
+  # If the modus is demo-system, we can do the same as for a primary-master, so
+  # overwrite the local_modus, so we can perform the same actions with the same
+  # templates (there is only one little exeption, but to handle this we stil
+  # the original $modus
+  if ( $modus eq "demo-system" )
+  {
+      $local_modus = "primary-master";
+  }
+
+  my $uid_root = $cfg->val("General","uid_root"); # root
+  my $gid_root = $cfg->val("General","gid_root"); # root
+  my $uid_ldap = $cfg->val("General","uid_ldap"); # ldap
+  my $gid_ldap = $cfg->val("General","gid_ldap"); # ldap
+  my $directory_openldap = $cfg->val("General","directory_openldap");
+  my $directory_acl      = $directory_openldap.$cfg->val("General","directory_acl");;
+  my $directory_data     = $directory_openldap.$cfg->val("General","directory_data");;
+  my $directory_schema   = $directory_openldap.$cfg->val("General","directory_schema");;
+  my $directory_ssl      = $directory_openldap.$cfg->val("General","directory_ssl");;
+  my $directory_hdb_data = $cfg->val("General","directory_hdb_data");
+  my $directory_confd    = $cfg->val("General","directory_confd");
+  my $file_slapd         = $directory_confd.$cfg->val("General","file_slapd");
+  my $file_ldap_conf     = $directory_openldap.$cfg->val("General","file_ldap_conf");
+  my $file_slapd_conf    = $directory_openldap.$cfg->val("General","file_slapd_conf");
+  my $file_00_directory                              = $directory_data."/00_directory-init.ldif";
+  my $file_01_administration_nextfreeuid             = $directory_data."/01_nextfreeuid-administration.ldif";
+  my $file_02_group_mapping_administration           = $directory_data."/02_group_mapping-administration.ldif";
+  my $file_02_administration_services                = $directory_data."/02_services-administration.ldif";
+  my $file_03_reseller                               = $directory_data."/03_reseller.ldif";
+  my $file_04_customers                              = $directory_data."/04_customers.ldif";
+  my $file_05_people                                 = $directory_data."/05_people.ldif";
+  my $file_06_groups                                 = $directory_data."/06_groups.ldif";
+  my $file_06_services_virtualization                = $directory_data."/06_services_virtualization.ldif";
+  my $file_07_authentication_services_virtualization_template = $directory_data."/07_authentication_services_virtualization.template-$local_modus";
+  my $file_07_authentication_services_virtualization = $directory_data."/07_authentication_services_virtualization.ldif";
+  my $file_08_configuration_services_virtualization_template = $directory_data."/08_configuration_services_virtualization.template-$local_modus";
+  my $file_08_configuration_services_virtualization  = $directory_data."/08_configuration_services_virtualization.ldif";
+  my $file_09_networks_services_virtualization_template      = $directory_data."/09_networks_services_virtualization.template-$local_modus";
+  my $file_09_networks_services_virtualization       = $directory_data."/09_networks_services_virtualization.ldif";
+  my $file_10_nodes_services_virtualization          = $directory_data."/10_nodes_services_virtualization.ldif";
+  my $file_11_storage_services_virtualization        = $directory_data."/11_storage_services_virtualization.ldif";
+  my $file_12_vm_profiles_services_virtualization    = $directory_data."/12_vm-profiles_services_virtualization.ldif";
+  my $file_13_vm_templates_services_virtualization   = $directory_data."/13_vm-templates_services_virtualization.ldif";
+  my $file_14_vm_pools_services_virtualization       = $directory_data."/14_vm-pools_services_virtualization.ldif";
+  my $file_14_vm_pools_services_virtualization_template  = $directory_data."/14_vm-pools_services_virtualization.template-$local_modus";
+  my $file_15_vms_services_virtualization            = $directory_data."/15_vms_services_virtualization.ldif";
+  my $file_16_primary_master_node                    = $directory_data."/16_primary-master-node.ldif";
+  my $file_16_primary_master_node_template           = $directory_data."/16_primary-master-node.template-$local_modus";
+  my $file_17_ranges_networks_services_virtualization = $directory_data."/17_ranges_networks_services_virtualization.ldif";
+  my $file;
+  my $line;
+  my $unencrypted_password;
+  my @output;
+  my $error = 1;
+  my $localIntIP = $localNetworkHash->{"int"}->{"ip"};
+  my $ntp_conf_file = $cfg->val("General","ntp_conf_file");
+  my $dns_conf_file = $cfg->val("General","dns_conf_file");
+  my @sar_commands;
+  my @ntp_hosts = ();
+  my @dns_hosts = ();
+  my $dns_host_string = "";
+  my $ntp_host_string = "";
+
+  # Used for commands later
+  my $search;
+  my $replace;
+
+  # Nicer Output
+  print "\n";
+
+  # Configuring the slapd daemon
+  header("Configuring the slapd daemon ...");
+
+  # Make sure, that the OpenLDAP daemon slapd is not running
+  stopDaemon("slapd");
+
+  # Setting the proper permisions on the openldap directory
+  print "\n";
+  setSingleFilePermissions("directory",$uid_root,$gid_ldap,0755,$directory_openldap);
+
+  ##############################################################################
+  ### Working on the file /etc/openldap/ldap.conf if needed by $modus
+  ##############################################################################
+
+  if ( $local_modus eq "primary_master" )
+  {
+      # Working on the file /etc/openldap/ldap.conf
+      print "\n";
+      print "Working on $file_ldap_conf ...\n";
+
+      # Replace:
+      # URI             ldap://127.0.0.1:389
+      # Or:
+      # URI             <FOSS-CLOUD-LDAP-VIP-URI>
+      # With:
+      # URI             ldap://$localIntIP:389
+
+      # Test if the file exists and is readable
+      unless ( -r $file_ldap_conf )
+      {
+          returnError(ERROR_MISSING_FILE_CODE,
+                      ERROR_MISSING_FILE_STRING,
+                      "Could not open $file_ldap_conf for reading");
+      }
+
+      open(FILE,$file_ldap_conf);
+      @output = <FILE>;
+      close FILE;
+
+      foreach $line (@output) {
+        if ($line =~ "^URI") {
+          print "Found:          $line";
+          $line =~ s/URI.*/URI             ldap:\/\/$localIntIP:389/g;
+          print "Replacing with: URI             ldap://$localIntIP:389\n";
+          $error = 0;
+        } # End of if ($line =~ "listen_addr")
+      } # End of foreach $line (@output)
+
+      if (!$dryrun) {
+        print "Writing:        URI             ldap://$localIntIP:389\n";
+        print "To the file:    $file_ldap_conf\n";
+        open(FOUT,">$file_ldap_conf") || die("Could not open $file_ldap_conf for writing.");
+        foreach $line (@output) {
+          print FOUT $line;
+        } # End of foreach $line (@output)
+        close FOUT;
+      } else {
+        if ($debug) {
+          foreach $line (@output) {
+            print $line;
+          } # End of foreach $line (@output)
+        } # End of if ($debug)
+        print "--dry-run: Would write 'URI             ldap://$localIntIP:389' to the file $file_ldap_conf!\n";
+      } # End of if (!$dryrun)
+
+      # Setting the proper permisions on the file /etc/openldap/ldap.conf ...
+      setSingleFilePermissions("file",$uid_root,$gid_ldap,0644,$file_ldap_conf);
+  } # End of if ( $local_modus eq "primary_master" )
+  # End of working on /etc/openldap/ldap.conf
+
+  ##############################################################################
+  ### Working on the file /etc/openldap/slapd.conf if needed by $modus
+  ##############################################################################
+
+  if ( $local_modus eq "primary-master" )
+  {
+      # Working on the file /etc/openldap/slapd.conf
+      print "\n";
+      print "Working on $file_slapd_conf ...\n";
+
+      # If the password was passed, i.e. specified in command line args we don't
+      # need to ask the user, just create a crypted one. But if the password was not
+      # specified in command line args, ask the user to enter a password
+      unless ( defined($password) )
+      {
+          # Ask the user for the Manager password
+          ($password,$unencrypted_password) = askForOpenLDAPManagerPassword();
+      } else
+      {
+          # Create a crypted version of the password specified in command line args
+          $unencrypted_password = $password;
+          $password = `/usr/sbin/slappasswd -s '$unencrypted_password'`;
+          my $errorCode = $? >> 8;
+
+          chomp($password);
+
+          if($errorCode != 0) {
+              returnError(ERROR_PASSWORD_NOT_CREATED_CODE,ERROR_PASSWORD_NOT_CREATED_STRING,"Could not encrypt the password with slappasswd.");
+          } # End of if($errorCode != 0)
+      }
+
+      # Replace:
+      # rootpw          {SSHA}0vML7DliNHZWrK9pok8UQpPhyPe9iNKu
+      # Or:
+      # rootpw          <FOSS-CLOUD-SLAPD-ROOT-PW>
+      # With:
+      # rootpw          {SSHA}McZMZiKDM5/EpeexPxG4qOojndoJeM2D
+
+      # Test if the file exists and is readable
+      unless ( -r $file_slapd_conf )
+      {
+          returnError(ERROR_MISSING_FILE_CODE,
+                      ERROR_MISSING_FILE_STRING,
+                      "Could not open $file_slapd_conf for reading");
+      }
+
+      open(FILE,$file_slapd_conf);
+      @output = <FILE>;
+      close FILE;
+
+      foreach $line (@output) {
+        if ($line =~ "^rootpw") {
+          print "Found:          $line";
+          $line =~ s/rootpw.*/rootpw          $password/g;
+          print "Replacing with: rootpw          $password\n";
+          $error = 0;
+        } # End of if ($line =~ "^rootpw")
+      } # End of foreach $line (@output)
+
+      if (!$dryrun) {
+        print "Writing:        rootpw          $password\n";
+        print "To the file:    $file_slapd_conf\n";
+        open(FOUT,">$file_slapd_conf") || die("Could not open $file_slapd_conf for writing.");
+        foreach $line (@output) {
+          print FOUT $line;
+        } # End of foreach $line (@output)
+        close FOUT;
+      } else {
+        if ($debug) {
+          foreach $line (@output) {
+            print $line;
+          } # End of foreach $line (@output)
+        } # End of if ($debug)
+        print "--dry-run: Would write 'rootpw          $password' to the file $file_slapd_conf!\n";
+      } # End of if (!$dryrun)
+
+      # Setting the proper permisions on the file /etc/openldap/slapd.conf ...
+      setSingleFilePermissions("file",$uid_root,$gid_ldap,0640,$file_slapd_conf);
+  } #   if ( $local_modus eq "primary-master" )
+  #  End of working on the file /etc/openldap/slapd.conf
+
+
+  ##############################################################################
+  ### Working on the file /etc/conf.d/slapd if needed by $modus
+  ##############################################################################
+
+  # Configuring /etc/conf.d/slapd
+  print "\n";
+  print "Working on $file_slapd ...\n";
+
+  # Test if the file exists and is readable
+  unless ( -r $file_slapd )
+  {
+      returnError(ERROR_MISSING_FILE_CODE,
+                  ERROR_MISSING_FILE_STRING,
+                  "Could not open $file_slapd for reading");
+  }
+
+  # Replacing OPTS=" -h 'ldap://127.0.0.1'" with OPTS=" -h 'ldap://$localIntIP'"
+  open(FILE,$file_slapd);
+  @output = <FILE>;
+  close FILE;
+
+  foreach $line (@output) {
+    if ($line =~ "^OPTS=") {
+      print  "Found:          $line";
+      $line =~ s/OPTS=.*/OPTS=\" -h 'ldap:\/\/$localIntIP'\"/g;
+      print "Replacing with: OPTS=\" -h 'ldap:\/\/$localIntIP'\"\n";
+      $error = 0;
+    } # End of if ($line =~ "listen_addr")
+  } # End of foreach $line (@output)
+
+  if (!$dryrun) {
+    print "Writing:        OPTS=\" -h 'ldap:\/\/$localIntIP'\"\n";
+    print "To the file:    $file_slapd\n";
+    open(FOUT,">$file_slapd") || die("Could not open $file_slapd for writing.");
+    foreach $line (@output) {
+      print FOUT $line;
+    } # End of foreach $line (@output)
+    close FOUT;
+  } else {
+    if ($debug) {
+      foreach $line (@output) {
+        print $line;
+      } # End of foreach $line (@output)
+    } # End of if ($debug)
+    print "--dry-run: Would write 'OPTS=\" -h 'ldap:\/\/$localIntIP'\"' to the file $file_slapd!\n";
+  } # End of if (!$dryrun)
+
+  # Setting the proper permisions on the acl directory and files ...
+  setSingleFilePermissions("directory",$uid_root,$gid_ldap,0750,$directory_acl);
+  setMultipleFilePermissions($uid_root,$gid_ldap,0640,$directory_acl);
+
+  # Setting the proper permisions on the data directory and files ...
+  setSingleFilePermissions("directory",$uid_root,$gid_ldap,0750,$directory_data);
+  setMultipleFilePermissions($uid_root,$gid_ldap,0640,$directory_data);
+
+  # Setting the proper permisions on the schema directory and files ...
+  setSingleFilePermissions("directory",$uid_root,$gid_ldap,0750,$directory_schema);
+  setMultipleFilePermissions($uid_root,$gid_ldap,0640,$directory_schema);
+
+  # Setting the proper permisions on the ssl directory ...
+  setSingleFilePermissions("directory",$uid_root,$gid_ldap,0755,$directory_ssl);
+
+  # Create the neccessary directory structure to hold the OpenLDAP data
+  print "\n";
+  createDirectoryStructure($uid_ldap,$gid_ldap,0700,$directory_hdb_data);
+
+  # Start the slapd daemon
+  startDaemon("slapd",5);
+
+  # Add the slapd daemon to the default runlevel
+  rcUpdate("slapd","default");
+
+  # Now we can start adding the data to the OpenLDAP directory with ldapadd
+  print "\n";
+
+
+  ##############################################################################
+  ### Worked on files needed by $modus
+  ##############################################################################
+
+  # AEIO: Ask eichi if ok
+
+  # Test if all files are readable
+  unless ( -r $file_00_directory ||
+           -r $file_01_administration_nextfreeuid ||
+           -r $file_02_group_mapping_administration ||
+           -r $file_02_administration_services ||
+           -r $file_03_reseller ||
+           -r $file_04_customers ||
+           -r $file_05_people ||
+           -r $file_06_groups ||
+           -r $file_06_services_virtualization
+         )
+  {
+      returnError(ERROR_MISSING_FILE_CODE,ERROR_MISSING_FILE_STRING);
+  }
+
+
+  header("Adding data ...");
+  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_00_directory);
+  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_01_administration_nextfreeuid);
+  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_02_group_mapping_administration);
+  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_02_administration_services);
+  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_03_reseller);
+  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_04_customers);
+  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_05_people);
+  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_06_groups);
+  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_06_services_virtualization);
+
+
+  ##############################################################################
+  # Working on /etc/openldap/data/07_services_virtualization_authentication.ldif
+  # if needed by $modus
+  ##############################################################################
+
+  if ( $local_modus eq "primary-master" )
+  {
+
+      # Configuring /etc/openldap/data/07_services_virtualization_authentication.ldif
+      print "\n";
+      print "Working on $file_07_authentication_services_virtualization ...\n";
+
+      # Replace:
+      # labeledURI: <FOSS-CLOUD-LABELED-URI>
+      # With:
+      # labeledURI: ldap://192.0.2.87:389
+
+      # Replace:
+      # sstLDAPBindPassword: <FOSS-CLOUD-MANAGER-PASSWORD>
+      # With:
+      # sstLDAPBindPassword: admin
+
+      # Create the search_and_replace commands to replace the LDIF template with
+      # the correct values
+      @sar_commands = ( {search => "<FOSS-CLOUD-LABELED-URI>", replace => "ldap://$localIntIP:389"},
+                           {search => "<FOSS-CLOUD-MANAGER-PASSWORD>", replace => $unencrypted_password},
+                      );
+
+      # Replace the template with the correct values which are specified in the
+      # @sar_commands array
+      searchAndReplace( $file_07_authentication_services_virtualization_template,
+                        $file_07_authentication_services_virtualization,
+                        @sar_commands
+                       );
+
+      print "\n";
+
+      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_07_authentication_services_virtualization);
+
+  } # End of if ( $local_modus eq "primary-master" )
+  # Worked on /etc/openldap/data/07_services_virtualization_authentication.ldif
+
+
+  ##############################################################################
+  # Working on /etc/openldap/data/08_configuration_services_virtualization.ldif
+  # if needed by $modus
+  ##############################################################################
+
+  if ( $local_modus eq "primary-master" )
+  {
+      # Configuring /etc/openldap/data/08_configuration_services_virtualization.ldif
+      print "\n";
+      print "Working on $file_08_configuration_services_virtualization ...\n";
+
+      # get the DNS Hosts form /etc/resolv.conf
+      open(DNS,$dns_conf_file) || die("Could not open $dns_conf_file for reading.");
+
+      @output = <DNS>;
+      
+      foreach $line (@output){
+        if($line =~ m/^nameserver\s+/){
+              $'=~m/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/;
+          push(@dns_hosts,$&);
+        }
+      }
+
+      # Generate the string to wirte in the ldif
+      foreach my $dns_host (@dns_hosts){
+        $dns_host_string.="\nsstNetworkDNSHost: $dns_host";
+      }
+
+      # get the NTP information form /etc/ntp.conf
+      open(NTP,$ntp_conf_file) || die("Could not open $ntp_conf_file for reading.");
+
+      @output = <NTP>;
+      my $match;
+
+      foreach $line (@output){
+        if($line =~ m/^server\s+/){
+          $match=$';
+          $match=~s/\n//g;
+          push(@ntp_hosts,$match);
+        }
+      }
+
+      # Generate the string to wirte in the ldif
+      foreach my $ntp_host (@ntp_hosts){
+        $ntp_host_string.="\nsstNetworkNTPHost: $ntp_host";
+      }
+
+      # Generate a universal unique identifier
+      my $uuid = `uuidgen`;
+
+      # And remove the newline at the end
+      chomp($uuid);
+
+      # Generate the search and replace commands for each segement.
+      @sar_commands = (## admin segment hashes ##
+                          {search => "<FOSS-CLOUD-ADMIN-VLAN-ID>",replace => $localNetworkHash->{"admin"}->{"id"}},
+                          {search => "<FOSS-CLOUD-ADMIN-NETWORK-ADDRESS>",replace => $localNetworkHash->{"admin"}->{"ip"}},
+                          {search => "<FOSS-CLOUD-ADMIN-NETMASK>",replace => $localNetworkHash->{"admin"}->{"netmask"}},
+                          {search => "<FOSS-CLOUD-ADMIN-BROADCAST>",replace => $localNetworkHash->{"admin"}->{"broadcast"}},
+                          {search => "<FOSS-CLOUD-ADMIN-DOMAIN>",replace => $localNetworkHash->{"admin"}->{"domain"}},
+
+                          ## int segment hashes ##
+                          {search => "<FOSS-CLOUD-INT-VLAN-ID>",replace => $localNetworkHash->{"int"}->{"id"}},
+                          {search => "<FOSS-CLOUD-INT-NETWORK-ADDRESS>",replace => $localNetworkHash->{"int"}->{"ip"}},
+                          {search => "<FOSS-CLOUD-INT-NETMASK>",replace => $localNetworkHash->{"int"}->{"netmask"}},
+                          {search => "<FOSS-CLOUD-INT-BROADCAST>",replace => $localNetworkHash->{"int"}->{"broadcast"}},
+                          {search => "<FOSS-CLOUD-INT-DOMAIN>",replace => $localNetworkHash->{"int"}->{"domain"}},
+
+                          ## data segment hashes##
+                          {search => "<FOSS-CLOUD-DATA-VLAN-ID>",replace => $localNetworkHash->{"data"}->{"id"}},
+                          {search => "<FOSS-CLOUD-DATA-NETWORK-ADDRESS>",replace => $localNetworkHash->{"data"}->{"ip"}},
+                          {search => "<FOSS-CLOUD-DATA-NETMASK>",replace => $localNetworkHash->{"data"}->{"netmask"}},
+                          {search => "<FOSS-CLOUD-DATA-BROADCAST>",replace => $localNetworkHash->{"data"}->{"broadcast"}},
+                          {search => "<FOSS-CLOUD-DATA-DOMAIN>",replace => $localNetworkHash->{"data"}->{"domain"}},
+
+                          ## pub segment hashes ##
+                          {search => "<FOSS-CLOUD-PUB-VLAN-ID>",replace => $localNetworkHash->{"pub"}->{"id"}},
+                          {search => "<FOSS-CLOUD-PUB-NETWORK-ADDRESS>",replace => $localNetworkHash->{"pub"}->{"ip"}},
+                          {search => "<FOSS-CLOUD-PUB-NETMASK>",replace => $localNetworkHash->{"pub"}->{"netmask"}},
+                          {search => "<FOSS-CLOUD-PUB-DEFAULT-GATEWAY>",replace => $localNetworkHash->{"pub"}->{"gateway"}},
+                          {search => "<FOSS-CLOUD-PUB-BROADCAST>",replace => $localNetworkHash->{"pub"}->{"broadcast"}},
+                          {search => "<FOSS-CLOUD-PUB-DOMAIN>",replace => $localNetworkHash->{"pub"}->{"domain"}},
+                          {search => "<FOSS-CLOUD-NTP-INFO>",replace => $ntp_host_string},
+                          {search => "<FOSS-CLOUD-DNS-INFO>",replace => $dns_host_string},
+
+                          # General
+                          {search => "<FOSS-CLOUD-ID>" , replace => $uuid },
+
+                          # Path
+                          {search  => "08_configuration_services_virtualization.template",
+                           replace => "08_configuration_services_virtualization.ldif"
+                          },
+                         );
+
+
+      # Replace the template with the correct values which are specified in the
+      # @sar_commands array
+      searchAndReplace( $file_08_configuration_services_virtualization_template,
+                        $file_08_configuration_services_virtualization,
+                        @sar_commands
+                       );
+
+      # Load the created ldif into the LDAP
+      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_08_configuration_services_virtualization);
+
+
+  } # End of ( $local_modus eq "primary-master" )
+  # Worked on /etc/openldap/data/08_configuration_services_virtualization.ldif
+
+  ##############################################################################
+  # Working on /etc/openldap/data/09_networks_services_virtualization.ldif
+  # if needed by $modus
+  ##############################################################################
+
+  if ( $local_modus eq "primary-master" )
+  {
+      ### Working on 09_networks_services_virtualization
+      #
+      
+      # Define some vars for the search and replace hash later
+      my $network_address;
+      my $netmask;
+      my $domain;
+      my $dns;
+      my $gateway;
+      my $broadcast;
+      my $ntp;
+
+      # Here we need to differ the global $modus, demo-system != primary-master
+      if ( $modus eq "primary-master" )
+      {
+          # Again create the NTP information for writing to the LDIF. We have already
+          # collected the host as we were working on 08_configuration_services_
+          # virtualization, so take this array and add the appropriate LDIF attributes
+
+
+
+          # Same thing for the DNS server, we already have the servers in an array so
+          # just add the LDIF appropriate attributes
+
+          # Generate the string to wirte in the ldif
+          $dns_host_string = join(",",@dns_hosts);
+
+          # Calculate the network address form the public IP and netmask
+          $network_address = NetAddr::IP::Lite->new($localNetworkHash->{"pub"}->{"ip"}."/".$localNetworkHash->{"pub"}->{"netmask"});
+          $network_address = $network_address->network()->addr();
+
+          # set the vars appropriate the the network hash
+          $netmask = $localNetworkHash->{"pub"}->{"netmask"};
+          $domain = $localNetworkHash->{"pub"}->{"domain"};
+          $dns = $dns_host_string;
+          $gateway = $localNetworkHash->{"pub"}->{"gateway"};
+          $broadcast = $localNetworkHash->{"pub"}->{"broadcast"};
+          
+      } elsif ( $modus eq "demo-system" )
+      {
+          # Get the information from the configuration file;
+          $network_address = $cfg->val($modus,"dhcp_network");
+          $netmask = $cfg->val($modus,"dhcp_netmask");
+          $domain =$cfg->val($modus,"dhcp_domain");
+          $dns = $cfg->val($modus,"dhcp_DNS");
+          $gateway = $cfg->val($modus,"dhcp_default_gateway");
+          $broadcast = $cfg->val($modus,"dhcp_broadcast");
+          
+
+      }
+      
+      # Generate the string to wirte in the ldif
+      $ntp_host_string = join(",",@ntp_hosts);
+
+      $ntp = $ntp_host_string;
+
+      @sar_commands = ( {search => "<FOSS-CLOUD-PUB-SUBNET-ADDRESS>", replace => $network_address},
+                        {search => "<FOSS-CLOUD-PUB-NETMASK>", replace => $netmask},
+                        {search => "<FOSS-CLOUD-PUB-DOMAIN>", replace => $domain},
+                        {search => "<FOSS-CLOUD-DNS-INFO>", replace => $dns},
+                        {search => "<FOSS-CLOUD-PUB-DEFAULT-GATEWAY>", replace => $gateway},
+                        {search => "<FOSS-CLOUD-PUB-BROADCAST>", replace => $broadcast},
+                        {search => "<FOSS-CLOUD-NTP-INFO>", replace => $ntp},
+                      );
+
+      # Replace the template with the correct values which are specified in the
+      # @sar_commands array
+      searchAndReplace( $file_09_networks_services_virtualization_template,
+                        $file_09_networks_services_virtualization,
+                        @sar_commands
+                       );
+
+      # Load the created ldif into the ldap
+      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_09_networks_services_virtualization);
+
+  }# End of if ( $local_modus eq "primary-master" )
+  # Working on /etc/openldap/data/09_networks_services_virtualization.ldif
+
+
+
+  # Load the ldifs into the LDAP to be able to continue
+  if ( -r $file_10_nodes_services_virtualization &&
+       -r $file_11_storage_services_virtualization &&
+       -r $file_12_vm_profiles_services_virtualization &&
+       -r $file_13_vm_templates_services_virtualization
+     )
+  {
+      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_10_nodes_services_virtualization);
+      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_11_storage_services_virtualization);
+      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_12_vm_profiles_services_virtualization);
+      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_13_vm_templates_services_virtualization);
+      
+  } else
+  {
+      returnError(ERROR_MISSING_FILE_CODE,ERROR_MISSING_FILE_STRING);
+  }
+
+
+  ##############################################################################
+  # Working on /etc/openldap/data/14_vm-pools_services_virtualization.ldif
+  # if needed by $modus
+  ##############################################################################
+
+  if ( $local_modus eq "primary-master" )
+  {
+
+      ### Working on 14_vm-pools_services_virtualization
+      #
+
+      @sar_commands = (## general ##
+                       {search => "<FOSS-CLOUD-NODE-NAME>",replace => $localNetworkHash->{"Node Name"}},
+
+                       ## pub segment hashes ##
+                       {search => "<FOSS-CLOUD-PUB-DOMAIN>",replace => $localNetworkHash->{"pub"}->{"domain"}},
+
+                       # Path
+                       {search  => "14_vm-pools_services_virtualization.template",
+                        replace => "14_vm-pools_services_virtualization.ldif"
+                       },
+                      );
+
+      # Replace the template with the correct values which are specified in the
+      # @sar_commands array
+      searchAndReplace( $file_14_vm_pools_services_virtualization_template,
+                        $file_14_vm_pools_services_virtualization,
+                        @sar_commands
+                       );
+
+      # Load the created ldif into the LDAP
+      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_14_vm_pools_services_virtualization);
+
+
+  } # End of if ( $local_modus eq "primary-master" )
+  # Worked on /etc/openldap/data/14_vm-pools_services_virtualization.ldif
+
+
+
+  # Load the ldif into the LDAP to be able to continue
+  if ( -r $file_15_vms_services_virtualization )
+  {
+    loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_15_vms_services_virtualization);
+  } else
+  {
+      returnError(ERROR_MISSING_FILE_CODE,ERROR_MISSING_FILE_STRING,
+                 "$file_15_vms_services_virtualization does not exist or has"
+                 ." incorrect permissions");
+  }
+
+
+  ##############################################################################
+  # Working on /etc/openldap/data/16_primary-master-node.ldif
+  # if needed by $modus
+  ##############################################################################
+
+  if ( $local_modus eq "primary-master" )
+  {
+
+      ### Working on 16_primary-master-node
+      #
+
+      @sar_commands = (## general ##
+                       {search => "<FOSS-CLOUD-NODE-NAME>",replace => $localNetworkHash->{"Node Name"}},
+
+                       ## admin segment hashes ##
+                       {search => "<FOSS-CLOUD-ADMIN-NETWORK-ADDRESS>",replace => $localNetworkHash->{"admin"}->{"ip"}},
+
+                       ## int segment hashes ##
+                       {search => "<FOSS-CLOUD-INT-NETWORK-ADDRESS>",replace => $localNetworkHash->{"int"}->{"ip"}},
+
+                       ## data segment hashes##
+                       {search => "<FOSS-CLOUD-DATA-NETWORK-ADDRESS>",replace => $localNetworkHash->{"data"}->{"ip"}},
+
+                       ## pub segment hashes ##
+                       {search => "<FOSS-CLOUD-PUB-NETWORK-ADDRESS>",replace => $localNetworkHash->{"pub"}->{"ip"}},
+                       {search => "<FOSS-CLOUD-PUB-DOMAIN>",replace => $localNetworkHash->{"pub"}->{"domain"}},
+
+                       # Path
+                       {search  => "16_primary-master-node.template",
+                        replace => "16_primary-master-node.ldif"
+                       },
+                      );
+
+
+      # Replace the template with the correct values which are specified in the
+      # @sar_commands array
+      searchAndReplace( $file_16_primary_master_node_template,
+                        $file_16_primary_master_node,
+                        @sar_commands
+                       );
+
+      # Load the created ldif into the LDAP
+      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_16_primary_master_node);
+
+
+  } # End of if ( $local_modus eq "primary-master" )
+  # Worked on /etc/openldap/data/16_primary-master-node.ldif
+
+
+  ##############################################################################
+  # Working on /etc/openldap/data/17_ranges_networks_services_virtualization.ldif
+  # if needed by $modus
+  ##############################################################################
+
+  if ( $modus eq "demo-system" )
+  {
+      # Load the ranges into the LDAP
+      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_17_ranges_networks_services_virtualization);
+  }
+  # Worked on 17_ranges_networks_services_virtualization
+
+  print "\n";
+
+
+  # Create the cronjob for the backup
+
+  # Get the values from the configuration file
+  my $cronjob_string = $cfg->val("Cron","LDAPBackupString");
+  my $cronjob_location = $cfg->val("Cron","LDAPBackupLocation");
+  my $cronjob_file = $cfg->val("Cron","LDAPBackupFile");
+
+  # Check whether the directory exists, if not create it
+  unless ( -d $cronjob_location )
+  {
+      system("mkdir -p $cronjob_location");
+      system("chmod 755 $cronjob_location");
+  }
+
+
+  # Open the file and write the cronjob if possible
+  unless ( open(CRON,">$cronjob_location/$cronjob_file") )
+  {
+      # If the file could not be opened, tell the user so
+      print "Could not open cronjob file ($cronjob_location/$cronjob_file) for";
+      print "writing, please create the LDAP backup crobjob yourself!\n";
+      sleep 5;
+  } else
+  {
+      # Write the string to the file and close the file
+      print CRON "# Cronjob for the LDAP backup\n";
+      print CRON $cronjob_string;
+      close CRON;
+
+      # Set the correct permission to the file
+      system("chmod 644 $cronjob_location/$cronjob_file");
+      
+      print "Cronjob for LDAP Backup created!\n";
+  }
+
+  print "\n";
+
+  return $unencrypted_password;
+
+} # End of sub configureOpenLDAP
+
+
+######################################################################################################
+# configureDHCP
+######################################################################################################
+# Description:
+#   Replaces the placeholder in the dhcp.conf file with the correct value
+# Usage:
+#   configureDHCP($localNetworkHash);
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+sub configureDHCP {
+
+    my $localNetworkHash = shift;
+
+    my $file_dhcp_conf_template = $cfg->val($modus,"file_dhcp_conf_template");
+    my $file_dhcp_conf = $cfg->val($modus,"file_dhcp_conf");
+
+    # Configuring the VM-Manager
+    header("Configuring the DHCP Daemon ...");
+    
+    # Working on the file /var/www/localhost/htdocs/vm-manager/vm_config.php ...
+    print "\n";
+    print "Working on $file_dhcp_conf ...\n";
+
+    # Generate the search and replace commands to replace the placeholders in
+    # template
+    my @sar_commands = ( { search => "<FOSS-CLOUD-LDAP-SERVER>", replace => $localNetworkHash->{"int"}->{"ip"} } );
+
+    searchAndReplace( $file_dhcp_conf_template,
+                      $file_dhcp_conf,
+                      @sar_commands
+                    );
+
+}
+
+######################################################################################################
+# configureVMManager
+######################################################################################################
+# Description: 
+#   Configures the VM-Manager with the OpenLDAP Server IP and the Manager password.
+# Usage:
+#   configureVMManager($localNetworkHash,$unencrypted_password);
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+sub configureVMManager {
+  my ($localNetworkHash,$unencrypted_password) = @_;
+  my $file_vmmanager_conf = $cfg->val($modus,"file_vmmanager_conf");
+  my $error = 1;
+  my @output;
+  my $line;
+
+  # OpenLDAP runs on the int VLAN
+  my $localIntIP = $localNetworkHash->{"int"}->{"ip"};
+
+  # Configuring the VM-Manager
+  header("Configuring the VM-Manager daemon ...");
+
+  # Working on the file /var/www/localhost/htdocs/vm-manager/vm_config.php ...
+  print "\n";
+  print "Working on $file_vmmanager_conf ...\n";
+
+  # Replace:
+  # 'server' => 'ldaps://<FOSS-CLOUD-LDAP-HOSTNAME>/',
+  # or
+  # 'server' => 'ldap://192.0.2.5/',
+  # With:
+  # 'server' => 'ldap://192.0.2.5/',
+
+  # Replace:
+  # 'port' => 636,
+  # Or:
+  # 'port' => 389,
+  # With:
+  # 'port' => 389,
+
+  # Replace:
+  # 'bind_pwd' => '<FOSS-CLOUD-LDAP-PASSWORD>',
+  # Or:
+  # 'bind_pwd' => 'admin',
+  # With:
+  # 'bind_pwd' => 'admin',
+  open(FILE,$file_vmmanager_conf) || die("Could not open $file_vmmanager_conf for reading.");
+  @output = <FILE>;
+  close FILE;
+
+  foreach $line (@output) {
+    if ($line =~ "'server'") {
+      print "Found:          $line";
+      $line =~ s/'server'.*/'server' => 'ldap:\/\/$localIntIP\/',/g; #'
+      print "Replacing with:                         'server' => 'ldap://$localIntIP/',\n";
+      $error = 0;
+    } # End of if ($line =~ "'server'")
+    if ($line =~ "'port'") {
+      print "Found:          $line";
+      $line =~ s/'port'.*/'port' => 389,/g;
+      print "Replacing with:                         'port' => 389,\n";
+      $error = 0;
+    } # End of if ($line =~ "'port'")
+    if ($line =~ "'bind_pwd'") {
+      print "Found:          $line";
+      $line =~ s/'bind_pwd'.*/'bind_pwd' => '$unencrypted_password',/g;
+      print "Replacing with:                         'bind_pwd' => '$unencrypted_password',\n";
+      $error = 0;
+    } # End of if ($line =~ "'bind_pwd'")
+  } # End of foreach $line (@output)
+
+  if (!$dryrun) {
+    print "Writing:        'server' => 'ldap://$localIntIP/',\n";
+    print "Writing:        'port' => 389,\n";
+    print "Writing:        'bind_pwd' => '$unencrypted_password',\n";
+    print "To the file:    $file_vmmanager_conf\n";
+    open(FOUT,">$file_vmmanager_conf") || die("Could not open $file_vmmanager_conf for writing.");
+    foreach $line (@output) {
+      print FOUT $line;
+    } # End of foreach $line (@output)
+    close FOUT;
+  } else {
+    if ($debug) {
+      foreach $line (@output) {
+        print $line;
+      } # End of foreach $line (@output)
+    } # End of if ($debug)
+    print "--dry-run: Would write ''server' => 'ldap://$localIntIP/,' to the file $file_vmmanager_conf!\n";
+    print "--dry-run: Would write ''port' => 389,' to the file $file_vmmanager_conf!\n";
+    print "--dry-run: Would write ''bind_pwd' => '$unencrypted_password',' to the file $file_vmmanager_conf!\n";
+  } # End of if (!$dryrun)
+
+  print "\n";
+
+} # End of sub configureVMManager
+
+
+######################################################################################################
+# configurePhpLDAPadmin
+######################################################################################################
+# Description: 
+#   Configures phpLDAPadmin for the local OpenLDAP server.
+# Usage:
+#   configurePhpLDAPadmin($localNetworkHash);
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+sub configurePhpLDAPadmin {
+    
+  my ($localNetworkHash)=@_;
+  
+  my $file_phpldapadmin_template = $cfg->val($modus,"file_phpldapadmin_template");
+  my $file_phpldapadmin_conf = $cfg->val($modus,"file_phpldapadmin_conf");
+  my $error = 1;
+  my @output;
+  my $line;
+
+  # OpenLDAP runs on the int VLAN
+  my $localIntIP = $localNetworkHash->{"int"}->{"ip"};
+
+  # Configuring the phpLDAPadmin
+  header("Configuring phpLDAPadmin ...");
+
+
+  # Setting the proper permisions on the openldap directory
+#  print "\n";
+#  setSingleFilePermissions("directory",$uid_root,$gid_ldap,0755,$directory_openldap);
+
+  # Working on the file /var/www/localhost/htdocs/phpldapadmin/config/config.php
+  print "\n";
+  print "Working on $file_phpldapadmin_template ...\n";
+
+  # Replace:
+  # $servers->setValue('server','host','ldaps://<FOSS-CLOUD-LDAP-VIP>');
+  # With: 
+  # $servers->setValue('server','host','ldap://192.0.2.87');
+
+  # Generate the search-and-replace commands:
+  # Take care of port and address ldap:// => 389 ldaps:// => 636
+  my @sar_commands = (
+                      {search => "<FOSS-CLOUD-LDAP-VIP>",replace => "ldap://".$localIntIP},
+                      {search => "<FOSS-CLOUD-LDAP-RIP1>",replace => "ldap://".$localIntIP},
+                      #{search => "<FOSS-CLOUD-LDAP-RIP2>",replace => $localIntIP},
+                      {search => "<FOSS-CLOUD-LDAP-PORT>",replace => 389},
+                     );
+
+  searchAndReplace ( $file_phpldapadmin_template,
+                     $file_phpldapadmin_conf,
+                     @sar_commands
+                   );
+
+  print "\n";
+
+} # End of configurePhpLDAPadmin
+
+
+######################################################################################################
+# configureApache2
+######################################################################################################
+# Description: 
+#   Configures and starts the Apache2 web server.
+# Usage:
+#   configureApache2($localNetworkHash);
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+sub configureApache2 {
+
+  my ($localNetworkHash)=@_;
+  
+  my $file_localhost_conf = $cfg->val($modus,"file_localhost_conf");
+  my $error = 1;
+  my @output;
+  my $line;
+
+  # Apache2 runs on the pub VLAN
+  my $localPubIP = $localNetworkHash->{"pub"}->{"ip"};
+  my $localPubDomain =  $localNetworkHash->{"pub"}->{"domain"};
+
+  # Configuring the apache2 daemon
+  header("Configuring the apache2 daemon ...");
+
+  # Make sure, that the web server daemon apache2 is not running
+  stopDaemon("apache2");
+
+  # Setting the proper permisions on the openldap directory
+#  print "\n";
+#  setSingleFilePermissions("directory",$uid_root,$gid_ldap,0755,$directory_openldap);
+
+  # Working on the file /etc/apache2/vhosts.d/localhost.conf
+  print "\n";
+  print "Working on $file_localhost_conf ...\n";
+
+  # Replace:
+  # Listen *:80
+  # Or:
+  # Listen 192.0.2.5:80
+  # With: 
+  # Listen 192.0.2.5:80
+
+  # Replace:
+  # <VirtualHost *:80>
+  # Or:
+  # <VirtualHost 192.0.2.5:80>
+  # With: 
+  # <VirtualHost 192.0.2.5:80>
+  open(FILE,$file_localhost_conf) || die("Could not open $file_localhost_conf for reading.");
+  @output = <FILE>;
+  close FILE;
+
+  foreach $line (@output) {
+    if ($line =~ "^Listen") {
+      print "Found:          $line";
+      $line =~ s/Listen.*/Listen $localPubIP:80/g;
+      print "Replacing with: Listen $localPubIP:80\n";
+      $error = 0;
+    } # End of if ($line =~ "^Listen")
+    if ($line =~ "^<VirtualHost") {
+      print "Found:          $line";
+      $line =~ s/<VirtualHost.*/<VirtualHost $localPubIP:80>/g;
+      print "Replacing with: <VirtualHost $localPubIP:80>\n";
+      $error = 0;
+    } # End of if ($line =~ "^<VirtualHost")
+  } # End of foreach $line (@output)
+
+  if (!$dryrun) {
+    print "Writing:        Listen $localPubIP:80\n";
+    print "Writing:        <VirtualHost $localPubIP:80>\n";
+    print "To the file:    $file_localhost_conf\n";
+    open(FOUT,">$file_localhost_conf") || die("Could not open $file_localhost_conf for writing.");
+    foreach $line (@output) {
+      print FOUT $line;
+    } # End of foreach $line (@output)
+    close FOUT;
+  } else {
+    if ($debug) {
+      foreach $line (@output) {
+        print $line;
+      } # End of foreach $line (@output)
+    } # End of if ($debug)
+    print "--dry-run: Would write 'Listen $localPubIP:80' to the file $file_localhost_conf!\n";
+    print "--dry-run: Would write '<VirtualHost $localPubIP:80>' to the file $file_localhost_conf!\n";
+  } # End of if (!$dryrun)
+
+  # Start the apache2 daemon
+  startDaemon("apache2");
+
+  # Add the apache2 daemon to the default runlevel
+  rcUpdate("apache2","default");
+
+} # End of configureApache2
+
+
+################################################################################
+# configureIPtables
+################################################################################
+# Description:
+#   Configures and starts the iptables.
+# Usage:
+#   configureIPtables($configuration);
+################################################################################
+# Return Values:
+#   none
+################################################################################
+
+sub configureIPtables {
+
+    my $configuration = shift;
+
+    my @args;
+
+    # Get the iptables command from the command line:
+    my $iptables_command = $configuration->val($modus,"iptables_command");
+
+    # Get all necessary parameters (can be more than one)
+    my @iptables_parameter = $configuration->val($modus,"iptables_parameter");
+
+    # Get the command for the rc-update
+    my $rc_update_command = $configuration->val($modus,"iptables_rc-update_command");
+
+    # Get the iptables save command
+    my $iptables_save_command = $configuration->val($modus,"iptables_save_command");
+
+
+    # Execute for each of the parameter the iptables command
+    foreach my $parameter (@iptables_parameter)
+    {
+
+        # Generate the command array
+        @args = ( $iptables_command, $parameter );
+
+        # Execute the command with the given parameter on the command line
+        if ( system( join(' ' , @args) ) )
+        {
+            returnError(ERROR_EXECUTE_COMMAND_CODE,ERROR_EXECUTE_COMMAND_STRING,
+                        "Could not execute @args");
+        }
+    } # End of foreach my $parameter (@iptables_parameter)
+
+    # Now save the iptables
+    if ( system( $iptables_save_command ) )
+    {
+       returnError(ERROR_EXECUTE_COMMAND_CODE,ERROR_EXECUTE_COMMAND_STRING,
+                        "Could not execute $iptables_save_command");
+    }
+
+    # Add the iptables to de default run-level
+    rcUpdate("iptables","default");
+
+    # And finally start the iptables daemon
+    startDaemon("iptables");
+
+} # End of configureIPtables
+
+######################################################################################################
+# header
+######################################################################################################
+# Description: 
+#   Prints nice header boxes, dependent on the console width:
+#   +-----------------------+
+#   |    title              |
+#   +-----------------------+
+######################################################################################################
+# Usage:
+#   header("My very first title");
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+sub header {
+  my ($title) = @_;
+  my ($wchar, $hchar, $wpixels, $hpixels) = GetTerminalSize();
+
+  print "+" . ( "-" x ($wchar - 2) ) . "+\n";
+  print "|   $title" . ( " " x ($wchar - (length($title) + 5) ) ) . "|\n";
+  print "+" . ( "-" x ($wchar - 2) ) . "+\n";
+
+} # End of sub header
+
+
+######################################################################################################
+# proceed
+######################################################################################################
+# Description: 
+#   Asks the user, if the installation should really proceed
+######################################################################################################
+# Usage:
+#   proceed();
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+sub proceed {
+  my ($type) = @_;
+  my $answer;
+
+  # Asks the user, if the installation should really proceed
+  print "Do you really want to proceed with configuration of the $type?\n";
+  print "yes or no (default: no): ";
+  chomp($answer = <STDIN>);
+  print "\n";
+
+  # If no answer was given, take default one (no)
+  unless($answer){
+    $answer = "no";
+  }
+
+  # Only proceed, if anwer is yes, otherwise abort
+  if ($answer ne "yes") {
+    exit 0;
+  }   
+
+} # End of sub proceed
+
+######################################################################################################
+# setSingleFilePermissions
+######################################################################################################
+# Description: 
+#   Set the permissions according to the parameters passed.
+######################################################################################################
+# Usage:
+#   setSingleFilePermissions($type,$uid,$gid,$permissions,$file);
+#   $type        : file or directory
+#   $uid         : numeric user id (0 for root, 439 for ldap, ...)
+#   $gid         : numeric group id (0 for root, 439 for ldap, ...)
+#   $permissions : permission arguments (for example 0640 or 0755)
+#   $file        : file name with the full path (for example /etc/openldap/slapd.conf)
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+sub setSingleFilePermissions {
+  my ($type,$uid,$gid,$permissions,$file) = @_;
+
+  # Setting the proper permisions on the file /etc/openldap/slapd.conf ...
+  print "Setting the proper permissions on the $type $file ...\n";
+  if (!$dryrun) {
+    if ($debug) {
+      print "Executing: chmod $permissions, $file\n";
+    } # End of if ($debug)
+    unless (chmod $permissions, $file) {
+      print "Could not chmod the the $type $file to $permissions, still proceeding ...\n";
+    }
+    if ($debug) {
+      print "Executing: chown $uid, $gid, $file\n";
+    } # End of if ($debug)
+    unless (chown $uid, $gid, $file) {
+      print "Could not chown the $type $file to uid $uid and gid $gid, still proceeding ...\n";
+    }
+  } else {
+    if ($debug) {
+      print "--dry-run: chmod $permissions, $file\n";
+      print "--dry-run: chown $uid, $gid, $file\n"
+    } # End of if ($debug)
+  } # End of if (!$dryrun)
+
+} # End of setSingleFilePermissions
+
+
+######################################################################################################
+# setMultipleFilePermissions
+######################################################################################################
+# Description: 
+#   Set the permissions according to the parameters passed.
+######################################################################################################
+# Usage:
+#   setMultipleFilePermissions($uid,$gid,$permissions,$directory);
+#   $uid         : numeric user id (0 for root, 439 for ldap, ...)
+#   $gid         : numeric group id (0 for root, 439 for ldap, ...)
+#   $permissions : permission arguments (for example 0640 or 0755)
+#   $directory   : the directory, which holds the files to be changed (for example /etc/openldap/acl)
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+sub setMultipleFilePermissions {
+  my ($uid,$gid,$permissions,$directory) = @_;
+  my $file;
+
+  opendir(DIR, $directory);
+  while ($file = readdir(DIR)) {
+    # Use a regular expression to ignore files beginning with a period
+    next if ($file =~ m/^\./);
+    setSingleFilePermissions("file",$uid,$gid,$permissions,$directory."/".$file);
+  } # End of while ($file = readdir(DIR))
+  closedir(DIR);
+
+} # End of sub setMultipleFilePermissions
+
+
+######################################################################################################
+# askForOpenLDAPManagerPassword
+######################################################################################################
+# Description: 
+#   Asks the user for the OpenLDAP Manager password
+######################################################################################################
+# Usage:
+#   ($password,$unencrypted_password) = askForOpenLDAPManagerPassword();
+######################################################################################################
+# Return Values:
+#   $passwd :               The OpenLDAP Manager password as a {SSHA} encrypted string.
+#                           The hash was generated using the command "slappasswd -s 'secret'".
+#                           For example: {SSHA}sXhbUawnUmzfn7sWEKqj9uMh2G6qvO+P
+#   $unencrypted_password : The same password, unencrypted, for example secret
+######################################################################################################
+sub askForOpenLDAPManagerPassword {
+  my $password;
+  my $unencrypted_password;
+  my $errorCode;
+
+  # Ask the user for the OpenLDAP Manager password
+  print "Please enter the password for cn=Manager,dc=foss-cloud,dc=org: ";
+
+  # Disable the echo on the terminal, so no one can see your top secret password
+  system('stty','-echo');
+  chomp($unencrypted_password = <STDIN>);
+
+  # Enable the echo on the terminal for all following output 
+  system('stty','echo');
+  print "\n";
+
+  $password = `/usr/sbin/slappasswd -s '$unencrypted_password'`;
+  $errorCode = $? >> 8;
+
+  chomp($password);
+
+  if($errorCode != 0) {
+    returnError(ERROR_PASSWORD_NOT_CREATED_CODE,ERROR_PASSWORD_NOT_CREATED_STRING,"Could not encrypt the password with slappasswd.");
+  } # End of if($errorCode != 0)
+
+  # Return the OpenLDAP Manager password
+  return ($password,$unencrypted_password);;
+
+} # End of sub askForOpenLDAPManagerPassword
+
+
+######################################################################################################
+# createDirectoryStructure
+######################################################################################################
+# Description: 
+#   Creates the neccessary directory structure. If it alreay exists, the current directory structure
+#   is deleted.
+######################################################################################################
+# Usage:
+#   createDirectoryStructure($uid,$gid,$permissions,$directory);
+#   $uid         : numeric user id (0 for root, 439 for ldap, ...)
+#   $gid         : numeric group id (0 for root, 439 for ldap, ...)
+#   $permissions : permission arguments (for example 0640 or 0755)
+#   $directory   : the directory, which holds the OpenLDAP data (for example 
+#                  /var/lib/openldap-hdb/foss-cloud)
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+sub createDirectoryStructure {
+  my ($uid,$gid,$permissions,$directory) = @_;
+  my @directoryArray;
+
+  print "Creating the directory structure: $directory\n";
+  @directoryArray = split '/', $directory;
+
+  # Check if /var/lib exists
+  if (-d "/$directoryArray[1]/$directoryArray[2]") {
+    print "/$directoryArray[1]/$directoryArray[2] exists, proceeding ...\n";
+  } else {
+    returnError(ERROR_MISSING_DIRECTORY_CODE,ERROR_MISSING_DIRECTORY_STRING,"/$directoryArray[1]/$directoryArray[2] does not exist, something is seriously wrong with you system!");
+  } # End of if (-d "/$directoryArray[1]/$directoryArray[2]")
+
+  # Check if /var/lib/openldap-hdb exists
+  if (-d "/$directoryArray[1]/$directoryArray[2]/$directoryArray[3]") {
+    if (!$dryrun) {
+      print "/$directoryArray[1]/$directoryArray[2]/$directoryArray[3] exists, trying to remove ...\n";
+      if (rmtree("/$directoryArray[1]/$directoryArray[2]/$directoryArray[3]", 0, 0)) {
+        print "/var/lib/openldap-hdb successfully removed.\n";
+      } else {
+        returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+      } # End of if (rmtree("/$directoryArray[1]/$directoryArray[2]/$directoryArray[3]", 0, 0))
+    } else {
+      print "--dry-run: Would delete /$directoryArray[1]/$directoryArray[2]/$directoryArray[3] with rmtree!\n";
+    } # End of if (!$dryrun)
+  } # End of if (-d "/$directoryArray[1]/$directoryArray[2]/$directoryArray[3]")
+
+  # Create the directory /var/lib/openldap-hdb/foss-cloud
+  if (!$dryrun) {
+    unless (defined eval {mkpath("/$directoryArray[1]/$directoryArray[2]/$directoryArray[3]/$directoryArray[4]",1)}) {
+      returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+    } # End of unless mkpath("/$directoryArray[1]/$directoryArray[2]/$directoryArray[3]/$directoryArray[4]",1)
+  } else {
+    print "--dry-run: Would create /$directoryArray[1]/$directoryArray[2]/$directoryArray[3]/$directoryArray[4] with mkpath!\n";
+  } # End of if (!$dryrun)
+  # Set the correct permissions
+  setSingleFilePermissions("directory",$uid,$gid,$permissions,"/$directoryArray[1]/$directoryArray[2]/$directoryArray[3]");
+  setSingleFilePermissions("directory",$uid,$gid,$permissions,"/$directoryArray[1]/$directoryArray[2]/$directoryArray[3]/$directoryArray[4]");
+
+} # End of sub createDirectoryStructure
+
+
+######################################################################################################
+# loadOpenLDAPsingleLDIF
+######################################################################################################
+# Description: 
+#   Loads the given file into the local OpenLDAP directory.
+######################################################################################################
+# Usage:
+#   loadOpenLDAPsingleLDIF($server,$password,$ldif);
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+sub loadOpenLDAPsingleLDIF {
+  my ($server,$password,$ldif) = @_;
+  my $output;
+  my $errorCode;
+
+  # Load the given LDIF into the directory server with ldapadd
+  if (!$dryrun) {
+    print "Working on $ldif ...\n";
+    $output = `/usr/bin/ldapadd -M -H "ldap://$server" -w $password -x -D "cn=Manager,dc=foss-cloud,dc=org" -f $ldif`;
+    $errorCode = $? >> 8;
+
+    if($errorCode != 0) {
+      returnError(ERROR_LOADING_LDIF_CODE,ERROR_LOADING_LDIF_STRING,"Could not load $ldif into the OpenLDAP server with ldapadd.");
+    } else {
+      print $output;
+    } # End of if($errorCode != 0)
+  } else {
+    print "/usr/bin/ldapadd -M -H \"ldap://$server\" -w $password -x -D \"cn=Manager,dc=foss-cloud,dc=org\" -f $ldif\n";
+  } # End of if (!$dryrun)
+
+} # End of loadOpenLDAPsingleLDIF
+
+######################################################################################################
+# unpackVirtualizationDataTarball
+######################################################################################################
+# Description:
+#   Unpacks the given tarball to the given destination keeping the permissions
+######################################################################################################
+# Usage:
+#   unpackVirtualizationDataTarball();
+######################################################################################################
+# Return Values:
+#   0 on success
+#   1 otherwise
+######################################################################################################
+sub unpackVirtualizationDataTarball {
+
+  my $tarball = shift;
+  my $destination = shift;
+
+  print "\nUnpacking tarball $tarball, depending on it's size this action can "
+       ."take some minutes ...\n";
+
+  # Generate the system commands
+  my @args= ("tar",
+             "xjpf",
+             $tarball,
+             "-C",
+             $destination);
+
+  # Execute the command if not in dry-run
+  unless ( $dryrun )
+  {
+
+      # Execute the commands and test if this was successful
+      if ( system ( join(" " , @args ) ) )
+      {
+          # If the command failed, retrun 1
+          return ERROR_UNDEFINED_CODE;
+      }
+
+  } else # If in dry-run just print out the command
+  {
+      print join(" ",@args)."\n\n";
+  }
+
+  # Return 0 if everything is ok
+  return SUCCESS_CODE;
+
+} # end sub unpackVirtualizationDataTarball
+
+
+######################################################################################################
+# searchAndReplace
+######################################################################################################
+# Description:
+#   
+######################################################################################################
+# Usage:
+#   searchAndReplace( $template_file, $output_file, @search_replace_commands );
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+
+sub searchAndReplace
+{
+    my $template = shift;
+    my $output_file = shift;
+    my @sar_commands = @_;
+
+    my $search;
+    my $replace;
+
+    # Test if the template file exists and is readable
+    unless ( -r $template )
+    {
+        returnError(ERROR_MISSING_FILE_CODE,
+                    ERROR_MISSING_FILE_STRING,
+                    "Could not open $template for reading");
+    }
+
+    # Open the template file in reading mode
+    open(INPUT,$template);
+    # Open the LDIF file in writing mode
+    open(OUTPUT,">$output_file") || die("Could not open $output_file for writing.");
+
+    # Go through the hole file
+    while(<INPUT>)
+    {
+
+        # Check for each line if we have to replace the "search" pattern with the "replace" string
+        foreach my $command (@sar_commands)
+        {
+
+            $search = $command->{"search"};
+            $replace= $command->{"replace"};
+
+            $_ =~s/$search/$replace/g;
+        }
+
+        # If not in dry-run write to the OUTPUT-file, else to STDOUT
+        if(!$dryrun)
+        {
+            print OUTPUT $_;
+        } else
+        {
+            print "--dryrun: $_";
+        }
+    }
+
+    # Close the files
+    close INPUT;
+    close OUTPUT;
+
+}

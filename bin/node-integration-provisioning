@@ -1,0 +1,375 @@
+#!/usr/bin/perl -w
+######################################################################################################
+# /usr/local/bin/node-integration-provisioning
+######################################################################################################
+#
+# Copyright (C) 2012 FOSS-Group
+#                    Germany
+#                    http://www.foss-group.de
+#                    support@foss-group.de
+#
+# Authors:
+#   Michael Eichenberger  <michael.eichenberger@stepping-stone.ch>
+#
+# Licensed under the EUPL, Version 1.1 or – as soon they
+# will be approved by the European Commission - subsequent
+# versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the
+# Licence.
+# You may obtain a copy of the Licence at:
+#
+# http://www.osor.eu/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+#
+# 
+#
+######################################################################################################
+ 
+######################################################################################################
+# Incorporate code with use (evaluates the included file at compile time).
+######################################################################################################
+use warnings;
+use strict;
+
+use Getopt::Long;
+Getopt::Long::Configure("no_auto_abbrev");
+use Sys::Syslog;
+use JSON::XS;
+
+$| = 1;                        # Turn buffering off, so that the output is flushed immediately
+ 
+######################################################################################################
+# Start the POD documentation information
+######################################################################################################
+=pod
+ 
+=head1 NAME
+ 
+node-integration-provisioning
+ 
+=head1 DESCRIPTION
+ 
+This script gets the arguments from  ...
+  
+The script uses syslog for logging purposes.
+
+Command Line Interface (CLI) parameters:
+ 
+=over
+ 
+=item -w 
+ 
+Gets the spice password.
+ 
+=item -p 
+ 
+Gets the spice port.
+
+=item -s
+
+Is the arguments string
+ 
+=back
+
+=head1 USAGE
+
+./node-integration-provisioning --module dummy -h
+./node-integration-provisioning --module dummy --help
+
+=head1 TESTING
+
+To check the exit code manually:
+
+=over
+
+echo $?
+
+=back
+
+Note, that the exit code 0 means success. 1 or larger means failure. 
+
+=head1 CREATED
+ 
+2011-11-12 michael.eichenberger@stepping-stone.ch created
+ 
+=head1 VERSION
+ 
+=over
+ 
+=item 2011-12 michael.eichenberger@stepping-stone.ch created
+ 
+=back
+ 
+=head1 INCORPORATED CODE
+ 
+Incorporated code with use:
+ 
+=over
+ 
+=over
+ 
+=item warnings;
+ 
+=item strict;
+ 
+=item Getopt::Long;
+ 
+=item Sys::Syslog;
+
+=back
+ 
+=back
+ 
+=cut
+######################################################################################################
+# End the POD documentation information
+######################################################################################################
+ 
+######################################################################################################
+# Read the configuration file
+######################################################################################################
+#my $cfg = Config::IniFiles->new( -file => "/usr/local/bin/node-integration-provisioning.conf");
+
+######################################################################################################
+# Process the single character or long command line arguments.
+######################################################################################################
+my %opts;
+GetOptions (
+  \%opts,
+  "dry-run|d",    # If passed to the script via CLI, then true.
+  "help|h",       # This option will display a short help message.
+  "module|m:s",   # The module name, is mandatory.
+  "a:s",          # Test option a.
+  "b:s",          # Test option b.
+  "fstype:s",     # The filesystem type.
+  "ip1:s",        # The IP Address of the first storage server.
+  "ip2:s",        # The IP Address of the first storage server.
+); 
+
+ 
+######################################################################################################
+# Variable definitions
+######################################################################################################
+my $debug             = 0;   # Debug modus: 0: off, 1: on
+
+######################################################################################################
+# Constant definitions
+######################################################################################################
+use constant SUCCESS_CODE                         => 0;
+use constant SUCCESS_STRING                       => "The script was executed successfully.";
+use constant ERROR_UNDEFINED_CODE                 => 1;
+use constant ERROR_UNDEFINED_STRING               => "The script ended in an undefined state.";
+use constant ERROR_NO_MODULE_NAME_CODE            => 2;
+use constant ERROR_NO_MODULE_NAME_STRING          => "No module name was passed.";
+use constant ERROR_UNKNOWN_FILESYSTEM_TYPE_CODE   => 3;
+use constant ERROR_UNKNOWN_FILESYSTEM_TYPE_STRING => "Unknown filesystem type.";
+use constant ERROR_NO_IP_ADDRESS_CODE             => 4;
+use constant ERROR_NO_IP_ADDRESS_STRING           => "The given IP address is not valid.";
+use constant ERROR_INCCORRECT_VOLUME_NAME_CODE    => 5;
+use constant ERROR_INCCORRECT_VOLUME_NAME_STRING  => "The given volume name is not valid.";
+
+######################################################################################################
+# Help text
+######################################################################################################
+my $help = "\nPlease use pod2text $0 for the online help\n\n";
+ 
+######################################################################################################
+# Main Programme
+######################################################################################################
+
+openlog($0,"ndelay,pid","local0");
+
+
+# Check the command line arguments
+checkCommandLineArguments();
+
+SWITCH: {
+  $opts{'module'} eq "dummy" and do { 
+    moduleDummy();
+    last;
+  };
+  $opts{'module'} eq "filesystem" and do { 
+    moduleFilesystem();
+    last;
+  };
+  # Return an undefined error if we reach this point.
+  returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+} # End of SWITCH
+
+
+######################################################################################################
+# Subroutines
+######################################################################################################
+ 
+######################################################################################################
+# checkCommandLineArguments
+######################################################################################################
+# Description:
+#  Check the command line arguments
+######################################################################################################
+sub checkCommandLineArguments {
+ 
+  # Check, if help was chosen. If yes, display help and exit
+  if ($opts{'help'}){
+    print $help;
+    exit SUCCESS_CODE;
+  } # End of if ($opts{'help'})
+
+  # Check, if a module was passed to the script.
+  if ((!$opts{'module'}) || ($opts{'module'} le "")) {
+    returnError(ERROR_NO_MODULE_NAME_CODE,ERROR_NO_MODULE_NAME_STRING);
+  }
+ 
+} # End of sub checkCommandLineArguments
+
+######################################################################################################
+# returnError
+######################################################################################################
+# Description:
+#   Returns the error code a JSON string
+######################################################################################################
+sub returnError {
+  my $error_code = $_[0];
+  my $error_string = $_[1];
+
+  # Write the syslog error message.
+  syslog("LOG_ERR",$error_string);
+
+  # Create a thing (called $json) that will be used to encode JSON strings
+  my $json = JSON::XS->new->utf8->pretty();
+
+  # Print the JSON Message and exit with the proper exit code.
+  print $json->encode({
+    "Return Code" => $error_code,
+    "Return String" => $error_string,
+  });
+  exit $error_code;
+
+} # End of sub returnError
+
+
+######################################################################################################
+# moduleDummy
+######################################################################################################
+# Description:
+#   For testing reasons we have a dummy module, which should always work as we don't have any
+#   external dependencies. 
+######################################################################################################
+sub moduleDummy {
+
+  # Make sure, the a option was passed to the script and consists of a value.
+  if ((!$opts{'a'}) || ($opts{'a'} le "")) {
+    # Return an undefined error if we reach this point.
+    returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+  }
+
+  # Make sure, the b option was passed to the script and consists of a value.
+  if ((!$opts{'b'}) || ($opts{'b'} le "")) {
+    # Return an undefined error if we reach this point.
+    returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+  }
+
+  # Now make sure, the the options a and b both set to OK.
+  if (($opts{'a'} eq "OK") && ($opts{'b'} eq "OK")) {
+    
+    # Create a thing (called $json) that will be used to encode JSON strings
+    my $json = JSON::XS->new->utf8->pretty();
+
+    # Print the JSON Message and exit with the proper exit code.
+    print $json->encode({
+      "Return Code" => SUCCESS_CODE,
+      "Return String" => SUCCESS_STRING,
+      "Dummy Value a" => $opts{'a'},
+      "Dummy Value b" => $opts{'b'},
+    });
+    exit SUCCESS_CODE;
+  } else {
+    # Return an undefined error if we reach this point.
+    returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+  } # End of if (($opts{'a'} eq "OK") && ($opts{'b'} eq "OK"))  
+
+} # End of sub moduleDummy
+
+
+######################################################################################################
+# moduleFilesystem
+######################################################################################################
+# Description:
+#   Mount the given glusterfs volume with the given virtuap IP address. 
+######################################################################################################
+# Neccessary Values:
+#   fstype:      The filesystem type.
+#   vip:         Virtual IP Address of the GlusterFS Server.
+#   volume-name: The Gluster volume that is exported by the GlusterFS Server.
+######################################################################################################
+# Return Values:
+#   {
+#      "Return String" : "The script was executed successfully.",
+#      "Return Code" : 0
+#   }
+######################################################################################################
+sub moduleFilesystem {
+
+  # Make sure, the fstype option was passed to the script and consists of a value.
+  if ((!$opts{'fstype'}) || ($opts{'fstype'} le "")) {
+    # Return an undefined error if we reach this point.
+    returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+  }
+
+  # Make sure, the ip1 option was passed to the script and consists of a value.
+  if ((!$opts{'ip1'}) || ($opts{'ip1'} le "")) {
+    # Return an undefined error if we reach this point.
+    returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+  }
+
+  # Make sure, the ip2 option was passed to the script and consists of a value.
+  if ((!$opts{'ip2'}) || ($opts{'ip2'} le "")) {
+    # Return an undefined error if we reach this point.
+    returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+  }
+
+  # Some important plausability tests.
+
+  # Do we have a known filesystem?
+  if ($opts{'fstype'} ne "glusterfs") {
+    returnError(ERROR_UNKNOWN_FILESYSTEM_TYPE_CODE,ERROR_UNKNOWN_FILESYSTEM_TYPE_STRING);
+  } # if ($opts{'fstype'} ne "glusterfs")
+
+  # Does the IP1 address really matches an IP address?
+  if ($opts{'ip1'} !~ m/^([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])$/) {
+    returnError(ERROR_NO_IP_ADDRESS_CODE,ERROR_NO_IP_ADDRESS_STRING);
+  } # End of if ($opts{'ip1'} !~ m/^([01]?\d\...
+
+  # Does the IP2 address really matches an IP address?
+  if ($opts{'ip2'} !~ m/^([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])\.([01]?\d\d?|2[0-4]\d|25[0-5])$/) {
+    returnError(ERROR_NO_IP_ADDRESS_CODE,ERROR_NO_IP_ADDRESS_STRING);
+  } # End of if ($opts{'ip2'} !~ m/^([01]?\d\...
+
+  # Set the provisiong variable to 1 to simulate a successfull provisioning.
+  my $provsioning = 1;
+
+  # Now make sure, that the provisioning was successfull.
+  if ($provsioning) {
+
+    # Create a thing (called $json) that will be used to encode JSON strings
+    my $json = JSON::XS->new->utf8->pretty();
+
+    # Print the JSON Message and exit with the proper exit code.
+    print $json->encode({
+      "Return Code" => SUCCESS_CODE,
+      "Return String" => SUCCESS_STRING,
+    });
+    exit SUCCESS_CODE;
+  } else {
+    # Return an undefined error if we reach this point.
+    returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+  } # End of if (($opts{'a'} eq "OK") && ($opts{'b'} eq "OK"))  
+
+} # End of sub moduleFilesystem

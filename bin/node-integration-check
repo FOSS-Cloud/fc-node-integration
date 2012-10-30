@@ -1,0 +1,464 @@
+#!/usr/bin/perl -w
+######################################################################################################
+# /usr/local/bin/node-integration-check
+######################################################################################################
+#
+# Copyright (C) 2012 FOSS-Group
+#                    Germany
+#                    http://www.foss-group.de
+#                    support@foss-group.de
+#
+# Authors:
+#   Michael Eichenberger  <michael.eichenberger@stepping-stone.ch>
+#
+# Licensed under the EUPL, Version 1.1 or – as soon they
+# will be approved by the European Commission - subsequent
+# versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the
+# Licence.
+# You may obtain a copy of the Licence at:
+#
+# http://www.osor.eu/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+#
+# 
+#
+######################################################################################################
+ 
+######################################################################################################
+# Incorporate code with use (evaluates the included file at compile time).
+######################################################################################################
+use warnings;
+use strict;
+
+use Getopt::Long;
+Getopt::Long::Configure("no_auto_abbrev");
+use Sys::Syslog;
+use JSON::XS;
+use Text::CSV;
+
+$| = 1;                        # Turn buffering off, so that the output is flushed immediately
+ 
+######################################################################################################
+# Start the POD documentation information
+######################################################################################################
+=pod
+ 
+=head1 NAME
+ 
+node-integration-check
+ 
+=head1 DESCRIPTION
+ 
+This script gets the arguments from  ...
+  
+The script uses syslog for logging purposes.
+
+Command Line Interface (CLI) parameters:
+ 
+=over
+ 
+=item -w 
+ 
+Gets the spice password.
+ 
+=item -p 
+ 
+Gets the spice port.
+
+=item -s
+
+Is the arguments string
+ 
+=back
+
+=head1 USAGE
+
+./node-integration-check --module dummy -h
+./node-integration-check --module dummy --help
+
+=head1 TESTING
+
+To check the exit code manually:
+
+=over
+
+echo $?
+
+=back
+
+Note, that the exit code 0 means success. 1 or larger means failure. 
+
+=head1 CREATED
+ 
+2011-11-13 michael.eichenberger@stepping-stone.ch created
+ 
+=head1 VERSION
+ 
+=over
+ 
+=item 2011-13 michael.eichenberger@stepping-stone.ch created
+ 
+=back
+ 
+=head1 INCORPORATED CODE
+ 
+Incorporated code with use:
+ 
+=over
+ 
+=over
+ 
+=item warnings;
+ 
+=item strict;
+ 
+=item Getopt::Long;
+ 
+=item Sys::Syslog;
+
+=back
+ 
+=back
+ 
+=cut
+######################################################################################################
+# End the POD documentation information
+######################################################################################################
+ 
+######################################################################################################
+# Read the configuration file
+######################################################################################################
+#my $cfg = Config::IniFiles->new( -file => "/usr/local/bin/node-integration-provisioning.conf");
+
+######################################################################################################
+# Process the single character or long command line arguments.
+######################################################################################################
+my %opts;
+GetOptions (
+  \%opts,
+  "dry-run|d",    # If passed to the script via CLI, then true.
+  "help|h",       # This option will display a short help message.
+  "module|m:s",   # The module name, is mandatory.
+  "a:s",          # Test option a.
+  "b:s",          # Test option b.
+); 
+
+ 
+######################################################################################################
+# Variable definitions
+######################################################################################################
+my $debug             = 0;   # Debug modus: 0: off, 1: on
+
+######################################################################################################
+# Constant definitions
+######################################################################################################
+use constant SUCCESS_CODE                         => 0;
+use constant SUCCESS_STRING                       => "The script was executed successfully.";
+use constant ERROR_UNDEFINED_CODE                 => 1;
+use constant ERROR_UNDEFINED_STRING               => "The script ended in an undefined state.";
+use constant ERROR_NO_MODULE_NAME_CODE            => 2;
+use constant ERROR_NO_MODULE_NAME_STRING          => "No module name was passed.";
+use constant ERROR_NO_NETWORK_CONF_FILE_CODE      => 3;
+use constant ERROR_NO_NETWORK_CONF_FILE_STRING    => "The network configuration file does not exist.";
+
+######################################################################################################
+# Help text
+######################################################################################################
+my $help = "\nPlease use pod2text $0 for the online help\n\n";
+ 
+######################################################################################################
+# Main Programme
+######################################################################################################
+
+openlog($0,"ndelay,pid","local0");
+
+
+# Check the command line arguments
+checkCommandLineArguments();
+
+SWITCH: {
+  $opts{'module'} eq "dummy" and do { 
+    moduleDummy();
+    last;
+  };
+  $opts{'module'} eq "network" and do { 
+    moduleNetwork();
+    last;
+  };
+  # Return an undefined error if we reach this point.
+  returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+} # End of SWITCH
+
+
+######################################################################################################
+# Subroutines
+######################################################################################################
+ 
+######################################################################################################
+# checkCommandLineArguments
+######################################################################################################
+# Description:
+#  Check the command line arguments
+######################################################################################################
+sub checkCommandLineArguments {
+ 
+  # Check, if help was chosen. If yes, display help and exit
+  if ($opts{'help'}){
+    print $help;
+    exit SUCCESS_CODE;
+  } # End of if ($opts{'help'})
+
+  # Check, if a module was passed to the script.
+  if ((!$opts{'module'}) || ($opts{'module'} le "")) {
+    returnError(ERROR_NO_MODULE_NAME_CODE,ERROR_NO_MODULE_NAME_STRING);
+  }
+ 
+} # End of sub checkCommandLineArguments
+
+######################################################################################################
+# returnError
+######################################################################################################
+# Description:
+#   Returns the error code a JSON string
+######################################################################################################
+sub returnError {
+  my $error_code = $_[0];
+  my $error_string = $_[1];
+
+  # Write the syslog error message.
+  syslog("LOG_ERR",$error_string);
+
+  # Create a thing (called $json) that will be used to encode JSON strings
+  my $json = JSON::XS->new->utf8->pretty();
+
+  # Print the JSON Message and exit with the proper exit code.
+  print $json->encode({
+    "Return Code" => $error_code,
+    "Return String" => $error_string,
+  });
+  exit $error_code;
+
+} # End of sub returnError
+
+
+######################################################################################################
+# moduleDummy
+######################################################################################################
+# Description:
+#   For testing reasons we have a dummy module, which should always work as we don't have any
+#   external dependencies. 
+######################################################################################################
+sub moduleDummy {
+
+  # Make sure, the a option was passed to the script and consists of a value.
+  if ((!$opts{'a'}) || ($opts{'a'} le "")) {
+    # Return an undefined error if we reach this point.
+    returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+  }
+
+  # Make sure, the b option was passed to the script and consists of a value.
+  if ((!$opts{'b'}) || ($opts{'b'} le "")) {
+    # Return an undefined error if we reach this point.
+    returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+  }
+
+  # Now make sure, the the options a and b both set to OK.
+  if (($opts{'a'} eq "OK") && ($opts{'b'} eq "OK")) {
+    
+    # Create a thing (called $json) that will be used to encode JSON strings
+    my $json = JSON::XS->new->utf8->pretty();
+
+    # Print the JSON Message and exit with the proper exit code.
+    print $json->encode({
+      "Return Code" => SUCCESS_CODE,
+      "Return String" => SUCCESS_STRING,
+      "Dummy Value a" => $opts{'a'},
+      "Dummy Value b" => $opts{'b'},
+    });
+    exit SUCCESS_CODE;
+  } else {
+    # Return an undefined error if we reach this point.
+    returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+  } # End of if (($opts{'a'} eq "OK") && ($opts{'b'} eq "OK"))  
+
+} # End of sub moduleDummy
+
+
+######################################################################################################
+# moduleFilesystem
+######################################################################################################
+# Description:
+#   Returns the four logical separated VLANs (virtual LANs) of the FOSS-Cloud environment.
+######################################################################################################
+# Neccessary Values:
+######################################################################################################
+# Return Values:
+#   {
+#      "Return String" : "The script was executed successfully.",
+#      "Return Code" : 0
+#      "Node Name" : "foss-cloud-node-02",
+#      "admin" : {
+#         "ip" : "10.1.110.14",
+#         "id" : "110"
+#      },
+#      "data" : {
+#         "ip" : "10.1.130.14",
+#         "id" : "130"
+#      },
+#      "int" : {
+#         "ip" : "10.1.120.14",
+#         "id" : "120"
+#      },
+#      "pub" : {
+#         "ip" : "10.1.140.14",
+#         "id" : "140"
+#      }
+#   }
+######################################################################################################
+# Explanation:
+#   Node Name:  The name of the node to be integrated into the FOSS-Cloud.
+#   admin:      Administrative network, used for administration and monitoring purposes.
+#     id:         The VLAN ID of the network.
+#     ip:         The IP address of the node in this network.
+#   data:        Data network, used for GlusterFS traffic.
+#     id:          The VLAN ID of the network.
+#     ip:          The IP address of the node in this network.
+#   int:         Internal network, used for internal traffic such as LDAP, libvirt, ...
+#     id:          The VLAN ID of the network.
+#     ip:           The IP address of the node in this network.
+#   pub:         Public network, used for accessing the VM-Manager webinterface, Spice traffic and 
+#                Internet access.
+#     id:          The VLAN ID of the network.
+#     ip:          The IP address of the node in this network.
+######################################################################################################
+sub moduleNetwork {
+
+  # Read the network configuration file.
+  my $node_name;
+  my ($admin_vlan_id,$admin_ip_address,$admin_domain,$admin_netmask,$admin_broadcast);
+  my ($data_vlan_id,$data_ip_address,$data_domain,$data_netmask,$data_broadcast);
+  my ($int_vlan_id,$int_ip_address,$int_domain,$int_netmask,$int_broadcast);
+  my ($pub_vlan_id,$pub_ip_address,$pub_domain,$pub_netmask,$pub_broadcast,$pub_gateway);
+
+  # Set the check variable to 1 to simulate, that the network configuration file was read successfully. 
+  # my $check = 1;
+
+  # Can later be replaced by var from conf file
+  my $network_conffile = "/usr/local/etc/foss-cloud/network.conf";
+
+
+  # Test if the configuration file exists. If yes, read it. 
+  if (-e $network_conffile) {
+
+    # Initialize the csv parser
+    #my $csv= Text::CSV::Encoded->new({encoding  => "utf8"});
+    my $csv= Text::CSV->new(); # TODO work with the encoded version!
+
+    # Open the network.conf file to read the data from it
+    open(my $configfh,$network_conffile);
+
+    # Go through each line in the Kunden.csv file
+    while( my $columns = $csv->getline($configfh) ) {
+
+      # Skip the first column (title)
+      if($columns->[0] eq "Nodename"){
+        next;
+      } # End if($columns->[0] eq "Nodename")
+
+  	# Switch the different entries int the network.conf
+      SWITCH: {
+        # Set the admin vars
+        $columns->[1] eq "admin" and do {
+          $node_name=$columns->[0];
+          $admin_vlan_id=$columns->[2];
+          $admin_ip_address=$columns->[3];
+          $admin_domain=$columns->[4];
+	  $admin_netmask=$columns->[5];
+	  $admin_broadcast=$columns->[6];
+          last;
+        };
+        # Set the data vars
+        $columns->[1] eq "data" and do { 
+          $data_vlan_id=$columns->[2];
+          $data_ip_address=$columns->[3];
+          $data_domain=$columns->[4];
+          $data_netmask=$columns->[5];
+          $data_broadcast=$columns->[6];
+          last;
+        };
+        # Set the int vars
+        $columns->[1] eq "int" and do { 
+          $int_vlan_id=$columns->[2];
+          $int_ip_address=$columns->[3];
+          $int_domain=$columns->[4];
+          $int_netmask=$columns->[5];
+          $int_broadcast=$columns->[6];
+          last;
+        };
+        # Set the pub vars
+        $columns->[1] eq "pub" and do { 
+          $pub_vlan_id=$columns->[2];
+          $pub_ip_address=$columns->[3];
+          $pub_domain=$columns->[4];
+          $pub_netmask=$columns->[5];
+          $pub_broadcast=$columns->[6];
+	  $pub_gateway=$columns->[7];
+          last;
+        };
+      } 
+
+    } # End while
+
+    # Create a thing (called $json) that will be used to encode JSON strings
+    my $json = JSON::XS->new->utf8->pretty();
+
+    # Print the JSON Message and exit with the proper exit code.
+    print $json->encode({
+      "Return Code" => SUCCESS_CODE,
+      "Return String" => SUCCESS_STRING,
+      "Node Name" => $node_name,
+      "admin" => {
+                   "id" => $admin_vlan_id,
+                   "ip" => $admin_ip_address,
+                   "domain" => $admin_domain,
+		   "netmask" => $admin_netmask,
+		   "broadcast" => $admin_broadcast,
+      },
+      "data" => {
+                   "id" => $data_vlan_id,
+                   "ip" => $data_ip_address,
+                   "domain" => $data_domain,
+                   "netmask" => $data_netmask,
+                   "broadcast" => $data_broadcast,
+      },
+      "int" => {
+                   "id" => $int_vlan_id,
+                   "ip" => $int_ip_address,
+                   "domain" => $int_domain,
+                   "netmask" => $int_netmask,
+                   "broadcast" => $int_broadcast,
+      },
+      "pub" => {
+                   "id" => $pub_vlan_id,
+                   "ip" => $pub_ip_address,
+                   "domain" => $pub_domain,
+                   "netmask" => $pub_netmask,
+                   "broadcast" => $pub_broadcast,
+		   "gateway" => $pub_gateway,
+      },
+    });
+    exit SUCCESS_CODE;
+  } else {
+    # Return an undefined error if we reach this point.
+    returnError(ERROR_NO_NETWORK_CONF_FILE_CODE,ERROR_NO_NETWORK_CONF_FILE_STRING);
+  } # End of if (($opts{'a'} eq "OK") && ($opts{'b'} eq "OK"))  
+
+} # End of sub moduleNetwork
