@@ -1,0 +1,506 @@
+# Copyright (C) 2012 FOSS-Group
+#                    Germany
+#                    http://www.foss-group.de
+#                    support@foss-group.de
+#
+# Authors:
+#  Michael Eichenberger <michael.eichenberger@stepping-stone.ch>
+#  
+# Licensed under the EUPL, Version 1.1 or – as soon they
+# will be approved by the European Commission - subsequent
+# versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the
+# Licence.
+# You may obtain a copy of the Licence at:
+#
+# http://www.osor.eu/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+#
+# 
+#
+#
+################################################################################
+# /etc/openldap/data/08_configuration_services_virtualization.template-primary-master
+################################################################################
+# Description:
+#  admin: Administrative network, used for administration and monitoring purposes. 
+#   <FOSS-CLOUD-ADMIN-NETWORK-ADDRESS>/<FOSS-CLOUD-ADMIN-NETMASK>
+#    For example: 10.1.110.0/24  	Network Address/Netmask -> Network Prefix
+#   <FOSS-CLOUD-ADMIN-DEFAULT-GATEWAY>
+#    For example: 10.1.110.1     	Default Gateway
+#   <FOSS-CLOUD-ADMIN-BROADCAST>
+#    For example: 10.1.110.255   	Broadcast
+#   <FOSS-CLOUD-ADMIN-VLAN-ID>
+#    For example: 110             	VLAN ID
+#   <FOSS-CLOUD-ADMIN-DOMAIN>
+#    For example: admin.example.com	Domain
+#
+#  data: Data network, used for GlusterFS (in later versions NFS and Ceph as well) traffic. 
+#   <FOSS-CLOUD-DATA-NETWORK-ADDRESS>/<FOSS-CLOUD-DATA-NETMASK>
+#    For example: 10.1.130.0/24    	Network Address/Netmask -> Network Prefix
+#   <FOSS-CLOUD-DATA-DEFAULT-GATEWAY>
+#    For example: 10.1.130.1       	Default Gateway
+#   <FOSS-CLOUD-DATA-BROADCAST>
+#    For example: 10.1.130.255     	Broadcast
+#   <FOSS-CLOUD-DATA-VLAN-ID>
+#    For example: 130             	VLAN ID
+#   <FOSS-CLOUD-DATA-DOMAIN>
+#    For example: data.example.com	Domain
+#
+#  int: Internal network, used for internal traffic such as LDAP, libvirt and more. 
+#   <FOSS-CLOUD-INT-NETWORK-ADDRESS>/<FOSS-CLOUD-INT-NETMASK>
+#    For example: 10.1.120.0/24    	Network Address/Netmask -> Network Prefix
+#   <FOSS-CLOUD-INT-DEFAULT-GATEWAY>
+#    For example: 10.1.120.1       	Default Gateway
+#   <FOSS-CLOUD-INT-BROADCAST>
+#    For example: 10.1.120.255     	Broadcast
+#   <FOSS-CLOUD-INT-VLAN-ID>
+#    For example: 1798             	VLAN ID
+#   <FOSS-CLOUD-INT-DOMAIN>
+#    For example: int.example.com	Domain
+#
+#  pub: Public network, used for accessing the VM-Manager web interface, Spice traffic and internet access. 
+#   <FOSS-CLOUD-PUB-NETWORK-ADDRESS>/<FOSS-CLOUD-PUB-NETMASK>
+#    For example: 192.168.140.0/24     Network Address/Netmask -> Network Prefix
+#   <FOSS-CLOUD-PUB-DEFAULT-GATEWAY>
+#    For example: 192.168.140.1        Default Gateway
+#   <FOSS-CLOUD-PUB-BROADCAST>
+#    For example: 192.168.140.255      Broadcast
+#   <FOSS-CLOUD-PUB-VLAN-ID>
+#    For example: 140                  VLAN ID
+#   <FOSS-CLOUD-PUB-DOMAIN>
+#    For example: example.com          Domain    
+################################################################################
+
+# The sub tree ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org contains the 
+# configuration information of the FOSS-Cloud (since version 0.8.0). 
+dn: ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: configuration
+description: This sub tree contains the configuration information of the FOSS-Cloud.
+
+# The sub tree ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org contains the internal ldap searches configuration of the FOSS-Cloud.
+dn: ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: internal searches
+description: This sub tree contains the internal ldap searches configuration of the FOSS-Cloud.
+
+################################################################################
+# ou=User Search,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+################################################################################
+# Description:
+#  This entry is used to check, if the user trying to log into the system, 
+#  actually exists in the directory.
+################################################################################
+# Example: 
+#  ldapsearch -D "cn=Manager,dc=foss-cloud,dc=org" -w admin -H "ldap://10.1.130.14:389" \
+#  -b "ou=people,dc=foss-cloud,dc=org"  "(&(objectClass=sstPerson)(cn=eichi))" uid
+################################################################################
+dn: ou=User Search,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: labeledURIObject
+objectclass: sstLDAPSearchObjectClass
+ou: User Search
+description: This is the "User Search" Bind-DN which is needed to search for the given user in the LDAP directory.
+sstDisplayName: "User Search" Bind-DN
+sstLDAPBaseDn: ou=people,dc=foss-cloud,dc=org
+sstLDAPFilter: (&(objectClass=sstPerson)(cn=%s)(!(sstLDAPForeignStaticAttribute=*)))
+sstLDAPForeignStaticAttribute: uid
+
+
+################################################################################
+#  ou=User Authentication,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+################################################################################
+# Description:
+#  Check the given username and password combination.
+################################################################################
+# Attention: 
+#  Normally, the sstLDAPAuthUserBind is set to TRUE, meaning, the users
+#  credentials are used. In some cases, it can make sense, that the Manager
+#  checks the credentials. In this case, sstLDAPAuthUserBind is set to FALSE
+#  and sstLDAPBindDn as well as sstLDAPBindPassword are both taken from the
+#  parent leaf.
+################################################################################
+dn: ou=User Authentication,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: labeledURIObject
+objectclass: sstLDAPAuthenticationObjectClass
+ou: User Authentication
+description: This is the users authentication Bind-DN which is needed to verify the credentials of the given user in the LDAP directory.
+sstDisplayName: "User Authentication" Bind-DN
+sstLDAPAuthUserBind: TRUE
+sstLDAPAuthUserBindDn: uid=%s,ou=people,dc=foss-cloud,dc=org
+sstLDAPAuthUserPasswordAttribute: userPassword
+
+
+################################################################################
+# ou=User Group Search,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+################################################################################
+# Description:
+#  This entry describes, how to look for the groups the user belongs to.
+################################################################################
+# Example: 
+#  ldapsearch -D "cn=Manager,dc=foss-cloud,dc=org" -w admin -H "ldap://10.1.130.14:389" \
+#  -b "ou=people,dc=foss-cloud,dc=org"  "(&(objectClass=sstPerson)(uid=4000003))" sstGroupUID
+################################################################################
+dn: ou=User Group Search,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: labeledURIObject
+objectclass: sstLDAPSearchObjectClass
+ou: User Group Search
+description: This is the "User Group Search", which is need to search for all the groups, the given user belongs to.
+sstDisplayName: Group Search
+sstLDAPBaseDn: ou=people,dc=foss-cloud,dc=org
+sstLDAPFilter: (&(objectClass=sstPerson)(uid=%s))
+sstLDAPReturnAttribute: sstGroupUID
+
+
+###################################################################################################
+# ou=Group Search,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  This entry describes the search for all existing groups in the foreign directory.
+###################################################################################################
+# Example:
+#  ldapsearch -D "cn=Manager,dc=foss-cloud,dc=org" -w admin -H "ldap://10.1.130.14:389" 
+#  -b "ou=groups,dc=foss-cloud,dc=org"  "(&(objectClass=sstGroupObjectClass)(uid=*))" 
+#  sstGroupName uid
+###################################################################################################
+dn: ou=Group Search,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: labeledURIObject
+objectclass: sstLDAPSearchObjectClass
+ou: Group Search
+description: This is the "Group Search", which is needed to search for all existing groups in the foreign directory.
+sstDisplayName: Group Search
+sstLDAPBaseDn: ou=groups,dc=foss-cloud,dc=org
+sstLDAPFilter: (&(objectClass=sstGroupObjectClass)(uid=*))
+sstLDAPForeignGroupDisplayName: sstGroupName
+sstLDAPForeignStaticAttribute: uid
+
+
+# The sub tree ou=networks,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org contains the networks configuration information of the FOSS-Cloud (since version 0.8.0). 
+dn: ou=networks,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: networks
+description: This sub tree contains the networks configuration information of the FOSS-Cloud.
+
+# admin: Administrative network, used for administration and monitoring purposes. 
+dn: ou=admin,ou=networks,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstNetwork
+ou: admin
+description: Administrative network, used for administration and monitoring purposes.
+sstNetworkVLANId: <FOSS-CLOUD-ADMIN-VLAN-ID>
+sstNetworkPrefix: <FOSS-CLOUD-ADMIN-NETWORK-ADDRESS>/<FOSS-CLOUD-ADMIN-NETMASK> 
+#sstNetworkDefaultGateway: <FOSS-CLOUD-ADMIN-DEFAULT-GATEWAY> 
+sstNetworkBroadcastAddress: <FOSS-CLOUD-ADMIN-BROADCAST> 
+sstNetworkDomainName: <FOSS-CLOUD-ADMIN-DOMAIN>
+
+# sshd: OpenSSH is used for remote management and access.
+dn: sstService=sshd,ou=admin,ou=networks,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstServices
+sstService: sshd
+description: OpenSSH is used for remote management and access.
+sstDisplayName: OpenSSH daemon
+
+# zabbix-agent: The ZABBIX-agent is used for monitoring purposes.
+dn: sstService=zabbix-agent,ou=admin,ou=networks,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstServices
+sstService: zabbix-agent
+description: The ZABBIX-agent is used for monitoring purposes.
+sstDisplayName: ZABBIX
+
+# data: Data network, used for GlusterFS (in later versions NFS and Ceph as well) traffic. 
+dn: ou=data,ou=networks,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstNetwork
+ou: data
+description: Data network, used for GlusterFS (in later versions NFS and Ceph as well) traffic.
+sstNetworkVLANId: <FOSS-CLOUD-DATA-VLAN-ID>
+sstNetworkPrefix: <FOSS-CLOUD-DATA-NETWORK-ADDRESS>/<FOSS-CLOUD-DATA-NETMASK>
+#sstNetworkDefaultGateway: <FOSS-CLOUD-DATA-DEFAULT-GATEWAY> 
+sstNetworkBroadcastAddress: <FOSS-CLOUD-DATA-BROADCAST> 
+sstNetworkDomainName: <FOSS-CLOUD-DATA-DOMAIN>
+
+# glusterd: The GlusterFS File service is used as the virtual machine storage.
+dn: sstService=glusterd,ou=data,ou=networks,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstServices
+sstService: glusterd
+description: The GlusterFS File service is used as the virtual machine storage.
+sstDisplayName: GlusterFS File Service
+#sstNetworkVirtualIPAdress: 10.1.130.87
+#sstNetworkVirtualHostname: glusterfs
+
+# int: Internal network, used for internal traffic such as LDAP, libvirt and more. 
+dn: ou=int,ou=networks,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstNetwork
+ou: int
+description: Internal network, used for internal traffic such as LDAP, libvirt and more.
+sstNetworkVLANId: <FOSS-CLOUD-INT-VLAN-ID>
+sstNetworkPrefix: <FOSS-CLOUD-INT-NETWORK-ADDRESS>/<FOSS-CLOUD-INT-NETMASK> 
+#sstNetworkDefaultGateway: <FOSS-CLOUD-INT-DEFAULT-GATEWAY>
+sstNetworkBroadcastAddress: <FOSS-CLOUD-INT-BROADCAST>
+sstNetworkDomainName: <FOSS-CLOUD-INT-DOMAIN>
+
+# libvirtd: The libvirtd daemon is used for the administration of the virtual servers.
+dn: sstService=libvirtd,ou=int,ou=networks,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstServices
+sstService: libvirtd
+description: The libvirtd daemon is used for the administration of the virtual servers.
+sstDisplayName: libvirtd Service
+
+# slapd: The OpenLDAP directory is used for the storage of all service related data.
+dn: sstService=slapd,ou=int,ou=networks,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstServices
+sstService: slapd
+description: The OpenLDAP directory is used for the storage of all service related data.
+sstDisplayName: OpenLDAP Service
+#sstNetworkVirtualIPAdress: 10.1.120.87
+#sstNetworkVirtualHostname: ldapm
+
+# pub: Public network, used for accessing the VM-Manager web interface, Spice traffic and internet access. 
+dn: ou=pub,ou=networks,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstNetwork
+ou: pub
+description: Public network, used for accessing the VM-Manager web interface, Spice traffic and internet access.
+sstNetworkVLANId: <FOSS-CLOUD-PUB-VLAN-ID>
+sstNetworkPrefix: <FOSS-CLOUD-PUB-NETWORK-ADDRESS>/<FOSS-CLOUD-PUB-NETMASK>
+sstNetworkDefaultGateway: <FOSS-CLOUD-PUB-DEFAULT-GATEWAY>
+sstNetworkBroadcastAddress: <FOSS-CLOUD-PUB-BROADCAST>
+sstNetworkDomainName: <FOSS-CLOUD-PUB-DOMAIN><FOSS-CLOUD-NTP-INFO><FOSS-CLOUD-DNS-INFO>
+
+# apache2: The Apache web server is used for the VM-Manager web interface.
+dn: sstService=apache2,ou=pub,ou=networks,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstServices
+sstService: apache2
+description: The Apache web server is used for the VM-Manager web interface.
+sstNetworkVirtualHostname: vm-manager
+sstDisplayName: VM-Manager Service
+
+# dhcpd: The DHCP server is used for the distribution of IP addresses.
+dn: sstService=dhcpd,ou=pub,ou=networks,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstServices
+sstService: dhcpd
+description: The DHCP server is used for the distribution of IP addresses.
+sstNetworkVirtualHostname: dhcpd
+sstDisplayName: DHCP Service
+
+# qemu-system-x86_64: The QEMU (spice) service is used for the interaction with virtualized desktop devices.
+dn: sstService=qemu-system-x86_64,ou=pub,ou=networks,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstServices
+sstService: qemu-system-x86_64
+description: The QEMU (spice) service is used for the interaction with virtualized desktop devices.
+sstNetworkVirtualHostname: vm-manager
+sstDisplayName: QEMU (spice) Service 
+
+# The sub tree ou=node-types,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org contains the services configuration information of the FOSS-Cloud (since version 0.8.0). 
+dn: ou=node-types,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: networks
+description: This sub tree contains the node-types configuration information of the FOSS-Cloud.
+
+# This node type is a special single-node installation and is used for demo purposes only.
+dn: sstNodeType=Demo-System,ou=node-types,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstTypeNode
+sstNodeType: Demo-System
+sstNodeSubtype: KVM
+sstService: sshd
+sstService: libvirtd
+sstService: slapd
+sstService: apache2
+sstService: qemu-system-x86_64
+description: This node type is a special single-node installation and is used for demo purposes only.
+sstDisplayName: Demo System
+
+# This is the first node of a multi-node installation.
+dn: sstNodeType=Primary-Master-Node,ou=node-types,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstTypeNode
+sstNodeType: Primary-Master-Node
+sstNodeSubtype: KVM
+sstService: sshd
+sstService: zabbix-agent
+sstService: libvirtd
+sstService: slapd
+sstService: apache2
+sstService: qemu-system-x86_64
+description: This is the first node of a multi-node installation.
+sstDisplayName: Primary-Master-Node
+
+# This is the second node of a multi-node installation.
+dn: sstNodeType=Secondary-Master-Node,ou=node-types,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstTypeNode
+sstNodeType: Secondary-Master-Node
+sstNodeSubtype: KVM
+sstService: sshd
+sstService: zabbix-agent
+sstService: libvirtd
+sstService: slapd
+sstService: apache2
+sstService: qemu-system-x86_64
+description: This is the second node of a multi-node installation.
+sstDisplayName: Secondary-Master-Node
+
+# The VM-Node is used to run the actual virtual machines (VM's).
+dn: sstNodeType=VM-Node,ou=node-types,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstTypeNode
+sstNodeType: VM-Node
+sstNodeSubtype: KVM
+sstService: sshd
+sstService: zabbix-agent
+sstService: libvirtd
+sstService: qemu-system-x86_64
+description: The VM-Node is used to run the actual virtual machines (VM's).
+sstDisplayName: VM-Node
+
+# The Storage-Node is used to store all the images (VM-Profiles, VM-Templates and VMs).
+dn: sstNodeType=Storage-Node,ou=node-types,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstTypeNode
+sstNodeType: Storage-Node
+sstNodeSubtype: GlusterFS
+sstService: sshd
+sstService: zabbix-agent
+sstService: glusterd
+description: The Storage-Node is used to store all the images (VM-Profiles, VM-Templates and VMs).
+sstDisplayName: Storage-Node
+
+# The sub tree ou=storage pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org contains the storage pools configuration information of the FOSS-Cloud (since version 1.0.0).
+dn: ou=storage pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: networks
+description: This sub tree contains the storage pools configuration information of the FOSS-Cloud.
+
+# This is where the global VM-Templates of the FOSS-Cloud environment are stored. These can be used as a base for users VM-Templates. 
+dn: ou=catalogue,ou=storage pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstStoragePoolConfigurationObjectClass
+ou: catalogue
+sstStoragePoolURI: file:///var/virtualization/catalogue/
+sstStoragePoolType: catalogue
+sstSelfService: FALSE
+
+# This is where ISO-files of the FOSS-Cloud environment are stored.
+dn: ou=iso,ou=storage pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstStoragePoolConfigurationObjectClass
+ou: iso
+sstStoragePoolURI: file:///var/virtualization/iso/
+sstStoragePoolType: iso
+sstSelfService: FALSE
+
+# This is where the user uploads his or her ISO-files into the FOSS-Cloud environment. 
+dn: ou=iso-choosable,ou=storage pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstStoragePoolConfigurationObjectClass
+ou: iso-choosable
+sstStoragePoolURI: file:///var/virtualization/iso-choosable/
+sstStoragePoolType: iso-choosable
+sstSelfService: FALSE
+
+# This is where the dynamic VM's of the FOSS-Cloud environment are stored. 
+dn: ou=vm-dynamic,ou=storage pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstStoragePoolConfigurationObjectClass
+ou: vm-dynamic
+sstStoragePoolURI: file:///var/virtualization/vm-dynamic/
+sstStoragePoolType: dynamic
+sstSelfService: TRUE
+
+# This is where the static VM's of the FOSS-Cloud environment are stored. 
+dn: ou=vm-persistent,ou=storage pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstStoragePoolConfigurationObjectClass
+ou: vm-persistent
+sstStoragePoolURI: file:///var/virtualization/vm-persistent/
+sstStoragePoolType: static
+sstSelfService: TRUE
+
+# This is where the VM-Templates of the FOSS-Cloud environment are stored. 
+dn: ou=vm-templates,ou=storage pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstStoragePoolConfigurationObjectClass
+ou: vm-templates
+sstStoragePoolURI: file:///var/virtualization/vm-templates/
+sstStoragePoolType: template
+sstSelfService: TRUE
+
+# This is where the automatically created FOSS-Cloud ID is stored.
+dn: ou=version,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstFOSSCloudVersionObjectClass
+ou: version
+sstFOSSCloudID: <FOSS-CLOUD-ID>
+
+# Contains the virtual machine pools configuration information.
+dn: ou=virtual machine pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstVirtualMachinePoolBrokerConfigurationObjectClass
+ou: virtual machine pools
+sstBrokerAlgorithm: quantity
+
+# The dynamic entry is defined as follows. It presumes that we should have a minimal number of 5 virtual
+# machines runnning at all time. We need to pre start 3 virtual machines and we can have a maximum number 
+# of 20 virtual machines: 
+dn: ou=dynamic,ou=virtual machine pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstVirtualMachinePoolConfigurationObjectClass
+ou: dynamic
+sstBrokerMinimalNumberOfVirtualMachines: 5
+sstBrokerMaximalNumberOfVirtualMachines: 20
+sstBrokerPreStartNumberOfVirtualMachines: 3
+
+# The static entry is defined as follows.
+dn: ou=static,ou=virtual machine pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: static
+
+# The template entry is defined as follows.
+dn: ou=template,ou=virtual machine pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: template

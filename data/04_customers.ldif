@@ -1,0 +1,82 @@
+# Copyright (C) 2011 FOSS-Group
+#                    Germany
+#                    http://www.foss-group.de
+#                    support@foss-group.de
+#
+# Authors:
+#  Michael Eichenberger <michael.eichenberger@stepping-stone.ch>
+#  
+# Licensed under the EUPL, Version 1.1 or – as soon they
+# will be approved by the European Commission - subsequent
+# versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the
+# Licence.
+# You may obtain a copy of the Licence at:
+#
+# http://www.osor.eu/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+#
+# 
+#
+#
+###################################################################################################
+# /etc/openldap/data/04_customers.ldif
+###################################################################################################
+# Description:
+#  Initialises the organisational data like resellers, customers and people.
+###################################################################################################
+
+###################################################################################################
+# customers
+###################################################################################################
+dn: uid=4000001,ou=customers,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstCustomerCompany
+uid: 4000001
+organizationName: Acme Corporation (Switzerland)
+sstBelongsToResellerUID: 4000000
+
+###################################################################################################
+# address
+###################################################################################################
+dn: ou=address,uid=4000001,ou=customers,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstAddressCompany
+ou: address
+organizationName: Acme Corporation (Switzerland)
+sstGender: m
+surname: Surname
+givenName: Forename
+postalAddress: Street Number
+countryName: CH
+postalCode: Postal Code
+localityName: Locality
+preferredLanguage: en-GB
+mail: forename.surname@example.com
+telephoneNumber: +41 00 000 00 00
+mobileTelephoneNumber: +41 00 000 00 00
+
+dn: ou=billing,uid=4000001,ou=customers,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstBillingCustomer
+ou: billing
+sstBillingCycle: 1
+sstBillingCycleFix: TRUE
+sstCurrency: CHF
+sstPaymentMethod: invoice
+
+dn: ou=people,uid=4000001,ou=customers,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: labeledURIObject
+ou: people
+labeledURI: ldap:///ou=people,dc=foss-cloud,dc=org??one?(sstBelongsToCustomerUID=4000001)

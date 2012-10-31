@@ -1,0 +1,111 @@
+# Copyright (C) 2012 FOSS-Group
+#                    Germany
+#                    http://www.foss-group.de
+#                    support@foss-group.de
+#
+# Authors:
+#  Michael Eichenberger <michael.eichenberger@stepping-stone.ch>
+#  
+# Licensed under the EUPL, Version 1.1 or – as soon they
+# will be approved by the European Commission - subsequent
+# versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the
+# Licence.
+# You may obtain a copy of the Licence at:
+#
+# http://www.osor.eu/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+#
+# 
+#
+#
+###################################################################################################
+# /etc/openldap/data/11_storage_services_virtualization.ldif
+###################################################################################################
+# Description:
+#  This LDIF creates the sub tree containing all the storage pools for the virtualization
+#  environment.
+###################################################################################################
+
+
+###################################################################################################
+# ou=storage pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  This sub tree contains all the storage pools for the virtualization environment.
+###################################################################################################
+dn: ou=storage pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: storage pools
+description: This sub tree contains all the storage pools for the virtualization environment.
+
+
+###################################################################################################
+# sstStoragePool=0f83f084-8080-413e-b558-b678e504836e,ou=storage pools,ou=virtualization,
+# ou=services,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  This entry contains the default static storage pool static-storage-pool-01 that is already
+#  set up when the FOSS-Cloud is installed.
+###################################################################################################
+dn: sstStoragePool=0f83f084-8080-413e-b558-b678e504836e,ou=storage pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstStoragePoolObjectClass
+objectclass: sstRelationship
+sstStoragePool: 0f83f084-8080-413e-b558-b678e504836e
+sstStoragePoolURI: file:///var/virtualization/vm-persistent/0f83f084-8080-413e-b558-b678e504836e
+sstStoragePoolType: static
+sstDisplayName: static-storage-pool-01
+description: This is the default static storage pool static-storage-pool-01.
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+
+###################################################################################################
+# sstStoragePool=5b77d2f6-061f-410c-8ee7-9e61da6f1927,ou=storage pools,ou=virtualization,
+# ou=services,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  This entry contains the default template storage pool template-storage-pool-01 that is already
+#  set up when the FOSS-Cloud is installed.
+###################################################################################################
+dn: sstStoragePool=5b77d2f6-061f-410c-8ee7-9e61da6f1927,ou=storage pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstStoragePoolObjectClass
+objectclass: sstRelationship
+sstStoragePool: 5b77d2f6-061f-410c-8ee7-9e61da6f1927
+sstStoragePoolURI: file:///var/virtualization/vm-templates/5b77d2f6-061f-410c-8ee7-9e61da6f1927
+sstStoragePoolType: template
+sstDisplayName: template-storage-pool-01
+description: This is the default template storage pool template-storage-pool-01.
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+
+###################################################################################################
+# sstStoragePool=c92851ab-ec8e-4eba-b60d-96cf3f72fd02,ou=storage pools,ou=virtualization,
+# ou=services,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  This entry contains the default static storage pool static-storage-pool-01 that is already
+#  set up when the FOSS-Cloud is installed.
+###################################################################################################
+dn: sstStoragePool=c92851ab-ec8e-4eba-b60d-96cf3f72fd02,ou=storage pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstStoragePoolObjectClass
+objectclass: sstRelationship
+sstStoragePool: c92851ab-ec8e-4eba-b60d-96cf3f72fd02
+sstStoragePoolURI: file:///var/virtualization/vm-dynamic/c92851ab-ec8e-4eba-b60d-96cf3f72fd02
+sstStoragePoolType: dynamic
+sstDisplayName: dynamic-storage-pool-01
+description: This is the default dynamic storage pool dynamic-storage-pool-01.
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001

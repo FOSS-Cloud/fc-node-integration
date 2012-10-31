@@ -1,0 +1,152 @@
+# Copyright (C) 2012 FOSS-Group
+#                    Germany
+#                    http://www.foss-group.de
+#                    support@foss-group.de
+#
+# Authors:
+#  Michael Eichenberger <michael.eichenberger@stepping-stone.ch>
+#  
+# Licensed under the EUPL, Version 1.1 or – as soon they
+# will be approved by the European Commission - subsequent
+# versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the
+# Licence.
+# You may obtain a copy of the Licence at:
+#
+# http://www.osor.eu/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+#
+# 
+#
+#
+###################################################################################################
+# /etc/openldap/data/00_directory-init.ldif
+###################################################################################################
+# Description:
+#  Initialises the dirctory information tree (DIT).
+###################################################################################################
+
+###################################################################################################
+# dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  The root of the foss-cloud directory.
+###################################################################################################
+dn: dc=foss-cloud,dc=org
+objectclass: top
+objectClass: dcObject
+objectClass: organization
+dc: foss-cloud
+o: foss-cloud
+
+###################################################################################################
+# ou=administration,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  The administrative section of the foss-cloud directory.
+###################################################################################################
+dn: ou=administration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: administration
+
+###################################################################################################
+# ou=billing,ou=administration,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  The billing section of the stepping stone directory. This is where the billing schemas for the
+#  bundles, products and product items are stored.
+###################################################################################################
+dn: ou=billing,ou=administration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: billing
+
+###################################################################################################
+# ou=people,ou=administration,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  This list is created automatically with the help of the dynlist overlay. The people listed here
+#  have super user rights over all the directory. The list should be kept as short as possible.
+###################################################################################################
+dn: ou=people,ou=administration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: labeledURIObject
+ou: people
+labeledURI: ldap:///ou=people,dc=foss-cloud,dc=org??one?(sstBelongsToUID=1)
+
+###################################################################################################
+# ou=services,ou=administration,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  The different daemons (services) authenticate themselves in this sub tree.
+###################################################################################################
+dn: ou=services,ou=administration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: services
+
+###################################################################################################
+# ou=customers,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  This sub tree stores all customers, independent to which reseller they belong to.
+###################################################################################################
+dn: ou=customers,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: customers
+
+###################################################################################################
+# ou=groups,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  This sub tree stores all the group mappings, independent to which customer or reseller they
+#   belong to.
+###################################################################################################
+dn: ou=groups,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: groups
+description: This sub tree stores all the group mappings, independent to which customer or reseller they belong to (works for both internal and external directories).
+
+###################################################################################################
+# ou=people,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  This sub tree stores all people, independent to which customer or reseller they belong to.
+###################################################################################################
+dn: ou=people,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: people
+
+###################################################################################################
+# ou=reseller,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  This subtree stores all the resellers.
+###################################################################################################
+dn: ou=reseller,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: reseller
+
+###################################################################################################
+# ou=services,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  The service related section of the stepping stone directory. Each service hat it's own sub tree.
+###################################################################################################
+dn: ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: services

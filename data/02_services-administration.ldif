@@ -1,0 +1,52 @@
+# Copyright (C) 2011 FOSS-Group
+#                    Germany
+#                    http://www.foss-group.de
+#                    support@foss-group.de
+#
+# Authors:
+#  Michael Eichenberger <michael.eichenberger@stepping-stone.ch>
+#  
+# Licensed under the EUPL, Version 1.1 or – as soon they
+# will be approved by the European Commission - subsequent
+# versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the
+# Licence.
+# You may obtain a copy of the Licence at:
+#
+# http://www.osor.eu/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+#
+# 
+#
+#
+###################################################################################################
+# /etc/openldap/data/07_authentication_services_virtualization.ldif
+###################################################################################################
+# Description:
+#  TBD
+###################################################################################################
+
+#  slappasswd -s 'rJRp6A97GAtKAZXg'
+dn: cn=dhcp,ou=services,ou=administration,dc=foss-cloud,dc=org
+cn: dhcp
+objectclass: top
+objectclass: organizationalPerson
+objectclass: inetOrgPerson
+sn: dhcp
+userPassword: {SSHA}pJpqL95nlFi78rnAstmn6VvZCXWTjVHZ
+
+# slappasswd -s 'TheF1nalCountdown!'
+dn: cn=spice,ou=services,ou=administration,dc=foss-cloud,dc=org
+cn: spice
+objectclass: top
+objectclass: organizationalPerson
+objectclass: inetOrgPerson
+sn: spice
+userPassword: {SSHA}W1ow/3J6JA8w6N+iJ7bfe7n4ucRwRJEE

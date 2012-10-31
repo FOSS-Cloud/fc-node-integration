@@ -1,0 +1,352 @@
+# Copyright (C) 2012 FOSS-Group
+#                    Germany
+#                    http://www.foss-group.de
+#                    support@foss-group.de
+#
+# Authors:
+#  Michael Eichenberger <michael.eichenberger@stepping-stone.ch>
+#  
+# Licensed under the EUPL, Version 1.1 or – as soon they
+# will be approved by the European Commission - subsequent
+# versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the
+# Licence.
+# You may obtain a copy of the Licence at:
+#
+# http://www.osor.eu/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+#
+# 
+#
+#
+###################################################################################################
+# /etc/openldap/data/14_vm-pools_services_virtualization.template
+###################################################################################################
+# Description:
+#   This file sets virtual machine-pools in dependancy of the default storage pools and the 
+#   primary master node.
+###################################################################################################
+#  admin: Administrative network, used for administration and monitoring purposes. 
+#   <FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN> 
+#    For example: <FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>
+#   <FOSS-CLOUD-ADMIN-NETWORK-ADDRESS> 
+#    For example: 10.1.110.86            Admin segment IP 
+#   <FOSS-CLOUD-DATA-NETWORK-ADDRESS> 
+#    For example: 10.1.130.86            Data segment IP 
+#   <FOSS-CLOUD-INT-NETWORK-ADDRESS>
+#    For example: 10.1.120.86            Int segment IP
+#   <FOSS-CLOUD-PUB-NETWORK-ADDRESS>
+#    For example: 192.168.140.5          Public segment IP
+#
+###################################################################################################
+
+###################################################################################################
+# ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#   This subtree contains the logical virtual machine pools for the virtualization environment.
+###################################################################################################
+dn: ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: virtual machine-pools
+description: This subtree contains the logical virtual machine pools for the virtualization environment.
+
+
+###################################################################################################
+# sstVirtualMachinePool=40fac639-c69d-43b0-817c-dbbf3fd161fc,ou=virtual machine pools,
+# ou=virtualization,ou=services,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#   This subtree contains the default vm-template virtual machine pool that is already set up when 
+#   the FOSS-Cloud is installed.
+###################################################################################################
+dn: sstVirtualMachinePool=40fac639-c69d-43b0-817c-dbbf3fd161fc,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstVirtualMachines
+objectclass: sstRelationship
+sstVirtualMachinePool: 40fac639-c69d-43b0-817c-dbbf3fd161fc
+sstDisplayName: vm-template-virtual-machine-pool-01
+description: This is the default vm-template virtual machine pool vm-template-virtual-machine-pool-01.
+sstVirtualMachinePoolType: template
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=groups,sstVirtualMachinePool=40fac639-c69d-43b0-817c-dbbf3fd161fc,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: groups
+description: This sub tree stores all the groups, which have access to the default vm-template virtual machine pool vm-template-virtual-machine-pool-01.
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=nodes,sstVirtualMachinePool=40fac639-c69d-43b0-817c-dbbf3fd161fc,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: nodes
+description: This sub tree stores all the nodes belonging to default vm-template virtual machine pool vm-template-virtual-machine-pool-01.
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,sstVirtualMachinePool=40fac639-c69d-43b0-817c-dbbf3fd161fc,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: labeledURIObject
+objectclass: sstRelationship
+ou: <FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>
+description: This entry links to the node <FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>.
+labeledURI: ldap:///sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=people,sstVirtualMachinePool=40fac639-c69d-43b0-817c-dbbf3fd161fc,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: people
+description: This sub tree stores all the people, which have access to the default vm-template virtual machine pool vm-template-virtual-machine-pool-01.
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=storage pools,sstVirtualMachinePool=40fac639-c69d-43b0-817c-dbbf3fd161fc,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: storage pools
+description: This sub tree stores all the storage pools belonging to default vm-template virtual machine pool vm-template-virtual-machine-pool-01 (normally just one storage pool).
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=5b77d2f6-061f-410c-8ee7-9e61da6f1927,ou=storage pools,sstVirtualMachinePool=40fac639-c69d-43b0-817c-dbbf3fd161fc,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: labeledURIObject
+objectclass: sstRelationship
+ou: 5b77d2f6-061f-410c-8ee7-9e61da6f1927
+description: This entry links to the vm-template storage pool 5b77d2f6-061f-410c-8ee7-9e61da6f1927.
+labeledURI: ldap:///sstStoragePool=5b77d2f6-061f-410c-8ee7-9e61da6f1927,ou=storage pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=ranges,sstVirtualMachinePool=40fac639-c69d-43b0-817c-dbbf3fd161fc,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: ranges
+description: This sub tree stores all the ranges belonging to default vm-template virtual machine pool vm-template-virtual-machine-pool-01.
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+
+###################################################################################################
+# sstVirtualMachinePool=d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa,ou=virtual machine pools,
+# ou=virtualization,ou=services,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#   This subtree contains the default static virtual machine pool that is already set up when 
+#   the FOSS-Cloud is installed.
+###################################################################################################
+dn: sstVirtualMachinePool=d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstVirtualMachines
+objectclass: sstRelationship
+sstVirtualMachinePool: d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa
+sstDisplayName: static-virtual-machine-pool-01
+description: This is the default static virtual machine pool static-virtual-machine-pool-01.
+sstVirtualMachinePoolType: static
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=groups,sstVirtualMachinePool=d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: groups
+description: This sub tree stores all the groups, which have access to the default static virtual machine pool static-virtual-machine-pool-01.
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=4000014,ou=groups,sstVirtualMachinePool=d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: 4000014
+description: Technology
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=nodes,sstVirtualMachinePool=d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: nodes
+description: This sub tree stores all the nodes belonging to default static virtual machine pool static-virtual-machine-pool-01.
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,sstVirtualMachinePool=d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: labeledURIObject
+objectclass: sstRelationship
+ou: <FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>
+description: This entry links to the node <FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>.
+labeledURI: ldap:///sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=people,sstVirtualMachinePool=d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: people
+description: This sub tree stores all the people, which have access to the default static virtual machine pool static-virtual-machine-pool-01.
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=storage pools,sstVirtualMachinePool=d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: storage pools
+description: This sub tree stores all the storage pools belonging to default static virtual machine pool static-virtual-machine-pool-01 (normally just one storage pool).
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=0f83f084-8080-413e-b558-b678e504836e,ou=storage pools,sstVirtualMachinePool=d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: labeledURIObject
+objectclass: sstRelationship
+ou: 0f83f084-8080-413e-b558-b678e504836e
+description: This entry links to the vm storage pool 0f83f084-8080-413e-b558-b678e504836e.
+labeledURI: ldap:///sstStoragePool=0f83f084-8080-413e-b558-b678e504836e,ou=storage pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=ranges,sstVirtualMachinePool=d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: ranges
+description: This sub tree stores all the ranges belonging to default static virtual machine pool static-virtual-machine-pool-01.
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+
+###################################################################################################
+# sstVirtualMachinePool=dbd81080-d9f8-42e2-a261-d56b80c9c528,ou=virtual machine pools,
+# ou=virtualization,ou=services,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#   This subtree contains the default dynamic virtual machine pool that is already set up when 
+#   the FOSS-Cloud is installed.
+###################################################################################################
+dn: sstVirtualMachinePool=dbd81080-d9f8-42e2-a261-d56b80c9c528,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstVirtualMachines
+objectclass: sstVirtualMachinePoolDynamicObjectClass
+objectclass: sstRelationship
+sstVirtualMachinePool: dbd81080-d9f8-42e2-a261-d56b80c9c528
+sstDisplayName: dynamic-virtual-machine-pool-01
+description: This is the default dynamic virtual machine pool dynamic-virtual-machine-pool-01.
+sstVirtualMachinePoolType: dynamic
+sstBrokerMinimalNumberOfVirtualMachines: 5
+sstBrokerMaximalNumberOfVirtualMachines: 20
+sstBrokerPreStartNumberOfVirtualMachines: 3
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=groups,sstVirtualMachinePool=dbd81080-d9f8-42e2-a261-d56b80c9c528,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: groups
+description: This sub tree stores all the groups, which have access to the default dynamic virtual machine pool dynamic-virtual-machine-pool-01.
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=4000014,ou=groups,sstVirtualMachinePool=dbd81080-d9f8-42e2-a261-d56b80c9c528,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: 4000014
+description: Technology
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=4000015,ou=groups,sstVirtualMachinePool=dbd81080-d9f8-42e2-a261-d56b80c9c528,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: 4000015
+description: Office
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=nodes,sstVirtualMachinePool=dbd81080-d9f8-42e2-a261-d56b80c9c528,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: nodes
+description: This sub tree stores all the nodes belonging to default dynamic virtual machine pool dynamic-virtual-machine-pool-01.
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,sstVirtualMachinePool=dbd81080-d9f8-42e2-a261-d56b80c9c528,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: labeledURIObject
+objectclass: sstRelationship
+ou: <FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>
+description: This entry links to the node <FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>.
+labeledURI: ldap:///sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=people,sstVirtualMachinePool=dbd81080-d9f8-42e2-a261-d56b80c9c528,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: people
+description: This sub tree stores all the people, which have access to the default dynamic virtual machine pool dynamic-virtual-machine-pool-01.
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=storage pools,sstVirtualMachinePool=dbd81080-d9f8-42e2-a261-d56b80c9c528,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: storage pools
+description: This sub tree stores all the storage pools belonging to default dynamic virtual machine pool dynamic-virtual-machine-pool-01 (normally just one storage pool).
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=c92851ab-ec8e-4eba-b60d-96cf3f72fd02,ou=storage pools,sstVirtualMachinePool=dbd81080-d9f8-42e2-a261-d56b80c9c528,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: labeledURIObject
+objectclass: sstRelationship
+ou: c92851ab-ec8e-4eba-b60d-96cf3f72fd02
+description: This entry links to the vm storage pool c92851ab-ec8e-4eba-b60d-96cf3f72fd02.
+labeledURI: ldap:///sstStoragePool=c92851ab-ec8e-4eba-b60d-96cf3f72fd02,ou=storage pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+
+dn: ou=ranges,sstVirtualMachinePool=dbd81080-d9f8-42e2-a261-d56b80c9c528,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstRelationship
+ou: ranges
+description: This sub tree stores all the ranges belonging to default dynamic virtual machine pool dynamic-virtual-machine-pool-01.
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001

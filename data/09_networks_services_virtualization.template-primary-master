@@ -1,0 +1,115 @@
+# Copyright (C) 2012 FOSS-Group
+#                    Germany
+#                    http://www.foss-group.de
+#                    support@foss-group.de
+#
+# Authors:
+#  Michael Eichenberger <michael.eichenberger@stepping-stone.ch>
+#  Pat Kläy <pat.klaey@stepping-stone.ch>
+#  
+# Licensed under the EUPL, Version 1.1 or – as soon they
+# will be approved by the European Commission - subsequent
+# versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the
+# Licence.
+# You may obtain a copy of the Licence at:
+#
+# http://www.osor.eu/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+#
+# 
+#
+#
+###################################################################################################
+# /etc/openldap/data/09_networks_services_virtualization.ldif
+###################################################################################################
+# Description:
+#  This sub tree holds all the networks of the FOSS-Cloud and acts as the backend to the DHCP
+#  server.
+###################################################################################################
+
+###################################################################################################
+# ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  This subtree contains the network pools for the virtualization environment.
+###################################################################################################
+dn: ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: networks
+description: This subtree contains the network pools for the virtualization environment.
+
+
+###################################################################################################
+# ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  The virtualization (virtual desktop and server infrastructure) subtree.
+###################################################################################################
+dn: ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: dhcp
+
+dn: cn=config-01,ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: dhcpService
+cn: config-01
+dhcpprimarydn: cn=dhcp-01,ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+
+dn: cn=dhcp-01,ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: dhcpServer
+cn: dhcp-01
+dhcpservicedn: cn=config-01,ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+
+
+###################################################################################################
+# cn=<FOSS-CLOUD-PUB-SUBNETs-ADDRESS>,cn=config-01,ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+###################################################################################################
+# Description:
+#  The sub tree the first predefined network.
+###################################################################################################
+dn: cn=<FOSS-CLOUD-PUB-SUBNET-ADDRESS>,cn=config-01,ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+cn: <FOSS-CLOUD-PUB-SUBNET-ADDRESS>
+description: This is the first network for which the DHCP server is responsible. All default DHCP options and statements are defined within this entry. It is set during the installation of the primary-master-node.
+dhcpnetmask: <FOSS-CLOUD-PUB-NETMASK>
+dhcpoption: domain-name "<FOSS-CLOUD-PUB-DOMAIN>"
+dhcpoption: domain-name-servers <FOSS-CLOUD-DNS-INFO>
+dhcpoption: routers <FOSS-CLOUD-PUB-DEFAULT-GATEWAY>
+dhcpoption: broadcast-address <FOSS-CLOUD-PUB-BROADCAST>
+dhcpoption: ntp-servers <FOSS-CLOUD-NTP-INFO>
+dhcpstatements: authoritative
+dhcpstatements: default-lease-time 3600
+dhcpstatements: min-lease-time 600
+dhcpstatements: max-lease-time 43200
+dhcpstatements: ddns-update-style none
+dhcpstatements: ddns-updates off
+dhcpstatements: ping-check false
+objectclass: dhcpOptions
+objectclass: dhcpSubnet
+objectclass: sstVirtualizationNetwork
+objectclass: top
+sstbelongstocustomeruid: 4000001
+sstbelongstoreselleruid: 4000000
+sstdisplayname: network-pool-01
+
+dn: ou=ranges,cn=<FOSS-CLOUD-PUB-SUBNET-ADDRESS>,cn=config-01,ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: This sub tree holds all user defined ranges (template, static and dynamic) belonging to the network <FOSS-CLOUD-PUB-SUBNET-ADDRESS>.
+objectclass: top
+objectclass: organizationalUnit
+ou: ranges
+
+dn: ou=virtual machines,cn=<FOSS-CLOUD-PUB-SUBNET-ADDRESS>,cn=config-01,ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: This sub tree holds all the virtual machines with an ip address from the network <FOSS-CLOUD-PUB-SUBNET-ADDRESS>.
+objectclass: top
+objectclass: organizationalUnit
+ou: virtual machines
