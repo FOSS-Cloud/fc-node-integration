@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 ######################################################################################################
-# /usr/local/bin/node-configuration
+# /usr/sbin/fc-node-configuration
 ######################################################################################################
 #
 # Copyright (C) 2012 FOSS-Group
@@ -60,7 +60,7 @@ $| = 1;                        # Turn buffering off, so that the output is flush
  
 =head1 NAME
  
-node-configuration
+fc-node-configuration
  
 =head1 DESCRIPTION
  
@@ -93,17 +93,17 @@ Shows debug information.
 
 =head1 USAGE
 
-./node-configuration --node-type primary-master-node
+./fc-node-configuration --node-type primary-master-node
 
-./node-configuration --node-type secondary-master-node
+./fc-node-configuration --node-type secondary-master-node
 
-./node-configuration --node-type primary-storage-node 
+./fc-node-configuration --node-type primary-storage-node 
 
-./node-configuration --node-type secondary-storage-node
+./fc-node-configuration --node-type secondary-storage-node
 
-./node-configuration --node-type vm-node
+./fc-node-configuration --node-type vm-node
 
-./node-configuration --node-type demo-system
+./fc-node-configuration --node-type demo-system
 
 =head1 TESTING
 
@@ -167,7 +167,7 @@ Incorporated code with use:
 ######################################################################################################
 my $location=dirname(abs_path($0));
 
-my $cfg = Config::IniFiles->new( -file => "$location/../etc/foss-cloud/node-configuration.conf");
+my $cfg = Config::IniFiles->new( -file => "$location/../../etc/foss-cloud/node-configuration.conf");
 
 ######################################################################################################
 # Process the single character or long command line arguments.
@@ -694,7 +694,7 @@ sub checkLocalNetwork {
 
   # Execute the node-configuration-check script and check the return value 
   # and catch the output. 
-  my $output = `/usr/local/bin/node-integration-check --module network`;
+  my $output = `/usr/libexec/foss-cloud/node-integration-check --module network`;
   my $errorCode = $? >> 8;
 
   # check the exit code of the node-configuration-check. If it is different to
@@ -757,7 +757,7 @@ sub checkRemoteNetwork {
   my $hash;
   my $strict_host_key_check;
   
-  my $cmd = "/usr/local/bin/node-integration-check --module network";
+  my $cmd = "/usr/libexec/foss-cloud/node-integration-check --module network";
 
   # Check if the known_hosts file exists or not
   if ( -e "~/.ssh/known_hosts" ) {

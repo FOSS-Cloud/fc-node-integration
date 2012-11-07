@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 ######################################################################################################
-# /usr/local/bin/node-integration-check
+# /usr/libexec/foss-cloud/node-integration-check
 ######################################################################################################
 #
 # Copyright (C) 2012 FOSS-Group
@@ -136,7 +136,7 @@ Incorporated code with use:
 ######################################################################################################
 # Read the configuration file
 ######################################################################################################
-#my $cfg = Config::IniFiles->new( -file => "/usr/local/bin/node-integration-provisioning.conf");
+#my $cfg = Config::IniFiles->new( -file => "/etc/foss-cloud/node-integration-provisioning.conf");
 
 ######################################################################################################
 # Process the single character or long command line arguments.
@@ -352,7 +352,7 @@ sub moduleNetwork {
   # my $check = 1;
 
   # Can later be replaced by var from conf file
-  my $network_conffile = "/usr/local/etc/foss-cloud/network.conf";
+  my $network_conffile = "/etc/foss-cloud/network.conf";
 
 
   # Test if the configuration file exists. If yes, read it. 

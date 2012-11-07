@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 ######################################################################################################
-# /usr/local/bin/node-integration-provisioning
+# /usr/libexec/foss-cloud/node-integration-provisioning
 ######################################################################################################
 #
 # Copyright (C) 2012 FOSS-Group
@@ -135,7 +135,7 @@ Incorporated code with use:
 ######################################################################################################
 # Read the configuration file
 ######################################################################################################
-#my $cfg = Config::IniFiles->new( -file => "/usr/local/bin/node-integration-provisioning.conf");
+#my $cfg = Config::IniFiles->new( -file => "/etc/foss-cloud/node-integration-provisioning.conf");
 
 ######################################################################################################
 # Process the single character or long command line arguments.
