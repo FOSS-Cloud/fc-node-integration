@@ -40,7 +40,7 @@
 #   <FOSS-CLOUD-ADMIN-VLAN-ID>
 #    For example: 110             	VLAN ID
 #   <FOSS-CLOUD-ADMIN-DOMAIN>
-#    For example: admin.example.com	Domain
+#    For example: admin.example.org	Domain
 #
 #  data: Data network, used for GlusterFS (in later versions NFS and Ceph as well) traffic. 
 #   <FOSS-CLOUD-DATA-NETWORK-ADDRESS>/<FOSS-CLOUD-DATA-NETMASK>
@@ -62,21 +62,21 @@
 #   <FOSS-CLOUD-INT-BROADCAST>
 #    For example: 10.1.120.255     	Broadcast
 #   <FOSS-CLOUD-INT-VLAN-ID>
-#    For example: 1798             	VLAN ID
+#    For example: 120             	VLAN ID
 #   <FOSS-CLOUD-INT-DOMAIN>
 #    For example: int.example.com	Domain
 #
 #  pub: Public network, used for accessing the VM-Manager web interface, Spice traffic and internet access. 
 #   <FOSS-CLOUD-PUB-NETWORK-ADDRESS>/<FOSS-CLOUD-PUB-NETMASK>
-#    For example: 192.168.140.0/24     Network Address/Netmask -> Network Prefix
+#    For example: 192.168.140.0/24  	Network Address/Netmask -> Network Prefix
 #   <FOSS-CLOUD-PUB-DEFAULT-GATEWAY>
-#    For example: 192.168.140.1        Default Gateway
+#    For example: 192.168.140.1     	Default Gateway
 #   <FOSS-CLOUD-PUB-BROADCAST>
-#    For example: 192.168.140.255      Broadcast
+#    For example: 192.168.140.255   	Broadcast
 #   <FOSS-CLOUD-PUB-VLAN-ID>
-#    For example: 140                  VLAN ID
+#    For example: 140            	    VLAN ID
 #   <FOSS-CLOUD-PUB-DOMAIN>
-#    For example: example.com          Domain    
+#    For example: example.com           Domain    
 ################################################################################
 
 # The sub tree ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org contains the 
@@ -94,12 +94,12 @@ objectclass: organizationalUnit
 ou: internal searches
 description: This sub tree contains the internal ldap searches configuration of the FOSS-Cloud.
 
-################################################################################
+##################################################################################################
 # ou=User Search,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 ################################################################################
 # Description:
-#  This entry is used to check, if the user trying to log into the system, 
-#  actually exists in the directory.
+#  This entry is used to check, if the user trying to log into the system, actually exists in the
+#  directory.
 ################################################################################
 # Example: 
 #  ldapsearch -D "cn=Manager,dc=foss-cloud,dc=org" -w admin -H "ldap://10.1.130.14:389" \
@@ -125,11 +125,10 @@ sstLDAPForeignStaticAttribute: uid
 #  Check the given username and password combination.
 ################################################################################
 # Attention: 
-#  Normally, the sstLDAPAuthUserBind is set to TRUE, meaning, the users
-#  credentials are used. In some cases, it can make sense, that the Manager
-#  checks the credentials. In this case, sstLDAPAuthUserBind is set to FALSE
-#  and sstLDAPBindDn as well as sstLDAPBindPassword are both taken from the
-#  parent leaf.
+#  Normally, the sstLDAPAuthUserBind is set to TRUE, meaning, the users credentials are used. In
+#  some cases, it can make sense, that the Manager checks the credentials. In this case,
+#  sstLDAPAuthUserBind is set to FALSE and sstLDAPBindDn as well as sstLDAPBindPassword are both
+#  taken from the parent leaf.
 ################################################################################
 dn: ou=User Authentication,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
@@ -167,17 +166,17 @@ sstLDAPFilter: (&(objectClass=sstPerson)(uid=%s))
 sstLDAPReturnAttribute: sstGroupUID
 
 
-###################################################################################################
+################################################################################
 # ou=Group Search,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
-###################################################################################################
+################################################################################
 # Description:
 #  This entry describes the search for all existing groups in the foreign directory.
-###################################################################################################
+################################################################################
 # Example:
 #  ldapsearch -D "cn=Manager,dc=foss-cloud,dc=org" -w admin -H "ldap://10.1.130.14:389" 
 #  -b "ou=groups,dc=foss-cloud,dc=org"  "(&(objectClass=sstGroupObjectClass)(uid=*))" 
 #  sstGroupName uid
-###################################################################################################
+################################################################################
 dn: ou=Group Search,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -248,7 +247,7 @@ objectclass: sstServices
 sstService: glusterd
 description: The GlusterFS File service is used as the virtual machine storage.
 sstDisplayName: GlusterFS File Service
-#sstNetworkVirtualIPAdress: 10.1.130.87
+#sstNetworkVirtualIPAdress: 10.1.130.130
 #sstNetworkVirtualHostname: glusterfs
 
 # int: Internal network, used for internal traffic such as LDAP, libvirt and more. 
@@ -279,7 +278,7 @@ objectclass: sstServices
 sstService: slapd
 description: The OpenLDAP directory is used for the storage of all service related data.
 sstDisplayName: OpenLDAP Service
-#sstNetworkVirtualIPAdress: 10.1.120.87
+#sstNetworkVirtualIPAdress: 10.1.120.120
 #sstNetworkVirtualHostname: ldapm
 
 # pub: Public network, used for accessing the VM-Manager web interface, Spice traffic and internet access. 

@@ -26,20 +26,20 @@
 # 
 #
 #
-###################################################################################################
+################################################################################
 # /etc/openldap/data/12_vm-profiles_services_virtualization.ldif
-###################################################################################################
+################################################################################
 # Description:
 #  This LDIF defines the two default VM-Profiles (Linux and Windows).
-###################################################################################################
+################################################################################
 
-###################################################################################################
+################################################################################
 # ou=virtual machine profiles,ou=virtualization,ou=services,dc=foss-cloud,dc=org
-###################################################################################################
+################################################################################
 # Description:
 #  This subtree contains all the profiles to create virtual machine templates in the virtualization
 #  environment.
-###################################################################################################
+################################################################################
 dn: ou=virtual machine profiles,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -47,13 +47,13 @@ ou: virtual machine profiles
 description: This subtree contains all the profiles to create virtual machine templates in the virtualization environment.
 
 
-###################################################################################################
+################################################################################
 # ou=linux,ou=virtual machine profiles,ou=virtualization,ou=services,dc=foss-cloud,dc=org
-###################################################################################################
+################################################################################
 # Description:
 #  This subtree contains all the Linux related profiles to create virtual machine templates in
 #  the virtualization environment.
-###################################################################################################
+################################################################################
 dn: ou=linux,ou=virtual machine profiles,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -195,13 +195,13 @@ sstsourcebridge: vmbr0
 ssttype: bridge
 
 
-###################################################################################################
+################################################################################
 # ou=windows,ou=virtual machine profiles,ou=virtualization,ou=services,dc=foss-cloud,dc=org
-###################################################################################################
+################################################################################
 # Description:
 #  This subtree contains all the Windows related profiles to create virtual machine templates in
 #  the virtualization environment.
-###################################################################################################
+################################################################################
 dn: ou=windows,ou=virtual machine profiles,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit

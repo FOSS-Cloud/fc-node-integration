@@ -26,33 +26,33 @@
 # 
 #
 #
-###################################################################################################
+################################################################################
 # /etc/openldap/data/14_vm-pools_services_virtualization.template
-###################################################################################################
+################################################################################
 # Description:
 #   This file sets virtual machine-pools in dependancy of the default storage pools and the 
 #   primary master node.
-###################################################################################################
+################################################################################
 #  admin: Administrative network, used for administration and monitoring purposes. 
 #   <FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN> 
 #    For example: <FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>
 #   <FOSS-CLOUD-ADMIN-NETWORK-ADDRESS> 
-#    For example: 10.1.110.86            Admin segment IP 
+#    For example: 10.1.110.13            Admin segment IP 
 #   <FOSS-CLOUD-DATA-NETWORK-ADDRESS> 
-#    For example: 10.1.130.86            Data segment IP 
+#    For example: 10.1.120.13            Data segment IP 
 #   <FOSS-CLOUD-INT-NETWORK-ADDRESS>
-#    For example: 10.1.120.86            Int segment IP
+#    For example: 10.1.130.13            Int segment IP
 #   <FOSS-CLOUD-PUB-NETWORK-ADDRESS>
-#    For example: 192.168.140.5          Public segment IP
+#    For example: 192.168.140.13         Public segment IP
 #
-###################################################################################################
+################################################################################
 
-###################################################################################################
+################################################################################
 # ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
-###################################################################################################
+################################################################################
 # Description:
 #   This subtree contains the logical virtual machine pools for the virtualization environment.
-###################################################################################################
+################################################################################
 dn: ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -60,14 +60,14 @@ ou: virtual machine-pools
 description: This subtree contains the logical virtual machine pools for the virtualization environment.
 
 
-###################################################################################################
+################################################################################
 # sstVirtualMachinePool=40fac639-c69d-43b0-817c-dbbf3fd161fc,ou=virtual machine pools,
 # ou=virtualization,ou=services,dc=foss-cloud,dc=org
-###################################################################################################
+################################################################################
 # Description:
 #   This subtree contains the default vm-template virtual machine pool that is already set up when 
 #   the FOSS-Cloud is installed.
-###################################################################################################
+################################################################################
 dn: sstVirtualMachinePool=40fac639-c69d-43b0-817c-dbbf3fd161fc,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstVirtualMachines
@@ -147,14 +147,14 @@ sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
 
 
-###################################################################################################
+################################################################################
 # sstVirtualMachinePool=d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa,ou=virtual machine pools,
 # ou=virtualization,ou=services,dc=foss-cloud,dc=org
-###################################################################################################
+################################################################################
 # Description:
 #   This subtree contains the default static virtual machine pool that is already set up when 
 #   the FOSS-Cloud is installed.
-###################################################################################################
+################################################################################
 dn: sstVirtualMachinePool=d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstVirtualMachines
@@ -243,14 +243,14 @@ sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
 
 
-###################################################################################################
+################################################################################
 # sstVirtualMachinePool=dbd81080-d9f8-42e2-a261-d56b80c9c528,ou=virtual machine pools,
 # ou=virtualization,ou=services,dc=foss-cloud,dc=org
-###################################################################################################
+################################################################################
 # Description:
 #   This subtree contains the default dynamic virtual machine pool that is already set up when 
 #   the FOSS-Cloud is installed.
-###################################################################################################
+################################################################################
 dn: sstVirtualMachinePool=dbd81080-d9f8-42e2-a261-d56b80c9c528,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstVirtualMachines

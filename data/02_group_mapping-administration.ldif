@@ -1,16 +1,16 @@
-###################################################################################################
+################################################################################
 # ou=group mapping,ou=administration,dc=foss-cloud,dc=org
-###################################################################################################
+################################################################################
 # Description:
 #  Used for the group mapping from the given readable format to the local group UID format.
 #  For example: "Technology" to "4000014".
-###################################################################################################
+################################################################################
 # Example: 
 #  ldapsearch -D "cn=Manager,dc=foss-cloud,dc=org" -w admin -H "ldap://10.1.130.14:389" \ 
 #  -b "ou=groups,dc=foss-cloud,dc=org"  \
 #  "(&(objectClass=sstGroupObjectClass)(sstGroupName=Technology)(sstBelongsToResellerUID=4000000)(sstBelongsToCustomerUID=4000001))" \
 #  uid
-###################################################################################################
+################################################################################
 dn: ou=group mapping,ou=administration,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit

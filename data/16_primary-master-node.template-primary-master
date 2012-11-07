@@ -1,4 +1,4 @@
-# Copyright (C) 2011 FOSS-Group
+# Copyright (C) 2012 FOSS-Group
 #                    Germany
 #                    http://www.foss-group.de
 #                    support@foss-group.de
@@ -26,23 +26,23 @@
 # 
 #
 #
-###################################################################################################
+################################################################################
 ## /etc/openldap/data/16_primary-master-node.template
-####################################################################################################
+#################################################################################
 # Description:
 #  admin: Administrative network, used for administration and monitoring purposes. 
 #   <FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN> 
 #    For example: foss-cloud-node-01.example.com
 #   <FOSS-CLOUD-ADMIN-NETWORK-ADDRESS> 
-#    For example: 10.1.110.86            Admin segment IP 
+#    For example: 10.1.110.13            Admin segment IP 
 #   <FOSS-CLOUD-DATA-NETWORK-ADDRESS> 
-#    For example: 10.1.130.86            Data segment IP 
+#    For example: 10.1.120.13            Data segment IP 
 #   <FOSS-CLOUD-INT-NETWORK-ADDRESS>
-#    For example: 10.1.120.86            Int segment IP
+#    For example: 10.1.130.13            Int segment IP
 #   <FOSS-CLOUD-PUB-NETWORK-ADDRESS>
-#    For example: 192.168.140.5          Public segment IP
+#    For example: 192.168.140.13         Public segment IP
 #
-###################################################################################################
+################################################################################
 dn: sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 description: The node <FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>.
 labeleduri: ldap:///ou=virtual machines,ou=virtualization,ou=services,dc=foss-cloud,dc=org??sub?(sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>)

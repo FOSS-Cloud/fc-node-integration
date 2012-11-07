@@ -27,20 +27,20 @@
 # 
 #
 #
-###################################################################################################
+################################################################################
 # /etc/openldap/data/09_networks_services_virtualization.ldif
-###################################################################################################
+################################################################################
 # Description:
 #  This sub tree holds all the networks of the FOSS-Cloud and acts as the backend to the DHCP
 #  server.
-###################################################################################################
+################################################################################
 
-###################################################################################################
+################################################################################
 # ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
-###################################################################################################
+################################################################################
 # Description:
 #  This subtree contains the network pools for the virtualization environment.
-###################################################################################################
+################################################################################
 dn: ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -48,12 +48,12 @@ ou: networks
 description: This subtree contains the network pools for the virtualization environment.
 
 
-###################################################################################################
+################################################################################
 # ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
-###################################################################################################
+################################################################################
 # Description:
 #  The virtualization (virtual desktop and server infrastructure) subtree.
-###################################################################################################
+################################################################################
 dn: ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -72,12 +72,12 @@ cn: dhcp-01
 dhcpservicedn: cn=config-01,ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 
 
-###################################################################################################
+################################################################################
 # cn=<FOSS-CLOUD-PUB-SUBNETs-ADDRESS>,cn=config-01,ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
-###################################################################################################
+################################################################################
 # Description:
 #  The sub tree the first predefined network.
-###################################################################################################
+################################################################################
 dn: cn=<FOSS-CLOUD-PUB-SUBNET-ADDRESS>,cn=config-01,ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 cn: <FOSS-CLOUD-PUB-SUBNET-ADDRESS>
 description: This is the first network for which the DHCP server is responsible. All default DHCP options and statements are defined within this entry. It is set during the installation of the primary-master-node.
