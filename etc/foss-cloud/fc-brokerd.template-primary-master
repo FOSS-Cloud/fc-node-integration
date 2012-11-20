@@ -1,0 +1,8 @@
+[general]
+cycle = 30
+
+[ldap]
+uri = <FOSS-CLOUD-LDAP-VIP-URI>
+binddn = <FOSS-ClOUD-BINDDN>
+bindpwd = <FOSS-ClOUD-BINDPW>
+basedn = <FOSS-ClOUD-BASEDN>
