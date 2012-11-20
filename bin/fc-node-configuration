@@ -507,6 +507,9 @@ sub primaryMasterNode{
   # Configure the apache2 daemon
   configureApache2($localNetworkHash);
 
+  # Configure the fc-brockerd daemon
+  configureFcBrokerd($localNetworkHash,$unencrypted_password);
+
   # Start the dhcp daemon and add it to the default runlevel
   startDaemon("dhcpd");
   rcUpdate("dhcpd","default");
@@ -2140,6 +2143,28 @@ sub configureOpenLDAP {
       print "Cronjob for LDAP Backup created!\n";
   }
 
+  # Check it the .keep_net-nds_openldap-0 file already exists or not
+  unless ( -e "$directory_hdb_data/.keep_net-nds_openldap-0" )
+  {
+      # If not write the .keep_net-nds_openldap-0 file and set proper permission
+      system("touch $directory_hdb_data/.keep_net-nds_openldap-0");
+      setSingleFilePermissions("file",$uid_root,$gid_root,0644,"$directory_hdb_data/.keep_net-nds_openldap-0");
+  }
+
+  # Check if the version-tag file already exists
+  unless ( -e "$directory_hdb_data/.version-tag" )
+  {
+      # If not write the version tag file
+      open(VERSION,">$directory_hdb_data/.version-tag") || die ("Cannot open $directory_hdb_data/.version-tag for writing");
+      print VERSION "OLDPF='openldap-2.4.30\n".
+                    "# do NOT delete this. it is used\n".
+                    "# to track versions for upgrading.";
+      close VERSION;
+
+      # Set correct permission 
+      setSingleFilePermissions("file",$uid_root,$gid_root,0644,"$directory_hdb_data/.version-tag");
+  }
+
   print "\n";
 
   return $unencrypted_password;
@@ -2441,6 +2466,67 @@ sub configureApache2 {
 
 
 ################################################################################
+# configureFc-brockerd
+################################################################################
+# Description:
+#   Configures and starts the fc-brockerd.
+# Usage:
+#   configureFc-brockerd($configuration);
+################################################################################
+# Return Values:
+#   none
+################################################################################
+
+sub configureFcBrokerd {
+
+  my ($localNetworkHash, $openldap_bind_password)=@_;
+
+  # Configuring the apache2 daemon
+  header("Configuring the fc-brokerd daemon ...");
+
+  # Get the necessary variables
+  my $fc_brokerd_temlplate_file = $cfg->val($modus,"file_fc_brokerd_conf_template");
+  my $fc_brokerd_config_file = $cfg->val("General","file_fc_brokerd_conf");
+
+  # OpenLDAP runs on the int VLAN
+  my $localIntIP = $localNetworkHash->{"int"}->{"ip"};
+  my $openldap_port = $cfg->val("openLDAP","port");
+
+  # Get the bind- and basedn
+  my $openldap_binddn = $cfg->val("openLDAP","binddn");
+  my $openldap_basedn = $cfg->val("openLDAP","basedn");
+
+  # Working on the file /var/www/localhost/htdocs/phpldapadmin/config/config.php
+  print "\n";
+  print "Working on $fc_brokerd_temlplate_file ...\n";
+
+  # Generate the search and replace commands
+  my @sar_commands = (
+                      {search => "<FOSS-CLOUD-LDAP-VIP-URI>", replace => "ldap://".$localIntIP.":".$openldap_port},
+                      {search => "<FOSS-ClOUD-BINDDN>", replace => $openldap_binddn},
+                      {search => "<FOSS-ClOUD-BINDPW>", replace => $openldap_bind_password},
+                      {search => "<FOSS-ClOUD-BASEDN", replace => $openldap_basedn}
+                     );
+
+  # Execute the command
+  searchAndReplace ( $fc_brokerd_temlplate_file,
+                     $fc_brokerd_config_file,
+                     @sar_commands
+                   );
+
+  # Get the roots group and user id
+  my $uid_root = $cfg->val("General","uid_root"); 
+  my $gid_root = $cfg->val("General","gid_fc-broker"); 
+
+  # Change the permission for the config file
+  setSingleFilePermissions("file",$uid_root,$gid_root,0640,$fc_brokerd_config_file);
+
+  # Start the daemon and add it to de default runlevel
+  startDaemon("fc-brokerd");
+  rcUpdate("fc-brokerd","default");
+}
+
+################################################################################
 # configureIPtables
 ################################################################################
 # Description:
@@ -2657,8 +2743,11 @@ sub askForOpenLDAPManagerPassword {
   my $unencrypted_password;
   my $errorCode;
 
+  # Get the binddn
+  my $openldap_binddn = $cfg->val("openLDAP","binddn");
+
   # Ask the user for the OpenLDAP Manager password
-  print "Please enter the password for cn=Manager,dc=foss-cloud,dc=org: ";
+  print "Please enter the password for $openldap_binddn: ";
 
   # Disable the echo on the terminal, so no one can see your top secret password
   system('stty','-echo');
