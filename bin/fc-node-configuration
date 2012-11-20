@@ -167,7 +167,9 @@ Incorporated code with use:
 ######################################################################################################
 my $location=dirname(abs_path($0));
 
-my $cfg = Config::IniFiles->new( -file => "$location/../../etc/foss-cloud/node-configuration.conf");
+my $config_file_path = "$location/../etc/foss-cloud";
+
+my $cfg = Config::IniFiles->new( -file => "$config_file_path/node-configuration.conf");
 
 ######################################################################################################
 # Process the single character or long command line arguments.
@@ -191,6 +193,8 @@ my $dryrun = 0;     # Dry-Run modus: 0: off, 1: on
 my $password = "";
 
 my $modus = "";
+
+my $helper_scripts_path = $location;
 
 ######################################################################################################
 # Constant definitions
@@ -694,7 +698,7 @@ sub checkLocalNetwork {
 
   # Execute the node-configuration-check script and check the return value 
   # and catch the output. 
-  my $output = `/usr/libexec/foss-cloud/node-integration-check --module network`;
+  my $output = `$helper_scripts_path/node-integration-check --module network`;
   my $errorCode = $? >> 8;
 
   # check the exit code of the node-configuration-check. If it is different to
@@ -757,7 +761,7 @@ sub checkRemoteNetwork {
   my $hash;
   my $strict_host_key_check;
   
-  my $cmd = "/usr/libexec/foss-cloud/node-integration-check --module network";
+  my $cmd = "$helper_scripts_path/node-integration-check --module network";
 
   # Check if the known_hosts file exists or not
   if ( -e "~/.ssh/known_hosts" ) {
