@@ -504,15 +504,15 @@ sub primaryMasterNode{
   # Configure DHCP
   configureDHCP($localNetworkHash);
 
+  # Start the dhcp daemon and add it to the default runlevel
+  startDaemon("dhcpd");
+  rcUpdate("dhcpd","default");
+
   # Configure the apache2 daemon
   configureApache2($localNetworkHash);
 
   # Configure the fc-brockerd daemon
   configureFcBrokerd($localNetworkHash,$unencrypted_password);
-
-  # Start the dhcp daemon and add it to the default runlevel
-  startDaemon("dhcpd");
-  rcUpdate("dhcpd","default");
 
   # Tell the administrator, that the installation and configuration of this node is complete.
   print "\nCongratulations, you have finished the installation and configuration of this Node!\n\n"
@@ -663,6 +663,9 @@ sub demoSystem{
 
   # Configure the iptables
   configureIPtables($cfg);
+
+  # Configure the fc-brockerd daemon
+  configureFcBrokerd($localNetworkHash,$unencrypted_password);
 
   # Start and add the PowerDNS recursor to the default runlevel
   startDaemon("precursor");
@@ -1151,7 +1154,7 @@ sub startDaemon {
   print "\nStarting the daemon $daemon ...\n";
 
   # Check, if the daemon isn't already running in the desired runlevel.
-  $output = `/etc/init.d/$daemon status`;
+  $output = `/etc/init.d/$daemon status  2>&1`;
 
   if ($output =~ "started") {
     print "The daemon $daemon is already running, restarting...\n";
@@ -1161,7 +1164,7 @@ sub startDaemon {
   } else {
 
     # Test if the daemon crashed
-    if ( $output =~ "crashed" ){
+    if ( $output =~ "crashed"){
         
         # If yes first zap it
         if ( !$dryrun ) {
@@ -2203,7 +2206,7 @@ sub configureDHCP {
     my $file_dhcp_conf_template = $cfg->val($modus,"file_dhcp_conf_template");
     my $file_dhcp_conf = $cfg->val($modus,"file_dhcp_conf");
 
-    # Configuring the VM-Manager
+    # Configuring the DHCP Daemon
     header("Configuring the DHCP Daemon ...");
     
     # Working on the file /var/www/localhost/htdocs/vm-manager/vm_config.php ...
@@ -2405,6 +2408,7 @@ sub configureApache2 {
   my $localPubDomain =  $localNetworkHash->{"pub"}->{"domain"};
 
   # Configuring the apache2 daemon
+  print "\n";
   header("Configuring the apache2 daemon ...");
 
   # Make sure, that the web server daemon apache2 is not running
@@ -2494,7 +2498,8 @@ sub configureFcBrokerd {
 
   my ($localNetworkHash, $openldap_bind_password)=@_;
 
-  # Configuring the apache2 daemon
+  # Configuring the fc-brokerd daemon
+  print "\n";
   header("Configuring the fc-brokerd daemon ...");
 
   # Get the necessary variables
