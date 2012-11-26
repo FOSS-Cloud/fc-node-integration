@@ -1159,6 +1159,19 @@ sub startDaemon {
     restartDaemon($daemon);
 
   } else {
+
+    # Test if the daemon crashed
+    if ( $output =~ "crashed" ){
+        
+        # If yes first zap it
+        if ( !$dryrun ) {
+            print "Executing: /etc/init.d/$daemon zap...\n";
+            system("/etc/init.d/$daemon zap");
+        } else {
+             print "--dry-run: /etc/init.d/$daemon zap\n";
+        }
+    }
+
     if (!$dryrun) {
       print "Executing: /etc/init.d/$daemon start...\n";
       system("/etc/init.d/$daemon start");
