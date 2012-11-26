@@ -26,9 +26,9 @@
 # 
 #
 #
-################################################################################
+#####################################################################################################################
 # /etc/openldap/data/08_configuration_services_virtualization.template-primary-master
-################################################################################
+#####################################################################################################################
 # Description:
 #  admin: Administrative network, used for administration and monitoring purposes. 
 #   <FOSS-CLOUD-ADMIN-NETWORK-ADDRESS>/<FOSS-CLOUD-ADMIN-NETMASK>
@@ -74,37 +74,89 @@
 #   <FOSS-CLOUD-PUB-BROADCAST>
 #    For example: 192.168.140.255   	Broadcast
 #   <FOSS-CLOUD-PUB-VLAN-ID>
-#    For example: 140            	    VLAN ID
+#    For example: 140            	VLAN ID
 #   <FOSS-CLOUD-PUB-DOMAIN>
 #    For example: example.com           Domain    
-################################################################################
+#####################################################################################################################
 
-# The sub tree ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org contains the 
-# configuration information of the FOSS-Cloud (since version 0.8.0). 
+#####################################################################################################################
+# ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+#####################################################################################################################
+# Description
+#  This entry contains the configuration information of the FOSS-Cloud (since version 0.8.0).
+#####################################################################################################################
 dn: ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
 ou: configuration
 description: This sub tree contains the configuration information of the FOSS-Cloud.
 
-# The sub tree ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org contains the internal ldap searches configuration of the FOSS-Cloud.
+#####################################################################################################################
+# ou=backup,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+#####################################################################################################################
+# Description
+#  This entry contains the default backup plan of the FOSS-Cloud (since version 1.2.0).
+#####################################################################################################################
+# Additional information
+#  The following backup configuration says, that the backup should be done daily, at 03:00 hours (localtime).
+#  *     *     *   *    *        command to be executed
+#  -     -     -   -    -
+#  |     |     |   |    |
+#  |     |     |   |    +----- day of week (0 - 6) (Sunday=0)
+#  |     |     |   +------- month (1 - 12)
+#  |     |     +--------- day of        month (1 - 31)
+#  |     +----------- hour (0 - 23)
+#  +------------- min (0 - 59)
+#  localtime in the crontab entry
+#####################################################################################################################
+dn: ou=backup,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstVirtualizationBackupObjectClass
+objectclass: sstCronObjectClass
+ou: backup
+description: This sub tree contains the default backup plan of the FOSS-Cloud.
+sstCronMinute: 0
+sstCronHour: 3
+sstCronDay: *
+sstCronMonth: *
+sstCronDayOfWeek: *
+sstCronActive: TRUE
+sstBackupRootDirectory: file:///var/backup/virtualization
+sstBackupRetainDirectory: file:///var/virtualization/retain
+sstVirtualizationDiskImageFormat: qcow2
+sstVirtualizationDiskImageOwner: root
+sstVirtualizationDiskImageGroup: vm-storage
+sstVirtualizationDiskImagePermission: 660
+sstBackupNumberOfIterations: 1
+sstVirtualizationVirtualMachineForceStart: FALSE
+sstVirtualizationBandwidthMerge: 0
+
+
+#####################################################################################################################
+# ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+#####################################################################################################################
+# Description
+#  This entry contains the internal ldap searches configuration of the FOSS-Cloud.
+#####################################################################################################################
 dn: ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
 ou: internal searches
 description: This sub tree contains the internal ldap searches configuration of the FOSS-Cloud.
 
-##################################################################################################
+
+#####################################################################################################################
 # ou=User Search,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
-################################################################################
+#####################################################################################################################
 # Description:
 #  This entry is used to check, if the user trying to log into the system, actually exists in the
 #  directory.
-################################################################################
+#####################################################################################################################
 # Example: 
 #  ldapsearch -D "cn=Manager,dc=foss-cloud,dc=org" -w admin -H "ldap://10.1.130.14:389" \
 #  -b "ou=people,dc=foss-cloud,dc=org"  "(&(objectClass=sstPerson)(cn=eichi))" uid
-################################################################################
+#####################################################################################################################
 dn: ou=User Search,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -118,18 +170,18 @@ sstLDAPFilter: (&(objectClass=sstPerson)(cn=%s)(!(sstLDAPForeignStaticAttribute=
 sstLDAPForeignStaticAttribute: uid
 
 
-################################################################################
+#####################################################################################################################
 #  ou=User Authentication,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
-################################################################################
+#####################################################################################################################
 # Description:
 #  Check the given username and password combination.
-################################################################################
+#####################################################################################################################
 # Attention: 
 #  Normally, the sstLDAPAuthUserBind is set to TRUE, meaning, the users credentials are used. In
 #  some cases, it can make sense, that the Manager checks the credentials. In this case,
 #  sstLDAPAuthUserBind is set to FALSE and sstLDAPBindDn as well as sstLDAPBindPassword are both
 #  taken from the parent leaf.
-################################################################################
+#####################################################################################################################
 dn: ou=User Authentication,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -143,16 +195,16 @@ sstLDAPAuthUserBindDn: uid=%s,ou=people,dc=foss-cloud,dc=org
 sstLDAPAuthUserPasswordAttribute: userPassword
 
 
-################################################################################
+#####################################################################################################################
 # ou=User Group Search,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
-################################################################################
+#####################################################################################################################
 # Description:
 #  This entry describes, how to look for the groups the user belongs to.
-################################################################################
+#####################################################################################################################
 # Example: 
 #  ldapsearch -D "cn=Manager,dc=foss-cloud,dc=org" -w admin -H "ldap://10.1.130.14:389" \
 #  -b "ou=people,dc=foss-cloud,dc=org"  "(&(objectClass=sstPerson)(uid=4000003))" sstGroupUID
-################################################################################
+#####################################################################################################################
 dn: ou=User Group Search,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -166,17 +218,17 @@ sstLDAPFilter: (&(objectClass=sstPerson)(uid=%s))
 sstLDAPReturnAttribute: sstGroupUID
 
 
-################################################################################
+#####################################################################################################################
 # ou=Group Search,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
-################################################################################
+#####################################################################################################################
 # Description:
 #  This entry describes the search for all existing groups in the foreign directory.
-################################################################################
+#####################################################################################################################
 # Example:
 #  ldapsearch -D "cn=Manager,dc=foss-cloud,dc=org" -w admin -H "ldap://10.1.130.14:389" 
 #  -b "ou=groups,dc=foss-cloud,dc=org"  "(&(objectClass=sstGroupObjectClass)(uid=*))" 
 #  sstGroupName uid
-################################################################################
+#####################################################################################################################
 dn: ou=Group Search,ou=internal searches,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -191,7 +243,12 @@ sstLDAPForeignGroupDisplayName: sstGroupName
 sstLDAPForeignStaticAttribute: uid
 
 
-# The sub tree ou=networks,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org contains the networks configuration information of the FOSS-Cloud (since version 0.8.0). 
+#####################################################################################################################
+# ou=networks,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+#####################################################################################################################
+# Description
+#  This entry contains the networks configuration information of the FOSS-Cloud (since version 0.8.0).
+#####################################################################################################################
 dn: ou=networks,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -321,7 +378,13 @@ description: The QEMU (spice) service is used for the interaction with virtualiz
 sstNetworkVirtualHostname: vm-manager
 sstDisplayName: QEMU (spice) Service 
 
-# The sub tree ou=node-types,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org contains the services configuration information of the FOSS-Cloud (since version 0.8.0). 
+
+#####################################################################################################################
+# ou=node-types,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+#####################################################################################################################
+# Description
+#  This entry contains the services configuration information of the FOSS-Cloud (since version 0.8.0).
+#####################################################################################################################
 dn: ou=node-types,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -397,7 +460,73 @@ sstService: glusterd
 description: The Storage-Node is used to store all the images (VM-Profiles, VM-Templates and VMs).
 sstDisplayName: Storage-Node
 
-# The sub tree ou=storage pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org contains the storage pools configuration information of the FOSS-Cloud (since version 1.0.0).
+
+#####################################################################################################################
+# ou=settings,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+#####################################################################################################################
+# Description
+#  This entry contains some default settings for the whole FOSS-Cloud (since version 1.2.0).
+#####################################################################################################################
+dn: ou=settings,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: settings
+description: This sub tree contains some default settings for the whole FOSS-Cloud.
+
+# This is where the global RDP related settings for the FOSS-Cloud environment are stored.
+dn: ou=rdp,ou=settings,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstVirtualizationSettingsObjectClass
+ou: rdp
+description: This sub tree contains the RDP related default settings for the whole FOSS-Cloud.
+sstAllowRDP: FALSE
+
+# This is where the global Sound related settings for the FOSS-Cloud environment are stored.
+dn: ou=sound,ou=settings,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstVirtualizationSettingsObjectClass
+ou: sound
+description: This sub tree contains the Sound related default settings of the FOSS-Cloud.
+sstAllowSound: TRUE
+
+# This is where the global Spice related settings for the FOSS-Cloud environment are stored.
+dn: ou=spice,ou=settings,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstVirtualizationSettingsObjectClass
+ou: spice
+description: This sub tree contains the Spice related default settings of the FOSS-Cloud.
+sstAllowSpice: TRUE
+sstSpicePortMin: 5900
+sstSpicePortMax: 5999
+
+# This is where the global USB related settings for the FOSS-Cloud environment are stored.
+dn: ou=usb,ou=settings,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstVirtualizationSettingsObjectClass
+ou: usb
+description: This sub tree contains the USB related default settings of the FOSS-Cloud.
+sstAllowUSB: FALSE
+
+# This is where the global VNC related settings for the FOSS-Cloud environment are stored.
+dn: ou=vnc,ou=settings,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstVirtualizationSettingsObjectClass
+ou: vnc
+description: This sub tree contains the VNC related default settings of the FOSS-Cloud.
+sstAllowVNC: FALSE
+
+
+#####################################################################################################################
+# ou=storage pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+#####################################################################################################################
+# Description
+#  This entry contains the storage pools configuration information of the FOSS-Cloud (since version 1.0.0).
+#####################################################################################################################
 dn: ou=storage pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -464,7 +593,13 @@ sstStoragePoolURI: file:///var/virtualization/vm-templates/
 sstStoragePoolType: template
 sstSelfService: TRUE
 
-# This is where the automatically created FOSS-Cloud ID is stored.
+
+#####################################################################################################################
+# ou=version,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+#####################################################################################################################
+# Description
+#  This is where the automatically created FOSS-Cloud ID is stored.
+#####################################################################################################################
 dn: ou=version,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -472,7 +607,13 @@ objectclass: sstFOSSCloudVersionObjectClass
 ou: version
 sstFOSSCloudID: <FOSS-CLOUD-ID>
 
-# Contains the virtual machine pools configuration information.
+
+#####################################################################################################################
+# ou=virtual machine pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+#####################################################################################################################
+# Description
+#  Contains the virtual machine pools configuration information.
+#####################################################################################################################
 dn: ou=virtual machine pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
