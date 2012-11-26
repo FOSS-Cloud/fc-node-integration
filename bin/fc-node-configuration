@@ -195,6 +195,7 @@ my $password = "";
 my $modus = "";
 
 my $helper_scripts_path = $location;
+my $remote_helper_scripts_path = $cfg->val("General","remote_helper_script_location");
 
 ######################################################################################################
 # Constant definitions
@@ -767,7 +768,7 @@ sub checkRemoteNetwork {
   my $hash;
   my $strict_host_key_check;
   
-  my $cmd = "$helper_scripts_path/node-integration-check --module network";
+  my $cmd = "$remote_helper_scripts_path/node-integration-check --module network";
 
   # Check if the known_hosts file exists or not
   if ( -e "~/.ssh/known_hosts" ) {
