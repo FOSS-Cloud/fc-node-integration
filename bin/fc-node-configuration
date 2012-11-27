@@ -191,7 +191,8 @@ my $debug = 0;      # Debug modus: 0: off, 1: on
 my $dryrun = 0;     # Dry-Run modus: 0: off, 1: on
 
 my $password = "";
-
+my $prov_backup_kvm_password = "";
+my $prov_backup_kvm_unencrypted_password = "";
 my $modus = "";
 
 my $helper_scripts_path = $location;
@@ -1448,6 +1449,7 @@ sub configureOpenLDAP {
   my $file_00_directory                              = $directory_data."/00_directory-init.ldif";
   my $file_01_administration_nextfreeuid             = $directory_data."/01_nextfreeuid-administration.ldif";
   my $file_02_group_mapping_administration           = $directory_data."/02_group_mapping-administration.ldif";
+  my $file_02_administration_services_template       = $directory_data."/02_services-administration.template-$local_modus";
   my $file_02_administration_services                = $directory_data."/02_services-administration.ldif";
   my $file_03_reseller                               = $directory_data."/03_reseller.ldif";
   my $file_04_customers                              = $directory_data."/04_customers.ldif";
@@ -1574,10 +1576,13 @@ sub configureOpenLDAP {
       # If the password was passed, i.e. specified in command line args we don't
       # need to ask the user, just create a crypted one. But if the password was not
       # specified in command line args, ask the user to enter a password
+
+      my $openldap_binddn = $cfg->val("openLDAP","binddn");
+
       unless ( defined($password) && $password ne "" )
       {
           # Ask the user for the Manager password
-          ($password,$unencrypted_password) = askForOpenLDAPManagerPassword();
+          ($password,$unencrypted_password) = askForOpenLDAPPassword($openldap_binddn);
       } else
       {
           # Create a crypted version of the password specified in command line args
@@ -1642,6 +1647,27 @@ sub configureOpenLDAP {
   } #   if ( $local_modus eq "primary-master" )
   #  End of working on the file /etc/openldap/slapd.conf
 
+
+  if ( ( $local_modus eq "primary-master" ) || ( $local_modus eq "vm-node" ) )
+  {
+      # If the password was passed, i.e. specified in command line args we don't
+      # need to ask the user, just create a crypted one. But if the password was not
+      # specified in command line args, ask the user to enter a password
+      print "\n";
+
+      # TODO: set the binddn in the configuration or template file
+      # TODO: write the provisioning backup kvm configuration file
+      my $openldap_binddn = "cn=prov-backup-kvm,ou=services,ou=administration,dc=foss-cloud,dc=org";
+
+      unless ( defined($prov_backup_kvm_password) && $prov_backup_kvm_password ne "" )
+      {
+          # Ask the user for the Manager password
+          ($prov_backup_kvm_password,$prov_backup_kvm_unencrypted_password) = askForOpenLDAPPassword($openldap_binddn);
+      } else
+      {
+        # Error ...
+      }
+  } # End of if ( ( $local_modus eq "primary-master" ) || ( $local_modus eq "vm-node" ) )
 
   ##############################################################################
   ### Working on the file /etc/conf.d/slapd if needed by $modus
@@ -1723,13 +1749,10 @@ sub configureOpenLDAP {
   ### Worked on files needed by $modus
   ##############################################################################
 
-  # AEIO: Ask eichi if ok
-
   # Test if all files are readable
   unless ( -r $file_00_directory ||
            -r $file_01_administration_nextfreeuid ||
            -r $file_02_group_mapping_administration ||
-           -r $file_02_administration_services ||
            -r $file_03_reseller ||
            -r $file_04_customers ||
            -r $file_05_people ||
@@ -1745,7 +1768,49 @@ sub configureOpenLDAP {
   loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_00_directory);
   loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_01_administration_nextfreeuid);
   loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_02_group_mapping_administration);
-  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_02_administration_services);
+
+  ##############################################################################
+  # Working on /etc/openldap/data/07_services-administration.ldif
+  # if needed by $modus
+  ##############################################################################
+
+  if ( ( $local_modus eq "primary-master" ) || ( $local_modus eq "vm-node" ) )
+  {
+
+      # Configuring /etc/openldap/data/02_services-administration.ldif
+      print "\n";
+      print "Working on $file_02_administration_services ...\n";
+
+      # Replace:
+      # labeledURI: <FOSS-CLOUD-LABELED-URI>
+      # With:
+      # labeledURI: ldap://192.0.2.87:389
+
+      # Replace:
+      # sstLDAPBindPassword: <FOSS-CLOUD-MANAGER-PASSWORD>
+      # With:
+      # sstLDAPBindPassword: admin
+
+      # Create the search_and_replace commands to replace the LDIF template with
+      # the correct values
+      @sar_commands = ( {search => "<FOSS-CLOUD-PROV-BACKUP-KVM-PASSWORD>", replace => $prov_backup_kvm_password},
+                        {search => "<FOSS-CLOUD-DHCP-PASSWORD>", replace => "{SSHA}pJpqL95nlFi78rnAstmn6VvZCXWTjVHZ"},
+                      );
+
+      # Replace the template with the correct values which are specified in the
+      # @sar_commands array
+      searchAndReplace( $file_02_administration_services_template,
+                        $file_02_administration_services,
+                        @sar_commands
+                       );
+
+      print "\n";
+
+      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_02_administration_services);
+
+  } # End of if ( ( $local_modus eq "primary-master" ) || ( $local_modus eq "vm-node" ) )
+  # Worked on /etc/openldap/data/02_services-administration.ldif
+
   loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_03_reseller);
   loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_04_customers);
   loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_05_people);
@@ -2747,13 +2812,13 @@ sub setMultipleFilePermissions {
 
 
 ######################################################################################################
-# askForOpenLDAPManagerPassword
+# askForOpenLDAPPassword
 ######################################################################################################
 # Description: 
 #   Asks the user for the OpenLDAP Manager password
 ######################################################################################################
 # Usage:
-#   ($password,$unencrypted_password) = askForOpenLDAPManagerPassword();
+#   ($password,$unencrypted_password) = askForOpenLDAPPassword($openldap_binddn);
 ######################################################################################################
 # Return Values:
 #   $passwd :               The OpenLDAP Manager password as a {SSHA} encrypted string.
@@ -2761,14 +2826,14 @@ sub setMultipleFilePermissions {
 #                           For example: {SSHA}sXhbUawnUmzfn7sWEKqj9uMh2G6qvO+P
 #   $unencrypted_password : The same password, unencrypted, for example secret
 ######################################################################################################
-sub askForOpenLDAPManagerPassword {
+sub askForOpenLDAPPassword {
+
+  # Set the binddn
+  my $openldap_binddn = shift;
 
   my $password;
   my $unencrypted_password;
   my $errorCode;
-
-  # Get the binddn
-  my $openldap_binddn = $cfg->val("openLDAP","binddn");
 
   # Create two different passwords to be able to check whether the entered
   # password is equal
@@ -2804,6 +2869,7 @@ sub askForOpenLDAPManagerPassword {
   }
 
   # At this point the passwords the user entered are the same:-)
+  print "\n\n";
   $unencrypted_password = $pass1;
 
   $password = `/usr/sbin/slappasswd -s '$unencrypted_password'`;
@@ -2818,7 +2884,7 @@ sub askForOpenLDAPManagerPassword {
   # Return the OpenLDAP Manager password
   return ($password,$unencrypted_password);;
 
-} # End of sub askForOpenLDAPManagerPassword
+} # End of sub askForOpenLDAPPassword
 
 
 ######################################################################################################

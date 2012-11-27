@@ -35,18 +35,17 @@
 
 #  slappasswd -s 'rJRp6A97GAtKAZXg'
 dn: cn=dhcp,ou=services,ou=administration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalPerson
+objectclass: inetOrgPerson
 cn: dhcp
-objectclass: top
-objectclass: organizationalPerson
-objectclass: inetOrgPerson
 sn: dhcp
-userPassword: {SSHA}pJpqL95nlFi78rnAstmn6VvZCXWTjVHZ
+userPassword: <FOSS-CLOUD-DHCP-PASSWORD>
 
-# slappasswd -s 'TheF1nalCountdown!'
-dn: cn=spice,ou=services,ou=administration,dc=foss-cloud,dc=org
-cn: spice
+dn: cn=prov-backup-kvm,ou=services,ou=administration,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalPerson
 objectclass: inetOrgPerson
-sn: spice
-userPassword: {SSHA}W1ow/3J6JA8w6N+iJ7bfe7n4ucRwRJEE
+cn: prov-backup-kvm
+sn: prov-backup-kvm
+userPassword: <FOSS-CLOUD-PROV-BACKUP-KVM-PASSWORD>
