@@ -494,7 +494,7 @@ sub primaryMasterNode{
   configureLibvirt($localNetworkHash);
 
   # Configure the slapd daemon
-  my $unencrypted_password = configureOpenLDAP($localNetworkHash);
+  my $unencrypted_password = configureOpenLDAP($localNetworkHash,$password);
 
   # Configure the VM-Manger
   configureVMManager($localNetworkHash,$unencrypted_password);
@@ -1574,7 +1574,7 @@ sub configureOpenLDAP {
       # If the password was passed, i.e. specified in command line args we don't
       # need to ask the user, just create a crypted one. But if the password was not
       # specified in command line args, ask the user to enter a password
-      unless ( defined($password) )
+      unless ( defined($password) && $password ne "" )
       {
           # Ask the user for the Manager password
           ($password,$unencrypted_password) = askForOpenLDAPManagerPassword();
@@ -1833,7 +1833,9 @@ sub configureOpenLDAP {
       foreach $line (@output){
         if($line =~ m/^server\s+/){
           $match=$';
-          $match=~s/\n//g;
+          # Get everything before the next space/tab
+          $match=~m/\s+/;
+          $match = $`;
           push(@ntp_hosts,$match);
         }
       }
@@ -2150,8 +2152,10 @@ sub configureOpenLDAP {
   } else
   {
       # Write the string to the file and close the file
+      print CRON "# MIN HOUR DAY MONTH DAYOFWEEK\n";
+      print CRON "# * * * * *\n";
       print CRON "# Cronjob for the LDAP backup\n";
-      print CRON $cronjob_string;
+      print CRON $cronjob_string."\n";
       close CRON;
 
       # Set the correct permission to the file
@@ -2758,6 +2762,7 @@ sub setMultipleFilePermissions {
 #   $unencrypted_password : The same password, unencrypted, for example secret
 ######################################################################################################
 sub askForOpenLDAPManagerPassword {
+
   my $password;
   my $unencrypted_password;
   my $errorCode;
@@ -2765,16 +2770,41 @@ sub askForOpenLDAPManagerPassword {
   # Get the binddn
   my $openldap_binddn = $cfg->val("openLDAP","binddn");
 
-  # Ask the user for the OpenLDAP Manager password
-  print "Please enter the password for $openldap_binddn: ";
+  # Create two different passwords to be able to check whether the entered
+  # password is equal
+  my $pass1 = "a";
+  my $pass2 = "b";
 
-  # Disable the echo on the terminal, so no one can see your top secret password
-  system('stty','-echo');
-  chomp($unencrypted_password = <STDIN>);
+  while ( $pass1 ne $pass2 )
+  {
 
-  # Enable the echo on the terminal for all following output 
-  system('stty','echo');
-  print "\n";
+      # Ask the user for the OpenLDAP Manager password
+      print "Please enter the password for $openldap_binddn: ";
+
+      # Disable the echo on the terminal, so no one can see your top secret password
+      system('stty','-echo');
+      chomp($pass1 = <STDIN>);
+
+      # Enable the echo on the terminal for the following output 
+      system('stty','echo');
+      print "\nPlease enter the same password again: ";
+
+      # Disable the echo on the terminal, so no one can see your top secret password
+      system('stty','-echo');
+      chomp($pass2 = <STDIN>);
+
+      # Enable the echo on the terminal for the following output 
+      system('stty','echo');
+
+      # Test if the passwords are the same, if not tell the user to try again
+      if ( $pass1 ne $pass2 )
+      {
+          print "\nPasswords do not match, please try again.\n\n";
+      }
+  }
+
+  # At this point the passwords the user entered are the same:-)
+  $unencrypted_password = $pass1;
 
   $password = `/usr/sbin/slappasswd -s '$unencrypted_password'`;
   $errorCode = $? >> 8;
