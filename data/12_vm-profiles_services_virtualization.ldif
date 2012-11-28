@@ -128,7 +128,7 @@ sstonrebootdefault: restart
 sstonrebootvalues: restart
 sstosarchitecture: TBD_GUI
 sstosbootdevice: cdrom
-sstosmachine: pc-1.0
+sstosmachine: pc-1.2
 sstostype: hvm
 sststatus: TBD_SYSTEM
 ssttype: kvm
@@ -276,7 +276,7 @@ sstonrebootdefault: restart
 sstonrebootvalues: restart
 sstosarchitecture: TBD_GUI
 sstosbootdevice: cdrom
-sstosmachine: pc-1.0
+sstosmachine: pc-1.2
 sstostype: hvm
 sststatus: TBD_SYSTEM
 ssttype: kvm
