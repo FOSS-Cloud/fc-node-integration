@@ -128,6 +128,9 @@ sstVirtualizationDiskImageFormat: qcow2
 sstVirtualizationDiskImageOwner: root
 sstVirtualizationDiskImageGroup: vm-storage
 sstVirtualizationDiskImagePermission: 660
+sstVirtualizationDiskImageDirectoryOwner: root
+sstVirtualizationDiskImageDirectoryGroup: vm-storage
+sstVirtualizationDiskImageDirectoryPermission: 770
 sstBackupNumberOfIterations: 1
 sstVirtualizationVirtualMachineForceStart: FALSE
 sstVirtualizationBandwidthMerge: 0
