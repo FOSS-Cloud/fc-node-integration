@@ -2593,7 +2593,7 @@ sub configureFcBrokerd {
                       {search => "<FOSS-CLOUD-LDAP-VIP-URI>", replace => "ldap://".$localIntIP.":".$openldap_port},
                       {search => "<FOSS-ClOUD-BINDDN>", replace => $openldap_binddn},
                       {search => "<FOSS-ClOUD-BINDPW>", replace => $openldap_bind_password},
-                      {search => "<FOSS-ClOUD-BASEDN", replace => $openldap_basedn}
+                      {search => "<FOSS-ClOUD-BASEDN>", replace => $openldap_basedn}
                      );
 
   # Execute the command
