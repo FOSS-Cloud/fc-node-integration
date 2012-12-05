@@ -1465,7 +1465,6 @@ sub configureOpenLDAP {
   my $file_10_nodes_services_virtualization          = $directory_data."/10_nodes_services_virtualization.ldif";
   my $file_11_storage_services_virtualization        = $directory_data."/11_storage_services_virtualization.ldif";
   my $file_12_vm_profiles_services_virtualization    = $directory_data."/12_vm-profiles_services_virtualization.ldif";
-  my $file_13_vm_templates_services_virtualization   = $directory_data."/13_vm-templates_services_virtualization.ldif";
   my $file_14_vm_pools_services_virtualization       = $directory_data."/14_vm-pools_services_virtualization.ldif";
   my $file_14_vm_pools_services_virtualization_template  = $directory_data."/14_vm-pools_services_virtualization.template-$local_modus";
   my $file_15_vms_services_virtualization            = $directory_data."/15_vms_services_virtualization.ldif";
@@ -2062,14 +2061,12 @@ sub configureOpenLDAP {
   # Load the ldifs into the LDAP to be able to continue
   if ( -r $file_10_nodes_services_virtualization &&
        -r $file_11_storage_services_virtualization &&
-       -r $file_12_vm_profiles_services_virtualization &&
-       -r $file_13_vm_templates_services_virtualization
+       -r $file_12_vm_profiles_services_virtualization
      )
   {
       loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_10_nodes_services_virtualization);
       loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_11_storage_services_virtualization);
       loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_12_vm_profiles_services_virtualization);
-      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_13_vm_templates_services_virtualization);
       
   } else
   {
