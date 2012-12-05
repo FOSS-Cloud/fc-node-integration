@@ -1761,7 +1761,7 @@ sub configureOpenLDAP {
            -r $file_06_services_virtualization
          )
   {
-      returnError(ERROR_MISSING_FILE_CODE,ERROR_MISSING_FILE_STRING);
+      returnError(ERROR_MISSING_FILE_CODE,ERROR_MISSING_FILE_STRING, "At least one of the LDIF files is not readable.");
   }
 
 
@@ -2072,7 +2072,7 @@ sub configureOpenLDAP {
       
   } else
   {
-      returnError(ERROR_MISSING_FILE_CODE,ERROR_MISSING_FILE_STRING);
+      returnError(ERROR_MISSING_FILE_CODE,ERROR_MISSING_FILE_STRING, "One of the files $file_10_nodes_services_virtualization, $file_11_storage_services_virtualization or $file_12_vm_profiles_services_virtualization is not readable.");
   }
 
 
