@@ -516,6 +516,8 @@ sub primaryMasterNode{
   # Configure the fc-brockerd daemon
   configureFcBrokerd($localNetworkHash,$unencrypted_password);
 
+  configureProvBackupKVM($localNetworkHash, $prov_backup_kvm_unencrypted_password);
+
   # Tell the administrator, that the installation and configuration of this node is complete.
   print "\nCongratulations, you have finished the installation and configuration of this Node!\n\n"
 
@@ -594,6 +596,8 @@ sub vmNode{
   # Start the ksmtuned daemon and add it to the default runlevel
   startDaemon("ksmtuned");
   rcUpdate("ksmtuned","default");
+
+  configureProvBackupKVM($localNetworkHash, $prov_backup_kvm_unencrypted_password);
 
   # Tell the administrator, that the installation and configuration of this node is complete.
   print "\nCongratulations, you have finished the installation and configuration of this Node!\n\n"
@@ -1654,13 +1658,11 @@ sub configureOpenLDAP {
       # specified in command line args, ask the user to enter a password
       print "\n";
 
-      # TODO: set the binddn in the configuration or template file
-      # TODO: write the provisioning backup kvm configuration file
-      my $openldap_binddn = "cn=prov-backup-kvm,ou=services,ou=administration,dc=foss-cloud,dc=org";
+      my $openldap_binddn = $cfg->val("prov-backup-kvm","ldap_binddn");
 
       unless ( defined($prov_backup_kvm_password) && $prov_backup_kvm_password ne "" )
       {
-          # Ask the user for the Manager password
+          # Ask the user for the prov-backup-kvm password
           ($prov_backup_kvm_password,$prov_backup_kvm_unencrypted_password) = askForOpenLDAPPassword($openldap_binddn);
       } else
       {
@@ -2609,6 +2611,72 @@ sub configureFcBrokerd {
   # Start the daemon and add it to de default runlevel
   startDaemon("fc-brokerd");
   rcUpdate("fc-brokerd","default");
+}
+
+################################################################################
+# configureProvBackupKVM
+################################################################################
+# Description:
+#   Configures and starts the prov-backup-kvm daemon
+# Usage:
+#   configureProvBackupKVM($configuration);
+################################################################################
+# Return Values:
+#   none
+################################################################################
+
+sub configureProvBackupKVM {
+
+  my ($localNetworkHash, $ldap_bind_password)=@_;
+
+  print "\n";
+  header("Configuring the prov-backup-kvm daemon ...");
+
+  # Get the necessary variables
+  my $prov_backup_kvm_template_file = $cfg->val("General","file_prov_backup_kvm_conf_template");
+  my $prov_backup_kvm_config_file = $cfg->val("General","file_prov_backup_kvm_conf");
+
+  my $node_name = $localNetworkHash->{"Node Name"}.".".$localNetworkHash->{"pub"}->{"domain"};
+
+  # OpenLDAP runs on the int VLAN
+  my $ldap_server = $localNetworkHash->{"int"}->{"ip"};
+  my $ldap_port = $cfg->val("openLDAP","port");
+  my $ldap_binddn = $cfg->val("prov-backup-kvm","ldap_binddn");
+  my $ldap_service_subtree = $cfg->val("prov-backup-kvm","ldap_service_subtree");
+  my $ldap_cookie_file = $cfg->val("prov-backup-kvm","ldap_cookie_file");
+  my $ldap_default_config = $cfg->val("prov-backup-kvm","ldap_default_config");
+
+  print "\n";
+  print "Working on $prov_backup_kvm_config_file ...\n";
+
+  # Generate the search and replace commands
+  my @sar_commands = (
+                      {search => "<FOSS-CLOUD-NODE-NAME>", replace => $node_name},
+                      {search => "<FOSS-CLOUD-LDAP-SERVER>", replace => $ldap_server},
+                      {search => "<FOSS-CLOUD-LDAP-PORT>", replace => $ldap_port},
+                      {search => "<FOSS-CLOUD-LDAP-BINDDN>", replace => $ldap_binddn},
+                      {search => "<FOSS-CLOUD-LDAP-BIND-PASSWORD>", replace => $ldap_bind_password},
+                      {search => "<FOSS-CLOUD-LDAP-SERVICE-SUBTREE>", replace => $ldap_service_subtree},
+                      {search => "<FOSS-CLOUD-LDAP-COOKIE-FILE>", replace => $ldap_cookie_file},
+                      {search => "<FOSS-CLOUD-LDAP-PROV-BACKUP-KVM-DEFAULT-CONFIGURATION>", replace => $ldap_default_config},
+                     );
+
+  # Execute the command
+  searchAndReplace ( $prov_backup_kvm_template_file,
+                     $prov_backup_kvm_config_file,
+                     @sar_commands
+                   );
+
+  # Get the roots group and user id
+  my $uid_root = $cfg->val("General","uid_root"); 
+  my $gid_root = $cfg->val("General","gid_root"); 
+
+  # Change the permission for the config file
+  setSingleFilePermissions("file",$uid_root,$gid_root,0640,$prov_backup_kvm_config_file);
+
+  # Start the daemon and add it to de default runlevel
+  startDaemon("prov-backup-kvm");
+  rcUpdate("prov-backup-kvm","default");
 }
 
 ################################################################################
