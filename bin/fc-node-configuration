@@ -2572,7 +2572,7 @@ sub configureFcBrokerd {
   header("Configuring the fc-brokerd daemon ...");
 
   # Get the necessary variables
-  my $fc_brokerd_temlplate_file = $cfg->val($modus,"file_fc_brokerd_conf_template");
+  my $fc_brokerd_template_file = $cfg->val($modus,"file_fc_brokerd_conf_template");
   my $fc_brokerd_config_file = $cfg->val("General","file_fc_brokerd_conf");
 
   # OpenLDAP runs on the int VLAN
@@ -2585,18 +2585,18 @@ sub configureFcBrokerd {
 
   # Working on the file /var/www/localhost/htdocs/phpldapadmin/config/config.php
   print "\n";
-  print "Working on $fc_brokerd_temlplate_file ...\n";
+  print "Working on $fc_brokerd_template_file ...\n";
 
   # Generate the search and replace commands
   my @sar_commands = (
                       {search => "<FOSS-CLOUD-LDAP-VIP-URI>", replace => "ldap://".$localIntIP.":".$openldap_port},
-                      {search => "<FOSS-ClOUD-BINDDN>", replace => $openldap_binddn},
-                      {search => "<FOSS-ClOUD-BINDPW>", replace => $openldap_bind_password},
-                      {search => "<FOSS-ClOUD-BASEDN>", replace => $openldap_basedn}
+                      {search => "<FOSS-CLOUD-BINDDN>", replace => $openldap_binddn},
+                      {search => "<FOSS-CLOUD-BINDPW>", replace => $openldap_bind_password},
+                      {search => "<FOSS-CLOUD-BASEDN>", replace => $openldap_basedn}
                      );
 
   # Execute the command
-  searchAndReplace ( $fc_brokerd_temlplate_file,
+  searchAndReplace ( $fc_brokerd_template_file,
                      $fc_brokerd_config_file,
                      @sar_commands
                    );
