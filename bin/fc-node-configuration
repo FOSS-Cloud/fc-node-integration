@@ -877,7 +877,7 @@ sub mountGlusterFS {
     my $fstab_file = $cfg->val($modus,"fstab_file");
     my $gluster_mount_point = $cfg->val($modus,"gluster_mount_point");
     my $gluster_mount_options = $cfg->val($modus,"gluster_mount_options");
-    my $gluster_volume_name = $cfg->val($modus,"gluster_volume_name");
+    my $gluster_volume_name = $cfg->val("General","gluster_volume_name");
     my $mount_binary = $cfg->val($modus,"mount_binary");
     my $output;
     my $errorCode;
@@ -893,7 +893,7 @@ sub mountGlusterFS {
 
     # Then we add the command
     $fstab_string .= "$remoteDataIP1:/$gluster_volume_name $gluster_mount_point";
-    $fstab_string .= " $gluster_mount_options,backupvolfile-server=";
+    $fstab_string .= " glusterfs $gluster_mount_options,backupvolfile-server=";
     $fstab_string .= "$remoteDataIP2 0 0\n";
 
     # Check if it is a dry-run or not
@@ -948,6 +948,10 @@ sub configureGlusterFS {
   my $output;
   my $errorCode;
   my $glusterCmd;
+  my $errorCodeTwo;
+  my $glusterCmdTwo;
+
+  my $gluster_volume_name = $cfg->val("General","gluster_volume_name");
 
   SWITCH: {
     $type eq "primary" and do {
@@ -1016,8 +1020,8 @@ sub configureGlusterFS {
     # Creating the distributed replicated volume
     print "Creating the distributed replicated volume ...\n";
     if (!$dryrun) {
-      print "Executing: gluster volume create virtualization replica 2 transport tcp $localDataIP:/var/data/gluster-volume-01 $remoteDataIP:/var/data/gluster-volume-01 ...\n";
-      $output = `gluster volume create virtualization replica 2 transport tcp $localDataIP:/var/data/gluster-volume-01 $remoteDataIP:/var/data/gluster-volume-01`;
+      print "Executing: gluster volume create $gluster_volume_name replica 2 transport tcp $localDataIP:/var/data/gluster-volume-01 $remoteDataIP:/var/data/gluster-volume-01 ...\n";
+      $output = `gluster volume create $gluster_volume_name replica 2 transport tcp $localDataIP:/var/data/gluster-volume-01 $remoteDataIP:/var/data/gluster-volume-01`;
       $errorCode = $? >> 8;
 
       if($errorCode == 0) {
@@ -1026,20 +1030,20 @@ sub configureGlusterFS {
         returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
       }
     } else {
-      print "--dry-run: gluster volume create virtualization replica 2 transport tcp $localDataIP:/var/data/gluster-volume-01 $remoteDataIP:/var/data/gluster-volume-01\n";
+      print "--dry-run: gluster volume create $gluster_volume_name replica 2 transport tcp $localDataIP:/var/data/gluster-volume-01 $remoteDataIP:/var/data/gluster-volume-01\n";
     } # End of if (!$dryrun)
 
 
     # Configure the distributed replicated volume
     print "Configuring the distributed replicated volume ...\n";
     if (!$dryrun) {
-      $glusterCmd = "gluster volume set virtualization nfs.disable On";
+      $glusterCmd = "gluster volume set $gluster_volume_name nfs.disable On";
       print "Executing: $glusterCmd ...\n";
       $output = `$glusterCmd`;
       $errorCode = $? >> 8;
 
       # Another command that needs to be executed
-      $glusterCmdTwo = "gluster volume set virtualization server.allow-insecure Off";
+      $glusterCmdTwo = "gluster volume set $gluster_volume_name server.allow-insecure Off";
       print "Executing: $glusterCmdTwo ...\n";
       $output = `$glusterCmdTwo`;
       $errorCodeTwo = $? >> 8;
@@ -1059,8 +1063,8 @@ sub configureGlusterFS {
     print "\n";
     print "Trying to start the newly created volume ...\n";
     if (!$dryrun) {
-      print "Executing: gluster volume start virtualization ...\n";
-      $output = `gluster volume start virtualization`;
+      print "Executing: gluster volume start $gluster_volume_name ...\n";
+      $output = `gluster volume start $gluster_volume_name`;
       $errorCode = $? >> 8;
 
       if($errorCode == 0) {
@@ -1069,7 +1073,7 @@ sub configureGlusterFS {
         returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
       }
     } else {
-      print "--dry-run: gluster volume start virtualization\n";
+      print "--dry-run: gluster volume start $gluster_volume_name\n";
     } # End of if (!$dryrun)
 
 
@@ -1679,7 +1683,7 @@ sub configureOpenLDAP {
       # If the user already is entering some passwords, also ask him the
       # password for the dhcp user
       my $openldap_dhcp_binddn = $cfg->val("General","dhcp_binddn");
-      unless ( defined($prov_backup_kvm_password) && $prov_backup_kvm_password ne "" )
+      unless ( defined($dhcp_password) && $dhcp_password ne "" )
       {
           # Ask the user for the prov-backup-kvm password
           ($dhcp_password,$dhcp_unencrypted_password) = askForOpenLDAPPassword($openldap_dhcp_binddn);
@@ -2294,6 +2298,7 @@ sub configureDHCP {
 
     my $file_dhcp_conf_template = $cfg->val($modus,"file_dhcp_conf_template");
     my $file_dhcp_conf = $cfg->val($modus,"file_dhcp_conf");
+    my $ldap_port = $cfg->val("openLDAP","port");
 
     # Configuring the DHCP Daemon
     header("Configuring the DHCP Daemon ...");
@@ -2304,7 +2309,9 @@ sub configureDHCP {
 
     # Generate the search and replace commands to replace the placeholders in
     # template
-    my @sar_commands = ( { search => "<FOSS-CLOUD-LDAP-SERVER>", replace => $localNetworkHash->{"int"}->{"ip"} } );
+    my @sar_commands = ( { search => "<FOSS-CLOUD-LDAP-SERVER>", replace => $localNetworkHash->{"int"}->{"ip"} },
+                         { search => "<FOSS-CLOUD-DHCP-PASSWORD>", replace => $dhcp_unencrypted_password}, 
+                         { search => "<FOSS-CLOUD-LDAP-PORT>", replace => $ldap_port});
 
     searchAndReplace( $file_dhcp_conf_template,
                       $file_dhcp_conf,
