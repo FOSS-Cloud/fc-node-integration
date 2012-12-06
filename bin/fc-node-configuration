@@ -868,68 +868,66 @@ sub checkRemoteNetwork {
 #   none
 ######################################################################################################
 sub mountGlusterFS {
-  my ($remoteNetworkHash1,$remoteNetworkHash2)=@_;
+    my ($remoteNetworkHash1,$remoteNetworkHash2)=@_;
 
-  my $remoteDataIP1 = $remoteNetworkHash1->{"data"}->{"ip"};
-  my $remoteDataIP2 = $remoteNetworkHash2->{"data"}->{"ip"};
-  my $file = $cfg->val($modus,"mount_glusterFS_file");
-  my $daemon = $cfg->val($modus,"mount_glusterFS_daemon");
-  my $output;
-  my $errorCode;
-  my @output;
-  my $line;
-  my $error = 1;
+    my $remoteDataIP1 = $remoteNetworkHash1->{"data"}->{"ip"};
+    my $remoteDataIP2 = $remoteNetworkHash2->{"data"}->{"ip"};
+    my $fstab_file = $cfg->val($modus,"fstab_file");
+    my $gluster_mount_point = $cfg->val($modus,"gluster_mount_point");
+    my $gluster_mount_options = $cfg->val($modus,"gluster_mount_options");
+    my $gluster_volume_name = $cfg->val($modus,"gluster_volume_name");
+    my $mount_binary = $cfg->val($modus,"mount_binary");
+    my $output;
+    my $errorCode;
+    
+    # Configuring the GlusterFS client and mounting it
+    header("Configuring the local GlusterFS client and mounting it ...");
 
-  # Configuring the GlusterFS client and mounting it
-  header("Configuring the local GlusterFS client and mounting it ...");
+    # First part of the string is a newline for a nice look and feel
+    my $fstab_string = "\n";
+    
+    # Then we put a little comment in the file
+    $fstab_string .= "# Mounting the glusterfs\n";
 
+    # Then we add the command
+    $fstab_string .= "$remoteDataIP1:/$gluster_volume_name $gluster_mount_point";
+    $fstab_string .= " $gluster_mount_options,backupvolfile-server=";
+    $fstab_string .= "$remoteDataIP2 0 0\n";
 
-  # Working on the file /etc/libvirt/libvirtd.conf
-  print "Working on $file ...\n";
-  print "Original:   GLUSTERMOUNT_SERVERS_virtualization=\"192.0.2.85 192.0.2.86\"\n";
-  print "Calculated: GLUSTERMOUNT_SERVERS_virtualization=\"$remoteDataIP1 $remoteDataIP2\"\n";
+    # Check if it is a dry-run or not
+    if ( !$dryrun )
+    {
+        # Now add the whole string to the fstab file
+        open(FSTAB,">>$fstab_file") || die ("Cannot open $fstab_file for writting");
+        print FSTAB $fstab_string;
+        close FSTAB;
 
-  # Replace:
-  # GLUSTERMOUNT_SERVERS_virtualization="<FOSS-CLOUD-GLUSTERFS-SERVERS>"
-  # Or:
-  # GLUSTERMOUNT_SERVERS_virtualization="192.0.2.85 192.0.2.86"
-  # With: 
-  # GLUSTERMOUNT_SERVERS_virtualization="192.0.2.85 192.0.2.86"
-  open(FILE,$file) || die("Could not open $file for reading.");
-  @output = <FILE>;
-  close FILE;
+    } else
+    {
+        # If dryrun only say what we would do
+        print "--dry-run: Would write $fstab_string to $fstab_file\n";
+    }
 
-  foreach $line (@output) {
-    if ($line =~ "^GLUSTERMOUNT_SERVERS_virtualization") {
-      print "Found:          $line";
-      $line =~ s/GLUSTERMOUNT_SERVERS_virtualization=.*/GLUSTERMOUNT_SERVERS_virtualization=\"$remoteDataIP1 $remoteDataIP2\"/g;
-      print "Replacing with: GLUSTERMOUNT_SERVERS_virtualization=\"$remoteDataIP1 $remoteDataIP2\"\n";
-      $error = 0;
-    } # End of if ($line =~ "^GLUSTERMOUNT_SERVERS_virtualization")
-  } # End of foreach $line (@output)
+    # Mount the glusterfs
+    my $mount_command = "$mount_binary $gluster_mount_point";
+    
+    # Check if it is a dry-run or not
+    if ( !$dryrun )
+    {
+      # Execute the mount command
+      system($mount_command);
+      $errorCode = $? >> 8;
 
-  if (!$dryrun) {
-    print "Writing:        GLUSTERMOUNT_SERVERS_virtualization=\"$remoteDataIP1 $remoteDataIP2\"\n";
-    print "To the file:    $file\n";
-    open(FOUT,">$file") || die("Could not open $file for writing.");
-    foreach $line (@output) {
-      print FOUT $line;
-    } # End of foreach $line (@output)
-    close FOUT;
-  } else {
-    if ($debug) {
-      foreach $line (@output) {
-        print $line;
-      } # End of foreach $line (@output)
-    } # End of if ($debug)
-    print "--dry-run: Would write 'GLUSTERMOUNT_SERVERS_virtualization=\"$remoteDataIP1 $remoteDataIP2\"' to the file $file!\n";
-  } # End of if (!$dryrun)
+      if($errorCode == 0) {
+        print "Successfully mounted $gluster_mount_point!\n";
+      } else {
+        returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
+      }
 
-  # Start the glusterd daemon
-  startDaemon($daemon);
-
-  # Add the glusterd daemon to the default runlevel
-  rcUpdate($daemon,"default");
+    } else
+    {
+        print "--dry-run: $mount_command\n";
+    }
 
 } # End of sub mountGlusterFS
 
@@ -1038,7 +1036,14 @@ sub configureGlusterFS {
       $output = `$glusterCmd`;
       $errorCode = $? >> 8;
 
-      if ($errorCode == 0) {
+      # Another command that needs to be executed
+      $glusterCmdTwo = "gluster volume set virtualization server.allow-insecure Off";
+      print "Executing: $glusterCmdTwo ...\n";
+      $output = `$glusterCmdTwo`;
+      $errorCodeTwo = $? >> 8;
+
+
+      if ($errorCode == 0 && $errorCodeTwo == 0) {
         print "Configured the distributed replicated volume successfully!\n";
       } else {
         returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
