@@ -193,6 +193,8 @@ my $dryrun = 0;     # Dry-Run modus: 0: off, 1: on
 my $password = "";
 my $prov_backup_kvm_password = "";
 my $prov_backup_kvm_unencrypted_password = "";
+my $dhcp_password = "";
+my $dhcp_unencrypted_password = "";
 my $modus = "";
 
 my $helper_scripts_path = $location;
@@ -1673,6 +1675,19 @@ sub configureOpenLDAP {
       {
         # Error ...
       }
+
+      # If the user already is entering some passwords, also ask him the
+      # password for the dhcp user
+      my $openldap_dhcp_binddn = $cfg->val("General","dhcp_binddn");
+      unless ( defined($prov_backup_kvm_password) && $prov_backup_kvm_password ne "" )
+      {
+          # Ask the user for the prov-backup-kvm password
+          ($dhcp_password,$dhcp_unencrypted_password) = askForOpenLDAPPassword($openldap_dhcp_binddn);
+      } else
+      {
+        # Error ...
+      }
+
   } # End of if ( ( $local_modus eq "primary-master" ) || ( $local_modus eq "vm-node" ) )
 
   ##############################################################################
@@ -1800,7 +1815,7 @@ sub configureOpenLDAP {
       # Create the search_and_replace commands to replace the LDIF template with
       # the correct values
       @sar_commands = ( {search => "<FOSS-CLOUD-PROV-BACKUP-KVM-PASSWORD>", replace => $prov_backup_kvm_password},
-                        {search => "<FOSS-CLOUD-DHCP-PASSWORD>", replace => "{SSHA}pJpqL95nlFi78rnAstmn6VvZCXWTjVHZ"},
+                        {search => "<FOSS-CLOUD-DHCP-PASSWORD>", replace => $dhcp_password},
                       );
 
       # Replace the template with the correct values which are specified in the
