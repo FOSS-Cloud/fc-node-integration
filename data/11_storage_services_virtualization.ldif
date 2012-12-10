@@ -60,7 +60,7 @@ objectclass: sstStoragePoolObjectClass
 objectclass: sstRelationship
 sstStoragePool: 0f83f084-8080-413e-b558-b678e504836e
 sstStoragePoolURI: file:///var/virtualization/vm-persistent/0f83f084-8080-413e-b558-b678e504836e
-sstStoragePoolType: static
+sstStoragePoolType: persistent
 sstDisplayName: persistent-storage-pool-01
 description: This is the default persistent storage pool persistent-storage-pool-01.
 sstBelongsToResellerUID: 4000000

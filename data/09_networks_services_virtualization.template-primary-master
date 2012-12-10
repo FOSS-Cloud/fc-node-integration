@@ -103,7 +103,7 @@ sstbelongstoreselleruid: 4000000
 sstdisplayname: network-pool-01
 
 dn: ou=ranges,cn=<FOSS-CLOUD-PUB-SUBNET-ADDRESS>,cn=config-01,ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
-description: This sub tree holds all user defined ranges (template, static and dynamic) belonging to the network <FOSS-CLOUD-PUB-SUBNET-ADDRESS>.
+description: This sub tree holds all user defined ranges (template, persistent and dynamic) belonging to the network <FOSS-CLOUD-PUB-SUBNET-ADDRESS>.
 objectclass: top
 objectclass: organizationalUnit
 ou: ranges

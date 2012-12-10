@@ -583,7 +583,7 @@ objectclass: organizationalUnit
 objectclass: sstStoragePoolConfigurationObjectClass
 ou: vm-persistent
 sstStoragePoolURI: file:///var/virtualization/vm-persistent/
-sstStoragePoolType: static
+sstStoragePoolType: persistent
 sstSelfService: TRUE
 
 # This is where the VM-Templates of the FOSS-Cloud environment are stored. 
@@ -636,11 +636,11 @@ sstBrokerMinimalNumberOfVirtualMachines: 5
 sstBrokerMaximalNumberOfVirtualMachines: 20
 sstBrokerPreStartNumberOfVirtualMachines: 3
 
-# The persistent (static) entry is defined as follows.
-dn: ou=static,ou=virtual machine pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+# The persistent entry is defined as follows.
+dn: ou=persisten,ou=virtual machine pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
-ou: static
+ou: persistent
 
 # The template entry is defined as follows.
 dn: ou=template,ou=virtual machine pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org

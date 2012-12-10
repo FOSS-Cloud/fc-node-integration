@@ -175,7 +175,7 @@ objectclass: sstRelationship
 sstVirtualMachinePool: d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa
 sstDisplayName: persistent-virtual-machine-pool-01
 description: This is the default persistent virtual machine pool persistent-virtual-machine-pool-01.
-sstVirtualMachinePoolType: static
+sstVirtualMachinePoolType: persistent
 sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
 

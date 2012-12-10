@@ -10,7 +10,7 @@ cn: 172.31.255.128/26
 objectclass: sstVirtualizationNetworkRange
 objectclass: top
 sstdisplayname: persistent
-sstnetworktype: static
+sstnetworktype: persistent
 
 dn: cn=172.31.255.192/26,ou=ranges,cn=172.31.255.0,cn=config-01,ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 cn: 172.31.255.192/26
