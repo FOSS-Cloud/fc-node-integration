@@ -576,7 +576,7 @@ sstStoragePoolURI: file:///var/virtualization/vm-dynamic/
 sstStoragePoolType: dynamic
 sstSelfService: TRUE
 
-# This is where the static VM's of the FOSS-Cloud environment are stored. 
+# This is where the persistent VM's of the FOSS-Cloud environment are stored. 
 dn: ou=vm-persistent,ou=storage pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -636,7 +636,7 @@ sstBrokerMinimalNumberOfVirtualMachines: 5
 sstBrokerMaximalNumberOfVirtualMachines: 20
 sstBrokerPreStartNumberOfVirtualMachines: 3
 
-# The static entry is defined as follows.
+# The persistent (static) entry is defined as follows.
 dn: ou=static,ou=virtual machine pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit

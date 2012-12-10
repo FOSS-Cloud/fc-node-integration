@@ -9,7 +9,7 @@ dn: cn=172.31.255.128/26,ou=ranges,cn=172.31.255.0,cn=config-01,ou=dhcp,ou=netwo
 cn: 172.31.255.128/26
 objectclass: sstVirtualizationNetworkRange
 objectclass: top
-sstdisplayname: static
+sstdisplayname: persistent
 sstnetworktype: static
 
 dn: cn=172.31.255.192/26,ou=ranges,cn=172.31.255.0,cn=config-01,ou=dhcp,ou=networks,ou=virtualization,ou=services,dc=foss-cloud,dc=org
@@ -33,7 +33,7 @@ objectclass: top
 objectclass: organizationalUnit
 objectclass: sstRelationship
 ou: 172.31.255.128/26
-description: This sub tree stores all the ranges belonging to default static virtual machine pool static-virtual-machine-pool-01.
+description: This sub tree stores all the ranges belonging to default persistent virtual machine pool persistent-virtual-machine-pool-01.
 sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
 
