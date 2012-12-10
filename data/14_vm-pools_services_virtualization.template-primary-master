@@ -79,6 +79,13 @@ sstVirtualMachinePoolType: template
 sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
 
+dn: ou=backup,sstVirtualMachinePool=40fac639-c69d-43b0-817c-dbbf3fd161fc,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstVirtualizationBackupObjectClass
+ou: backup
+description: This sub tree contains the backup plan of the vm-template virtual machine pool vm-template-virtual-machine-pool-01.
+
 dn: ou=groups,sstVirtualMachinePool=40fac639-c69d-43b0-817c-dbbf3fd161fc,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -116,6 +123,12 @@ ou: people
 description: This sub tree stores all the people, which have access to the default vm-template virtual machine pool vm-template-virtual-machine-pool-01.
 sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
+
+dn: ou=settings,sstVirtualMachinePool=40fac639-c69d-43b0-817c-dbbf3fd161fc,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: settings
+description: This sub tree contains the settings for the vm-template virtual machine pool vm-template-virtual-machine-pool-01.
 
 dn: ou=storage pools,sstVirtualMachinePool=40fac639-c69d-43b0-817c-dbbf3fd161fc,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
@@ -166,6 +179,13 @@ sstVirtualMachinePoolType: static
 sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
 
+dn: ou=backup,sstVirtualMachinePool=d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstVirtualizationBackupObjectClass
+ou: backup
+description: This sub tree contains the backup plan of the persistent virtual machine pool persistent-virtual-machine-pool-01.
+
 dn: ou=groups,sstVirtualMachinePool=d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -212,6 +232,12 @@ ou: people
 description: This sub tree stores all the people, which have access to the default persistent virtual machine pool persistent-virtual-machine-pool-01.
 sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
+
+dn: ou=settings,sstVirtualMachinePool=d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: settings
+description: This sub tree contains settings for the persistent virtual machine pool persistent-virtual-machine-pool-01.
 
 dn: ou=storage pools,sstVirtualMachinePool=d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
@@ -265,6 +291,13 @@ sstBrokerMaximalNumberOfVirtualMachines: 20
 sstBrokerPreStartNumberOfVirtualMachines: 3
 sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
+
+dn: ou=backup,sstVirtualMachinePool=dbd81080-d9f8-42e2-a261-d56b80c9c528,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstVirtualizationBackupObjectClass
+ou: backup
+description: This sub tree contains the backup plan of the dynamic virtual machine pool dynamic-virtual-machine-pool-01.
 
 dn: ou=groups,sstVirtualMachinePool=dbd81080-d9f8-42e2-a261-d56b80c9c528,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
@@ -321,6 +354,12 @@ ou: people
 description: This sub tree stores all the people, which have access to the default dynamic virtual machine pool dynamic-virtual-machine-pool-01.
 sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
+
+dn: ou=settings,sstVirtualMachinePool=dbd81080-d9f8-42e2-a261-d56b80c9c528,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: settings
+description: This sub tree contains the settings for the dynamic virtual machine pool dynamic-virtual-machine-pool-01.
 
 dn: ou=storage pools,sstVirtualMachinePool=dbd81080-d9f8-42e2-a261-d56b80c9c528,ou=virtual machine pools,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
