@@ -637,7 +637,7 @@ sstBrokerMaximalNumberOfVirtualMachines: 20
 sstBrokerPreStartNumberOfVirtualMachines: 3
 
 # The persistent entry is defined as follows.
-dn: ou=persisten,ou=virtual machine pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+dn: ou=persistent,ou=virtual machine pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
 ou: persistent
