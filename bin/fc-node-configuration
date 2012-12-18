@@ -50,6 +50,10 @@ use NetAddr::IP;
 use Cwd "abs_path";
 use File::Basename;
 use Config::IniFiles;
+use Net::LDAP;
+use Net::LDAP::Constant qw(
+  LDAP_SUCCESS
+);
 
 $| = 1;                        # Turn buffering off, so that the output is flushed immediately
 
@@ -241,6 +245,10 @@ use constant ERROR_DELETE_FILE_CODE               => 17;
 use constant ERROR_DELETE_FILE_STRING             => "Could not delete file";
 use constant ERROR_EXECUTE_COMMAND_CODE           => 18;
 use constant ERROR_EXECUTE_COMMAND_STRING         => "Could not execute a CLI command";
+use constant ERROR_NO_LDAP_CONNECTION_CODE        => 19;
+use constant ERROR_NO_LDAP_CONNECTION_STRING      => "Could not establish a connection to the LDAP-Server";
+use constant ERROR_NO_LDAP_BIND_CODE              => 20;
+use constant ERROR_NO_LDAP_BIND_STRING            => "Could not bind to the LDAP-Server";
 
 
 ######################################################################################################
@@ -518,7 +526,7 @@ sub primaryMasterNode{
   # Configure the fc-brockerd daemon
   configureFcBrokerd($localNetworkHash,$unencrypted_password);
 
-  configureProvBackupKVM($localNetworkHash, $prov_backup_kvm_unencrypted_password);
+  configureProvBackupKVM($localNetworkHash, $localNetworkHash->{'int'}->{'ip'}, $prov_backup_kvm_unencrypted_password);
 
   # Tell the administrator, that the installation and configuration of this node is complete.
   print "\nCongratulations, you have finished the installation and configuration of this Node!\n\n"
@@ -599,7 +607,125 @@ sub vmNode{
   startDaemon("ksmtuned");
   rcUpdate("ksmtuned","default");
 
-  configureProvBackupKVM($localNetworkHash, $prov_backup_kvm_unencrypted_password);
+  # Get the port and protocol:
+  my $ldap_protocol;
+  my $ldap_port = $cfg->val("openLDAP","port");
+  
+  if ( $ldap_port == 389 )
+  {
+    # If port is 389 means unencrypted connection
+    $ldap_protocol = "ldap://";
+  } else
+  {
+    # Otherwise we use encrypted connection
+    $ldap_protocol = "ldaps://";
+
+  }
+
+  # The LDAP connection
+  my $ldap_connection;
+  my $ldap_error;
+  my $retry = "yes";
+  my $ldap_ip;
+
+  # Ask the user for the correct ip as long as he wants and did not enter the
+  # correct one
+  while( $retry eq "yes" && !$ldap_connection)
+  {
+
+      # Ask the user on which IP the LDAP-Server runs
+      $ldap_ip = "";
+
+      # Check if it is a correct IP: 
+      while( $ldap_ip !~ m/^(\d{1,3}.){3}\d{1,3}$/ )
+      {
+
+          # Ask the user for the IP
+          print "\n";
+          print "Please enter the IP on which the LDAP Server is running / "
+               ."listening: ";
+          chomp($ldap_ip = <STDIN>);
+
+      }
+
+      print "Trying to connect to ".$ldap_protocol.$ldap_ip."\n";
+
+      # And now try to bind with the user and password to the given IP to test if 
+      # everything is correct
+      $ldap_connection = Net::LDAP->new( $ldap_protocol.$ldap_ip,
+                                      port => $ldap_port,
+                                      async    => 0,
+                                      #verify => 'require',
+                                      #cafile => '/etc/ssl/certs/Swiss_Certificate_Authority.cert.pem',
+                                      );
+      # Get the error
+      $ldap_error = $!;
+
+      # Test if we have a connection
+      if ( !$ldap_connection )
+      {
+        # Connection failed, retry?
+        print "Could not connect to ".$ldap_protocol.$ldap_ip." ($ldap_error), "
+             ."retry (yes/NO): ";
+        chomp( $retry = <STDIN>);
+
+      }
+
+  }    
+
+  my $binddn;
+  my ($ldap_crypt, $prov_backup_kvm_unencrypted_password );
+
+  # Test if the connection could be established: 
+  if ( $ldap_connection )
+  {
+
+    my $bind;
+    my $bind_retry = "yes";
+
+    # Try to bind as long as the user wants
+    while ( $bind_retry eq "yes" )
+    {
+
+        # If yes try to bind:
+        # Also ask the user for the password for the user with which the prov-backup-
+        # daemon binds to the LDAP
+        $binddn = $cfg->val("prov-backup-kvm","ldap_binddn");
+        ($ldap_crypt, $prov_backup_kvm_unencrypted_password ) = askForOpenLDAPPassword($binddn);
+
+        $bind = $ldap_connection->bind($binddn , password => $prov_backup_kvm_unencrypted_password);
+
+        # Was bind successful? 
+        if ( $bind->code() == LDAP_SUCCESS )
+        {
+            # Set bind retry to no
+            $bind_retry = "no";
+        } else
+        {
+            # Ask the user if he wants to retry: 
+            print "\nCannot bind to ".$ldap_protocol.$ldap_ip." (".$bind->error()
+                  .") retry? (yes/NO): ";
+            chomp($bind_retry = <STDIN>);
+        }
+
+    }
+
+    # Test if bind was successful: 
+    if ( $bind->code() != LDAP_SUCCESS )
+    {
+        # If not return the error
+        returnError(ERROR_NO_LDAP_BIND_CODE,ERROR_NO_LDAP_BIND_STRING,$bind->error());
+    } else
+    {
+        # If success we can set up the prov-backup-kvm daemon
+        configureProvBackupKVM($localNetworkHash, $ldap_ip, $prov_backup_kvm_unencrypted_password);
+    }
+
+  } else
+  {
+    # If not we can stop with error
+    returnError(ERROR_NO_LDAP_CONNECTION_CODE,ERROR_NO_LDAP_CONNECTION_STRING,$ldap_error);
+  }
 
   # Tell the administrator, that the installation and configuration of this node is complete.
   print "\nCongratulations, you have finished the installation and configuration of this Node!\n\n"
@@ -2654,7 +2780,7 @@ sub configureFcBrokerd {
 
 sub configureProvBackupKVM {
 
-  my ($localNetworkHash, $ldap_bind_password)=@_;
+  my ($localNetworkHash, $ldap_server, $ldap_bind_password) = @_;
 
   print "\n";
   header("Configuring the prov-backup-kvm daemon ...");
@@ -2665,8 +2791,6 @@ sub configureProvBackupKVM {
 
   my $node_name = $localNetworkHash->{"Node Name"}.".".$localNetworkHash->{"pub"}->{"domain"};
 
-  # OpenLDAP runs on the int VLAN
-  my $ldap_server = $localNetworkHash->{"int"}->{"ip"};
   my $ldap_port = $cfg->val("openLDAP","port");
   my $ldap_binddn = $cfg->val("prov-backup-kvm","ldap_binddn");
   my $ldap_service_subtree = $cfg->val("prov-backup-kvm","ldap_service_subtree");
