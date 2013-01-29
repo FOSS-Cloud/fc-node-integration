@@ -251,6 +251,8 @@ use constant ERROR_NO_LDAP_BIND_CODE                => 20;
 use constant ERROR_NO_LDAP_BIND_STRING              => "Could not bind to the LDAP-Server";
 use constant ERROR_GLUSTER_PEER_PROBE_FAILED_CODE   => 21;
 use constant ERROR_GLUSTER_PEER_PROBE_FAILED_STRING => "The gluster peer probe command did not succeed";
+use constant ERROR_CANNOT_CREATE_BACKUP_DIR_CODE    => 22;
+use constant ERROR_CANNOT_CREATE_BACKUP_DIR_STRING  => "Cannot create the backup directory /var/virtualization/backup";
 
 ######################################################################################################
 # Help text
@@ -3381,10 +3383,32 @@ sub searchAndReplace
 sub createBackupDirectorySymlink
 {
 
+    # Arguments for system calls
+    my @args; 
+
+    # Check if we need to create the backup direcory
+    unless ( -d "/var/virtualization/backup" )
+    {
+        # If not create it
+        @args = ("mkdir","/var/virtualization/backup");
+
+        # Execute the commands
+        system( join(' ', @args) );
+
+        # Test if it was successful
+        if ( $? == 0 )
+        {
+            print "\nDirectory /var/virtualization/backup created\n";
+        } else
+        {
+            returnError(ERROR_CANNOT_CREATE_BACKUP_DIR_CODE,ERROR_CANNOT_CREATE_BACKUP_DIR_STRING);
+        }
+    }
+
     # Create a symlink on the /var directory with the name backup which links to
     # /var/virtualization directory which is bigger.
     # So the symlink /var/backup will point to /var/virtualization/backup
-    my @args = ("ln","-s","/var/virtualization/backup","/var/backup");
+    @args = ("ln","-s","/var/virtualization/backup","/var/backup");
 
     # Execute the commands
     system( join(' ', @args) );
