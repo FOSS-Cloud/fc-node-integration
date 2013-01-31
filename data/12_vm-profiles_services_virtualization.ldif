@@ -1,4 +1,4 @@
-# Copyright (C) 2012 FOSS-Group
+# Copyright (C) 2013 FOSS-Group
 #                    Germany
 #                    http://www.foss-group.de
 #                    support@foss-group.de
@@ -26,20 +26,20 @@
 # 
 #
 #
-################################################################################
+#####################################################################################################################
 # /etc/openldap/data/12_vm-profiles_services_virtualization.ldif
-################################################################################
+#####################################################################################################################
 # Description:
 #  This LDIF defines the two default VM-Profiles (Linux and Windows).
-################################################################################
+#####################################################################################################################
 
-################################################################################
+#####################################################################################################################
 # ou=virtual machine profiles,ou=virtualization,ou=services,dc=foss-cloud,dc=org
-################################################################################
+#####################################################################################################################
 # Description:
 #  This subtree contains all the profiles to create virtual machine templates in the virtualization
 #  environment.
-################################################################################
+#####################################################################################################################
 dn: ou=virtual machine profiles,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -47,13 +47,13 @@ ou: virtual machine profiles
 description: This subtree contains all the profiles to create virtual machine templates in the virtualization environment.
 
 
-################################################################################
+#####################################################################################################################
 # ou=linux,ou=virtual machine profiles,ou=virtualization,ou=services,dc=foss-cloud,dc=org
-################################################################################
+#####################################################################################################################
 # Description:
 #  This subtree contains all the Linux related profiles to create virtual machine templates in
 #  the virtualization environment.
-################################################################################
+#####################################################################################################################
 dn: ou=linux,ou=virtual machine profiles,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -113,7 +113,7 @@ sstfeature: acpi
 sstfeature: pae
 sstmemory: -1
 sstmemorydefault: 134217728
-sstmemorymax: 8589934592
+sstmemorymax: 137438953472
 sstmemorymin: 134217728
 sstmemorystep: 134217728
 sstnode: TBD_GUI
@@ -179,7 +179,7 @@ ssttype: file
 sstvolumeallocation: 0
 sstvolumecapacity: -1
 sstvolumecapacitydefault: 10737418240
-sstvolumecapacitymax: 214748364800
+sstvolumecapacitymax: 2199023255552
 sstvolumecapacitymin: 10737418240
 sstvolumecapacitystep: 1073741824
 sstvolumename: TBD_SYSTEM
@@ -195,13 +195,13 @@ sstsourcebridge: vmbr0
 ssttype: bridge
 
 
-################################################################################
+#####################################################################################################################
 # ou=windows,ou=virtual machine profiles,ou=virtualization,ou=services,dc=foss-cloud,dc=org
-################################################################################
+#####################################################################################################################
 # Description:
 #  This subtree contains all the Windows related profiles to create virtual machine templates in
 #  the virtualization environment.
-################################################################################
+#####################################################################################################################
 dn: ou=windows,ou=virtual machine profiles,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
@@ -261,7 +261,7 @@ sstfeature: acpi
 sstfeature: pae
 sstmemory: -1
 sstmemorydefault: 536870912
-sstmemorymax: 8589934592
+sstmemorymax: 137438953472
 sstmemorymin: 268435456
 sstmemorystep: 134217728
 sstnode: TBD_GUI
@@ -339,7 +339,7 @@ ssttype: file
 sstvolumeallocation: 0
 sstvolumecapacity: -1
 sstvolumecapacitydefault: 42949672960
-sstvolumecapacitymax: 214748364800
+sstvolumecapacitymax: 2199023255552
 sstvolumecapacitymin: 10737418240
 sstvolumecapacitystep: 1073741824
 sstvolumename: TBD_SYSTEM
