@@ -1,4 +1,4 @@
-# Copyright (C) 2012 FOSS-Group
+# Copyright (C) 2013 FOSS-Group
 #                    Germany
 #                    http://www.foss-group.de
 #                    support@foss-group.de
@@ -26,30 +26,28 @@
 # 
 #
 #
-################################################################################
+#####################################################################################################################
 # /etc/openldap/data/05_people.ldif
-################################################################################
+#####################################################################################################################
 # Description:
 #  Initialises the organisational data like resellers, customers and people.
-################################################################################
+#####################################################################################################################
 
-################################################################################
+#####################################################################################################################
 # people
-################################################################################
+#####################################################################################################################
 # slappasswd -s 'admin'
 dn: uid=4000002,ou=people,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstPerson
 uid: 4000002
 sstGender: m
-surname: User1
-givenName: Demo
+givenName: FOSS-Cloud
+surname: Administrator
 preferredLanguage: en-GB
 userPassword: {SSHA}B2nioD05ZT1KqWML/QGRiAD6/fs9KWMp
 mail: demo.user1@example.com
 cn: admin
-telephoneNumber: +41 00 000 00 00
-mobileTelephoneNumber: +41 00 000 00 00
 sstTimeZoneOffset: UTC+01
 sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
@@ -64,228 +62,4 @@ dn: sstRole=Admin Virtualization,uid=4000002,ou=people,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstRoles
 sstRole: Admin Virtualization
-sstProduct: 0
-
-# slappasswd -s 'demo2'
-dn: uid=4000003,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstPerson
-uid: 4000003
-sstGender: m
-surname: User2
-givenName: Demo
-preferredLanguage: en-GB
-userPassword: {SSHA}f8d6pvX6XbbmNQpc9Gfg52nWYDLTqUMu
-mail: demo.user2@example.com
-cn: user2
-telephoneNumber: +41 00 000 00 00
-mobileTelephoneNumber: +41 00 000 00 00
-sstTimeZoneOffset: UTC+01
-description: Is in the groups Technology (4000014) and Office (4000015).
-sstGroupUID: 4000014
-sstGroupUID: 4000015
-sstGroupName: Technology
-sstGroupName: Office
-sstBelongsToResellerUID: 4000000
-sstBelongsToCustomerUID: 4000001
-
-dn: sstRole=User,uid=4000003,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstRoles
-sstRole: User
-sstProduct: 0
-
-# slappasswd -s 'demo3'
-dn: uid=4000004,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstPerson
-uid: 4000004
-sstGender: m
-surname: User3
-givenName: Demo
-preferredLanguage: en-GB
-userPassword: {SSHA}cEU4IfYTusMb0fB+br/lpRm/4Fn9YvUd
-mail: demo.user3@example.com
-cn: user3
-telephoneNumber: +41 00 000 00 00
-mobileTelephoneNumber: +41 00 000 00 00
-sstTimeZoneOffset: UTC+01
-description: Is in the groups Technology (4000014) and Office (4000015).
-sstGroupUID: 4000014
-sstGroupUID: 4000015
-sstGroupName: Technology
-sstGroupName: Office
-sstBelongsToResellerUID: 4000000
-sstBelongsToCustomerUID: 4000001
-
-dn: sstRole=User,uid=4000004,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstRoles
-sstRole: User
-sstProduct: 0
-
-# slappasswd -s 'demo4'
-dn: uid=4000005,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstPerson
-uid: 4000005
-sstGender: m
-surname: User4
-givenName: Demo
-preferredLanguage: en-GB
-userPassword: {SSHA}SMCrEz7xeEWiS1TZe+Zbyh4lDHR5Vb5B
-mail: demo.user4@example.com
-cn: user4
-telephoneNumber: +41 00 000 00 00
-mobileTelephoneNumber: +41 00 000 00 00
-sstTimeZoneOffset: UTC+01
-description: Is in the groups Technology (4000014) and Office (4000015).
-sstGroupUID: 4000014
-sstGroupUID: 4000015
-sstGroupName: Technology
-sstGroupName: Office
-sstBelongsToResellerUID: 4000000
-sstBelongsToCustomerUID: 4000001
-
-dn: sstRole=User,uid=4000005,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstRoles
-sstRole: User
-sstProduct: 0
-
-# slappasswd -s 'demo5'
-dn: uid=4000006,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstPerson
-uid: 4000006
-sstGender: m
-surname: User5
-givenName: Demo
-preferredLanguage: en-GB
-userPassword: {SSHA}s146//9RjkjjiAA09uioGLKXVE0i1Hj3
-mail: demo.user5@example.com
-cn: user5
-telephoneNumber: +41 00 000 00 00
-mobileTelephoneNumber: +41 00 000 00 00
-sstTimeZoneOffset: UTC+01
-description: Is in the groups Technology (4000014) and Office (4000015).
-sstGroupUID: 4000014
-sstGroupUID: 4000015
-sstGroupName: Technology
-sstGroupName: Office
-sstBelongsToResellerUID: 4000000
-sstBelongsToCustomerUID: 4000001
-
-dn: sstRole=User,uid=4000006,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstRoles
-sstRole: User
-sstProduct: 0
-
-# slappasswd -s 'demo6'
-dn: uid=4000007,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstPerson
-uid: 4000007
-sstGender: m
-surname: User6
-givenName: Demo
-preferredLanguage: en-GB
-userPassword: {SSHA}N2DXAtd3ERBTU7Z3ePFrpt/muYTBw7u4
-mail: demo.user6@example.com
-cn: user6
-telephoneNumber: +41 00 000 00 00
-mobileTelephoneNumber: +41 00 000 00 00
-sstTimeZoneOffset: UTC+01
-description: Is in the group Office (4000015).
-sstGroupUID: 4000015
-sstGroupName: Office
-sstBelongsToResellerUID: 4000000
-sstBelongsToCustomerUID: 4000001
-
-dn: sstRole=User,uid=4000007,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstRoles
-sstRole: User
-sstProduct: 0
-
-# slappasswd -s 'demo7'
-dn: uid=4000008,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstPerson
-uid: 4000008
-sstGender: m
-surname: User7
-givenName: Demo
-preferredLanguage: en-GB
-userPassword: {SSHA}dYNWz/tOtWar/vymRfTylJxsn2+YVVdG
-mail: demo.user7@example.com
-cn: user7
-telephoneNumber: +41 00 000 00 00
-mobileTelephoneNumber: +41 00 000 00 00
-sstTimeZoneOffset: UTC+01
-description: Is in the group Office (4000015).
-sstGroupUID: 4000015
-sstGroupName: Office
-sstBelongsToResellerUID: 4000000
-sstBelongsToCustomerUID: 4000001
-
-dn: sstRole=User,uid=4000008,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstRoles
-sstRole: User
-sstProduct: 0
-
-# slappasswd -s 'demo8'
-dn: uid=4000009,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstPerson
-uid: 4000009
-sstGender: m
-surname: User8
-givenName: Demo
-preferredLanguage: en-GB
-userPassword: {SSHA}e5Tv6xSZEhfzSJz+kkw4Fjamnt0cJpAC
-mail: demo.user8@example.com
-cn: user8
-telephoneNumber: +41 00 000 00 00
-mobileTelephoneNumber: +41 00 000 00 00
-sstTimeZoneOffset: UTC+01
-description: Is in the group Office (4000015).
-sstGroupUID: 4000015
-sstGroupName: Office
-sstBelongsToResellerUID: 4000000
-sstBelongsToCustomerUID: 4000001
-
-dn: sstRole=User,uid=4000009,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstRoles
-sstRole: User
-sstProduct: 0
-
-# slappasswd -s 'demo9'
-dn: uid=4000010,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstPerson
-uid: 4000010
-sstGender: m
-surname: User9
-givenName: Demo
-preferredLanguage: en-GB
-userPassword: {SSHA}uNDyiVp6hTD1xI+r6pvCyu17aGILQ6A3
-mail: demo.user9@example.com
-cn: user9
-telephoneNumber: +41 00 000 00 00
-mobileTelephoneNumber: +41 00 000 00 00
-sstTimeZoneOffset: UTC+01
-description: Is in the group Office (4000015).
-sstGroupUID: 4000015
-sstGroupName: Office
-sstBelongsToResellerUID: 4000000
-sstBelongsToCustomerUID: 4000001
-
-dn: sstRole=User,uid=4000010,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstRoles
-sstRole: User
 sstProduct: 0
