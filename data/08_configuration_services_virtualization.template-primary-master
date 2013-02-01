@@ -1,4 +1,4 @@
-# Copyright (C) 2012 FOSS-Group
+# Copyright (C) 2013 FOSS-Group
 #                    Germany
 #                    http://www.foss-group.de
 #                    support@foss-group.de
@@ -475,6 +475,17 @@ objectclass: top
 objectclass: organizationalUnit
 ou: settings
 description: This sub tree contains some default settings for the whole FOSS-Cloud.
+
+# This is where the global hostname related settings for the FOSS-Cloud environment are stored.
+dn: ou=hostname,ou=settings,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstHostnameDefinitionObjectClass
+ou: hostname
+description: This sub tree defines pre-formated hostnames in the form of kvm-%04d. Together with the domain name, this gives you kvm-0000.example.org to kvm-9999.example.org.
+sstNetworkDomainName: <FOSS-CLOUD-PUB-DOMAIN>
+sstNetworkHostnameFormat: kvm-%04d
+sstNetworkHostnameNextFreeNumber: 1
 
 # This is where the global RDP related settings for the FOSS-Cloud environment are stored.
 dn: ou=rdp,ou=settings,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
