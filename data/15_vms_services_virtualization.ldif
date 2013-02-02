@@ -1,4 +1,4 @@
-# Copyright (C) 2012 FOSS-Group
+# Copyright (C) 2013 FOSS-Group
 #                    Germany
 #                    http://www.foss-group.de
 #                    support@foss-group.de
@@ -26,21 +26,22 @@
 # 
 #
 #
-################################################################################
+#####################################################################################################################
 # /etc/openldap/data/15_vms_services_virtualization.ldif
-################################################################################
+#####################################################################################################################
 # Description:
-#  TBD
-################################################################################
+#  This LDIF creates the sub tree "ou=virtual machines,ou=virtualization,ou=services,o=stepping-stone,c=ch", which
+#  contains all virtual machines and virtual machine templates of this FOSS-Cloud installation. 
+#####################################################################################################################
 
-################################################################################
+#####################################################################################################################
 # ou=virtual machines,ou=virtualization,ou=services,dc=foss-cloud,dc=org
-################################################################################
+#####################################################################################################################
 # Description:
 #  This subtree contains all the running virtual machines in the virtualization environment.
-################################################################################
+#####################################################################################################################
 dn: ou=virtual machines,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
 ou: virtual machines
-description: This subtree contains all the running virtual machines in the virtualization environment.
+description: This sub tree contains all virtual machines and virtual machine templates of this FOSS-Cloud installation. 
