@@ -343,10 +343,10 @@ sub moduleNetwork {
 
   # Read the network configuration file.
   my $node_name;
-  my ($admin_vlan_id,$admin_ip_address,$admin_domain,$admin_netmask,$admin_broadcast);
-  my ($data_vlan_id,$data_ip_address,$data_domain,$data_netmask,$data_broadcast);
-  my ($int_vlan_id,$int_ip_address,$int_domain,$int_netmask,$int_broadcast);
-  my ($pub_vlan_id,$pub_ip_address,$pub_domain,$pub_netmask,$pub_broadcast,$pub_gateway);
+  my ($admin_vlan_id,$admin_ip_address,$admin_domain,$admin_netmask,$admin_broadcast,$admin_vip,$admin_ip_second_master_node);
+  my ($data_vlan_id,$data_ip_address,$data_domain,$data_netmask,$data_broadcast,$data_vip,$data_ip_second_master_node);
+  my ($int_vlan_id,$int_ip_address,$int_domain,$int_netmask,$int_broadcast,$int_vip,$int_ip_second_master_node);
+  my ($pub_vlan_id,$pub_ip_address,$pub_domain,$pub_netmask,$pub_broadcast,$pub_gateway,$pub_vip,$pub_ip_second_master_node);
 
   # Set the check variable to 1 to simulate, that the network configuration file was read successfully. 
   # my $check = 1;
@@ -383,6 +383,8 @@ sub moduleNetwork {
           $admin_domain=$columns->[4];
 	  $admin_netmask=$columns->[5];
 	  $admin_broadcast=$columns->[6];
+          $admin_vip = $columns->[8];
+          $admin_ip_second_master_node = $columns->[9];
           last;
         };
         # Set the data vars
@@ -392,6 +394,8 @@ sub moduleNetwork {
           $data_domain=$columns->[4];
           $data_netmask=$columns->[5];
           $data_broadcast=$columns->[6];
+          $data_vip = $columns->[8];
+          $data_ip_second_master_node = $columns->[9];
           last;
         };
         # Set the int vars
@@ -401,6 +405,8 @@ sub moduleNetwork {
           $int_domain=$columns->[4];
           $int_netmask=$columns->[5];
           $int_broadcast=$columns->[6];
+          $int_vip = $columns->[8];
+          $int_ip_second_master_node = $columns->[9];
           last;
         };
         # Set the pub vars
@@ -411,6 +417,8 @@ sub moduleNetwork {
           $pub_netmask=$columns->[5];
           $pub_broadcast=$columns->[6];
 	  $pub_gateway=$columns->[7];
+          $pub_vip = $columns->[8];
+          $pub_ip_second_master_node = $columns->[9];
           last;
         };
       } 
@@ -431,6 +439,8 @@ sub moduleNetwork {
                    "domain" => $admin_domain,
 		   "netmask" => $admin_netmask,
 		   "broadcast" => $admin_broadcast,
+                   "vip" => $admin_vip,
+                   "secondary_master_ip" => $admin_ip_second_master_node,
       },
       "data" => {
                    "id" => $data_vlan_id,
@@ -438,6 +448,8 @@ sub moduleNetwork {
                    "domain" => $data_domain,
                    "netmask" => $data_netmask,
                    "broadcast" => $data_broadcast,
+                   "vip" => $data_vip,
+                   "secondary_master_ip" => $data_ip_second_master_node,
       },
       "int" => {
                    "id" => $int_vlan_id,
@@ -445,6 +457,8 @@ sub moduleNetwork {
                    "domain" => $int_domain,
                    "netmask" => $int_netmask,
                    "broadcast" => $int_broadcast,
+                   "vip" => $int_vip,
+                   "secondary_master_ip" => $int_ip_second_master_node,
       },
       "pub" => {
                    "id" => $pub_vlan_id,
@@ -453,6 +467,8 @@ sub moduleNetwork {
                    "netmask" => $pub_netmask,
                    "broadcast" => $pub_broadcast,
 		   "gateway" => $pub_gateway,
+                   "vip" => $pub_vip,
+                   "secondary_master_ip" => $pub_ip_second_master_node,
       },
     });
     exit SUCCESS_CODE;

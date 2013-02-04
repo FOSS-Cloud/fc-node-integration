@@ -253,7 +253,12 @@ use constant ERROR_GLUSTER_PEER_PROBE_FAILED_CODE   => 21;
 use constant ERROR_GLUSTER_PEER_PROBE_FAILED_STRING => "The gluster peer probe command did not succeed";
 use constant ERROR_CANNOT_CREATE_BACKUP_DIR_CODE    => 22;
 use constant ERROR_CANNOT_CREATE_BACKUP_DIR_STRING  => "Cannot create the backup directory /var/virtualization/backup";
+use constant ERROR_NETWORK_CONF_MISSING_CODE        => 23;
+use constant ERROR_NETWORK_CONF_MISSING_STRING      => "The specified network configuration is not writable";
 
+
+use constant VIP            => 'vip';
+use constant SECONDARY_IP   => 'secondary_ip';
 ######################################################################################################
 # Help text
 ######################################################################################################
@@ -474,6 +479,12 @@ sub primaryMasterNode{
 
   # Asks the user, if the installation should really proceed
   proceed("primary-master-node");
+
+  # Ask for the VIPs
+  my @vips = askVIP();
+
+  # Add the vips to the network config
+  addVIPsToNetworkConfig( @vips );
 
   # Start with step one and check the network configuration
   my $localNetworkHash = checkLocalNetwork();
@@ -3425,5 +3436,172 @@ sub createBackupDirectorySymlink
              ."virtualization/backup, try to create manually by executing the "
              ."following command: @args\n";
     }
+
+}
+
+
+
+################################################################################
+# askVIP
+################################################################################
+# Description:
+#   
+################################################################################
+# Usage:
+#   askVIP( );
+################################################################################
+# Return Values:
+#   Array of hashes of the VIPs
+################################################################################
+
+sub askVIP
+{
+
+    # define the iterfaces and vlans
+    my @interfaces = ("pub","admin","data","int");
+    my @vlans = (140,110,120,130);
+
+    # Define where we need what
+    my @vip_needed = $cfg->val("primary-master","interface_has_vip");
+    my @secondary_master_ip_needed = $cfg->val("primary-master","vip_needs_secondary_master_ip_for_interface");
+
+    # the array which holds the hashes of what to ask the user
+    my @vips = ();
+
+    # Ask the user the VIP for the interfaces which have a vip
+    my $i = 0;
+    my $vip;
+    my $secondary_ip;
+    foreach my $interface ( @interfaces )
+    {
+        # Set the needed vars to 0
+        $vip = 0;
+        $secondary_ip = 0;
+
+        # Check if this interface has a vip
+        if ( grep ( $_ eq $interface, @vip_needed ) )
+        {
+            while ( $vip !~ m/^(\d{1,3}.){3}\d{1,3}$/ )
+            {
+                # Ask the user for the VIP
+                print "\n\nPlease enter the VIP for the $interface-interface (V"
+                      ."LAN ".$vlans[$i].")\n(default: 10.1.".$vlans[$i].".1): ";
+                chomp($vip = <STDIN>);
+
+                # Test if the user entered something, if not take default value
+                $vip = "10.1.".$vlans[$i].".1" unless ( $vip );
+
+            }
+        }
+
+        # Check if this interface also needs the ip of the secondary sotrage
+        # node
+        if ( grep ( $_ eq $interface, @secondary_master_ip_needed ) )
+        {
+            while ( $secondary_ip !~ m/^(\d{1,3}.){3}\d{1,3}$/ )
+            {
+                # Ask the user for the VIP
+                print "\n\nPlease enter the IP for the $interface-interface (VL"
+                      ."AN ".$vlans[$i].") of the\nsecondary-master-node ("
+                      ."default: 10.1.".$vlans[$i].".14): ";
+                chomp($secondary_ip = <STDIN>);
+
+                # Test if the user entered something, if not take default value
+                $secondary_ip = "10.1.".$vlans[$i].".14" unless ($secondary_ip);
+
+            }
+        }
+
+        # add a hash to the ask the user array
+        $vips[$i++] = ( {VIP => $vip, SECONDARY_IP => $secondary_ip } );   
+    }
+
+    return @vips;
+}
+
+################################################################################
+# addVIPsToNetworkConfig
+################################################################################
+# Description:
+#   
+################################################################################
+# Usage:
+#   asaddVIPsToNetworkConfigkVIP( @vips );
+################################################################################
+# Return Values:
+#   none
+################################################################################
+
+sub addVIPsToNetworkConfig{
+
+    # Get the array of hashes which is passed
+    my @vips = @_;
+
+    my @configuration;
+
+    # Open the network config file: 
+    my $network_conf = $cfg->val($modus,"file_network_conf");
+    if ( -w $network_conf )
+    {
+        open(READ_FH,$network_conf);
+        
+        # Read the file and store each line in the configuration array
+        while ( <READ_FH> )
+        {
+            push( @configuration, $_ );
+        }
+
+        # Close the reading FH
+        close READ_FH;
+
+        # Add the VIP information to each line of the file
+        my $i = 0;
+        foreach my $tmp ( @vips )
+        {
+            # Check if vip and/or secondary master node ip is specified and
+            # append it to the line
+            my $vip = $tmp->{VIP};
+            my $second_ip = $tmp->{SECONDARY_IP};
+
+            # remove the newline at the end of the line
+            chomp( $configuration[$i] );
+
+            # Append the comma to the line
+            $configuration[$i] .= ",";
+
+            # Append the vip to the line
+            $configuration[$i] .= $vip if ( $vip );
+
+            # Append the comma to the line
+            $configuration[$i] .= ",";
+
+            # Append the secondary ip to the line
+            $configuration[$i] .= $second_ip if ( $second_ip );
+
+            # increase the index
+            $i++;
+
+        }
+
+        # Write the changes back to the file
+        open(WRITE_FH,">$network_conf");
+        foreach my $conf_line ( @configuration )
+        {
+            print WRITE_FH $conf_line."\n";
+        }
+        close WRITE_FH;
+
+
+    } else
+    {
+        # Stop with error
+        returnError(ERROR_NETWORK_CONF_MISSING_CODE,
+                    ERROR_NETWORK_CONF_MISSING_STRING,
+                    "The file $network_conf is not writable");
+    }
+    
+
+    print "\nSuccesfully added VIP information to the network configuration ";
+    print "(".$network_conf.")\n";
 
 }
