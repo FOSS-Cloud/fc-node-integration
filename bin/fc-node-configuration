@@ -2693,6 +2693,7 @@ sub configureApache2 {
   # Apache2 runs on the pub VLAN
   my $localPubIP = $localNetworkHash->{"pub"}->{"ip"};
   my $localPubDomain =  $localNetworkHash->{"pub"}->{"domain"};
+  my $pub_vip = $localNetworkHash->{"pub"}->{"vip"};
 
   # Configuring the apache2 daemon
   print "\n";
@@ -3485,11 +3486,11 @@ sub askVIP
             {
                 # Ask the user for the VIP
                 print "\n\nPlease enter the VIP for the $interface-interface (V"
-                      ."LAN ".$vlans[$i].")\n(default: 10.1.".$vlans[$i].".1): ";
+                      ."LAN ".$vlans[$i].")\n(default: 10.1.".$vlans[$i].".10): ";
                 chomp($vip = <STDIN>);
 
                 # Test if the user entered something, if not take default value
-                $vip = "10.1.".$vlans[$i].".1" unless ( $vip );
+                $vip = "10.1.".$vlans[$i].".10" unless ( $vip );
 
             }
         }
