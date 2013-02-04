@@ -545,6 +545,9 @@ sub primaryMasterNode{
   # Configure the apache2 daemon
   configureApache2($localNetworkHash);
 
+  # Configure ucarp
+  configureUcarp();
+
   # Configure the fc-brockerd daemon
   configureFcBrokerd($localNetworkHash,$unencrypted_password);
 
@@ -1685,6 +1688,7 @@ sub configureOpenLDAP {
   my $localIntIP = $localNetworkHash->{"int"}->{"ip"};
   my $ntp_conf_file = $cfg->val("General","ntp_conf_file");
   my $dns_conf_file = $cfg->val("General","dns_conf_file");
+  my $int_vip = $localNetworkHash->{"int"}->{"vip"};
   my @sar_commands;
   my @ntp_hosts = ();
   my @dns_hosts = ();
@@ -1740,14 +1744,14 @@ sub configureOpenLDAP {
       foreach $line (@output) {
         if ($line =~ "^URI") {
           print "Found:          $line";
-          $line =~ s/URI.*/URI             ldap:\/\/$localIntIP:389/g;
-          print "Replacing with: URI             ldap://$localIntIP:389\n";
+          $line =~ s/URI.*/URI             ldap:\/\/$int_vip:389/g;
+          print "Replacing with: URI             ldap://$int_vip:389\n";
           $error = 0;
         } # End of if ($line =~ "listen_addr")
       } # End of foreach $line (@output)
 
       if (!$dryrun) {
-        print "Writing:        URI             ldap://$localIntIP:389\n";
+        print "Writing:        URI             ldap://$int_vip:389\n";
         print "To the file:    $file_ldap_conf\n";
         open(FOUT,">$file_ldap_conf") || die("Could not open $file_ldap_conf for writing.");
         foreach $line (@output) {
@@ -1760,7 +1764,7 @@ sub configureOpenLDAP {
             print $line;
           } # End of foreach $line (@output)
         } # End of if ($debug)
-        print "--dry-run: Would write 'URI             ldap://$localIntIP:389' to the file $file_ldap_conf!\n";
+        print "--dry-run: Would write 'URI             ldap://$int_vip:389' to the file $file_ldap_conf!\n";
       } # End of if (!$dryrun)
 
       # Setting the proper permisions on the file /etc/openldap/ldap.conf ...
@@ -1909,14 +1913,14 @@ sub configureOpenLDAP {
   foreach $line (@output) {
     if ($line =~ "^OPTS=") {
       print  "Found:          $line";
-      $line =~ s/OPTS=.*/OPTS=\" -h 'ldap:\/\/$localIntIP'\"/g;
-      print "Replacing with: OPTS=\" -h 'ldap:\/\/$localIntIP'\"\n";
+      $line =~ s/OPTS=.*/OPTS=\" -h 'ldap:\/\/$localIntIP ldap:\/\/$int_vip'\"/g;
+      print "Replacing with: OPTS=\" -h 'ldap:\/\/$localIntIP ldap:\/\/$int_vip'\"\n";
       $error = 0;
     } # End of if ($line =~ "listen_addr")
   } # End of foreach $line (@output)
 
   if (!$dryrun) {
-    print "Writing:        OPTS=\" -h 'ldap:\/\/$localIntIP'\"\n";
+    print "Writing:        OPTS=\" -h 'ldap:\/\/$localIntIP ldap:\/\/$int_vip'\"\n";
     print "To the file:    $file_slapd\n";
     open(FOUT,">$file_slapd") || die("Could not open $file_slapd for writing.");
     foreach $line (@output) {
@@ -1929,7 +1933,7 @@ sub configureOpenLDAP {
         print $line;
       } # End of foreach $line (@output)
     } # End of if ($debug)
-    print "--dry-run: Would write 'OPTS=\" -h 'ldap:\/\/$localIntIP'\"' to the file $file_slapd!\n";
+    print "--dry-run: Would write 'OPTS=\" -h 'ldap:\/\/$localIntIP ldap:\/\/$int_vip'\"' to the file $file_slapd!\n";
   } # End of if (!$dryrun)
 
   # Setting the proper permisions on the acl directory and files ...
@@ -2694,6 +2698,7 @@ sub configureApache2 {
   my $localPubIP = $localNetworkHash->{"pub"}->{"ip"};
   my $localPubDomain =  $localNetworkHash->{"pub"}->{"domain"};
   my $pub_vip = $localNetworkHash->{"pub"}->{"vip"};
+  my $apache_vip_name = "";
 
   # Configuring the apache2 daemon
   print "\n";
@@ -2701,6 +2706,20 @@ sub configureApache2 {
 
   # Make sure, that the web server daemon apache2 is not running
   stopDaemon("apache2");
+
+
+  while ( $apache_vip_name !~ m/.+\..+\..{2,3}/ )
+  {
+      # Ask for the apache2 VIP name
+      print "\nPlease enter the apache VIP name (default: foss-cloud."
+           .$localPubDomain."): ";
+      chomp( $apache_vip_name = <STDIN> );
+
+      # If no name is entered take default one
+      $apache_vip_name = "foss-cloud.".$localPubDomain unless ( $apache_vip_name );
+
+  }
+
 
   # Setting the proper permisions on the openldap directory
 #  print "\n";
@@ -2730,16 +2749,23 @@ sub configureApache2 {
   foreach $line (@output) {
     if ($line =~ "^Listen") {
       print "Found:          $line";
-      $line =~ s/Listen.*/Listen $localPubIP:80/g;
+      $line =~ s/Listen.*/Listen $pub_vip:80/g;
       print "Replacing with: Listen $localPubIP:80\n";
       $error = 0;
     } # End of if ($line =~ "^Listen")
     if ($line =~ "^<VirtualHost") {
       print "Found:          $line";
-      $line =~ s/<VirtualHost.*/<VirtualHost $localPubIP:80>/g;
+      $line =~ s/<VirtualHost.*/<VirtualHost $pub_vip:80>/g;
       print "Replacing with: <VirtualHost $localPubIP:80>\n";
       $error = 0;
     } # End of if ($line =~ "^<VirtualHost")
+    
+    if ( $line =~ m/^\s+ServerName/ )
+    {
+        $line =~ s/ServerName.*/ServerName $apache_vip_name/;
+        print "Replacing with:    ServerName ".$apache_vip_name."\n";
+    }
+
   } # End of foreach $line (@output)
 
   if (!$dryrun) {
@@ -2757,8 +2783,8 @@ sub configureApache2 {
         print $line;
       } # End of foreach $line (@output)
     } # End of if ($debug)
-    print "--dry-run: Would write 'Listen $localPubIP:80' to the file $file_localhost_conf!\n";
-    print "--dry-run: Would write '<VirtualHost $localPubIP:80>' to the file $file_localhost_conf!\n";
+    print "--dry-run: Would write 'Listen $pub_vip:80' to the file $file_localhost_conf!\n";
+    print "--dry-run: Would write '<VirtualHost $pub_vip:80>' to the file $file_localhost_conf!\n";
   } # End of if (!$dryrun)
 
   # Start the apache2 daemon
@@ -2769,6 +2795,27 @@ sub configureApache2 {
 
 } # End of configureApache2
 
+
+################################################################################
+# configureUcarp
+################################################################################
+# Description:
+#   Configures and starts ucarp
+# Usage:
+#   configureUcarp();
+################################################################################
+# Return Values:
+#   none
+################################################################################
+sub configureUcarp
+{
+
+  # Configuring ucarp
+  print "\n";
+  header("Configuring ucarp ...");
+    # TODO 
+
+}
 
 ################################################################################
 # configureFc-brockerd
@@ -3482,15 +3529,25 @@ sub askVIP
         # Check if this interface has a vip
         if ( grep ( $_ eq $interface, @vip_needed ) )
         {
+
+            my $default_ip;
+            if ( $vlans[$i] == 140 )
+            {
+                $default_ip = "192.168.140.10" ;
+            } else
+            {
+                $default_ip = "10.1.".$vlans[$i].".10";
+            }
+
             while ( $vip !~ m/^(\d{1,3}.){3}\d{1,3}$/ )
             {
                 # Ask the user for the VIP
                 print "\n\nPlease enter the VIP for the $interface-interface (V"
-                      ."LAN ".$vlans[$i].")\n(default: 10.1.".$vlans[$i].".10): ";
+                      ."LAN ".$vlans[$i].")\n(default: $default_ip): ";
                 chomp($vip = <STDIN>);
 
                 # Test if the user entered something, if not take default value
-                $vip = "10.1.".$vlans[$i].".10" unless ( $vip );
+                $vip = $default_ip unless ( $vip );
 
             }
         }
@@ -3499,16 +3556,26 @@ sub askVIP
         # node
         if ( grep ( $_ eq $interface, @secondary_master_ip_needed ) )
         {
+            
+            my $default_ip;
+            if ( $vlans[$i] == 140 )
+            {
+                $default_ip = "192.168.140.14" ;
+            } else
+            {
+                $default_ip = "10.1.".$vlans[$i].".14";
+            }
+
             while ( $secondary_ip !~ m/^(\d{1,3}.){3}\d{1,3}$/ )
             {
                 # Ask the user for the VIP
                 print "\n\nPlease enter the IP for the $interface-interface (VL"
                       ."AN ".$vlans[$i].") of the\nsecondary-master-node ("
-                      ."default: 10.1.".$vlans[$i].".14): ";
+                      ."default: $default_ip): ";
                 chomp($secondary_ip = <STDIN>);
 
                 # Test if the user entered something, if not take default value
-                $secondary_ip = "10.1.".$vlans[$i].".14" unless ($secondary_ip);
+                $secondary_ip = $default_ip unless ($secondary_ip);
 
             }
         }
