@@ -579,18 +579,69 @@ sub secondaryMasterNode{
   # Display a nice title
   header("Secondary-Master-Node Installation");
 
-  # Asks the user, if the installation should really proceed
-  # proceed("secondary-master-node");
+   # Asks the user, if the installation should really proceed
+   proceed("secondary-master-node");
 
   # Start with step one and check the network configuration
-  # my $localNetworkHash = checkLocalNetwork();
+  my $localNetworkHash = checkLocalNetwork();
+
+  # Get the network config from primary master node (we also need to know the 
+  # VIPs)
+  # Ask the user for the information of the first storage Node.
+  my ($host,$user,$password)=askRemoteHostInfo("primary Master-Node","admin",$localNetworkHash->{"admin"}->{"id"});
+
+  # Retreive the network information of the first Storage-Node
+  my $remoteNetworkHash = checkRemoteNetwork($host,$user,$password);
+
+  # Add the VIPs to the local network
+  my @vips = (
+                { VIP => $remoteNetworkHash->{'pub'}->{'vip'}, SECONDARY_IP => $remoteNetworkHash->{'pub'}->{'secondary_master_ip'} },
+                { VIP => $remoteNetworkHash->{'admin'}->{'vip'}, SECONDARY_IP => $remoteNetworkHash->{'admin'}->{'secondary_master_ip'} },
+                { VIP => $remoteNetworkHash->{'data'}->{'vip'}, SECONDARY_IP => $remoteNetworkHash->{'data'}->{'secondary_master_ip'} },
+                { VIP => $remoteNetworkHash->{'int'}->{'vip'}, SECONDARY_IP => $remoteNetworkHash->{'int'}->{'secondary_master_ip'} },
+             );
+  addVIPsToNetworkConfig(@vips);
+
+  # Get the local network again
+  $localNetworkHash = checkLocalNetwork();
+
+  # Ask the user for the information of the first storage Node.
+  my ($host1,$user1,$password1)=askRemoteHostInfo("primary Storage-Node","admin",$localNetworkHash->{"admin"}->{"id"});
+
+  # Retreive the network information of the first Storage-Node
+  my $remoteNetworkHash1 = checkRemoteNetwork($host1,$user1,$password1);
+
+  # Ask the user for the information of the second storage Node.
+  my ($host2,$user2,$password2)=askRemoteHostInfo("secondary Storage-Node","admin",$localNetworkHash->{"admin"}->{"id"});
+
+  # Retreive the network information of the second Storage-Node
+  my $remoteNetworkHash2 = checkRemoteNetwork($host2,$user2,$password2);
+
+  # Start the ksm daemon and add it to the default runlevel
+  startDaemon("ksm");
+  rcUpdate("ksm","default");
+
+  # Start the ksmtuned daemon and add it to the default runlevel
+  startDaemon("ksmtuned");
+  rcUpdate("ksmtuned","default");
+
+  # Mount the GlusterFS volume
+  mountGlusterFS($remoteNetworkHash1,$remoteNetworkHash2);
+
+  # Unpack virtualization data tarball and test if it's ok
+  my $tarball = $cfg->val($modus,"file_tarball_source");
+  my $destination = $cfg->val($modus,"file_tarball_destination");
+  if ( unpackVirtualizationDataTarball($tarball, $destination) )
+  {
+      returnError(ERROR_UNPACKING_TARBALL_CODE,ERROR_UNPACKING_TARBALL_STRING);
+  }
 
   # Configure the libvirtd daemon
-  # configureLibvirt($localNetworkHash);
+  configureLibvirt($localNetworkHash);
 
   # Tell the administrator, that the installation and configuration of this node is complete.
   #print "\nCongratulations, you have finished the installation and configuration of this Node!\n\n"
-  print "Not implemented yet.\n";
+  print "Not implemented fully yet.\n";
 
 } # End of sub secondaryMasterNode
 
@@ -1302,13 +1353,21 @@ sub askRemoteHostInfo {
   
   # Check if it is a primary or secondary storage node and set the default ip 
   # accordingly
-  if ( $server_type eq "primary Storage-Node" )
-  {
-    $default_ip = "10.1.110.11";
-  } elsif ( $server_type eq "secondary Storage-Node" )
-  {
-    $default_ip = "10.1.110.12";
-  }
+
+  SWITCH: {
+    $server_type eq "primary Storage-Node" and do {
+      $default_ip = "10.1.110.11";
+      last;
+    };
+    $server_type eq "secondary Storage-Node" and do {
+      $default_ip = "10.1.110.12";
+      last;
+    };
+    $server_type eq "primary Master-Node" and do {
+      $default_ip = "10.1.110.13";
+      last;
+    };
+  };
 
   # Ask for the IP address and save it, we check if it is a real IP, if not ask
   # again until we have a real IP
