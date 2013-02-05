@@ -546,7 +546,13 @@ sub primaryMasterNode{
   configureApache2($localNetworkHash);
 
   # Configure ucarp
-  configureUcarp();
+  configureUcarp($localNetworkHash);
+
+  # Start the ucarp for int and pub
+  startDaemon("ucarp.pub");
+  rcUpdate("ucarp.pub","default");
+  startDaemon("ucarp.int");
+  rcUpdate("ucarp.int","default");
 
   # Configure the fc-brockerd daemon
   configureFcBrokerd($localNetworkHash,$unencrypted_password);
@@ -1663,6 +1669,7 @@ sub configureOpenLDAP {
   my $file_03_reseller                               = $directory_data."/03_reseller.ldif";
   my $file_04_customers                              = $directory_data."/04_customers.ldif";
   my $file_05_people                                 = $directory_data."/05_people.ldif";
+  my $file_05_people_template                        = $directory_data."/05_people.template-primary-master";
   my $file_06_groups                                 = $directory_data."/06_groups.ldif";
   my $file_06_services_virtualization                = $directory_data."/06_services_virtualization.ldif";
   my $file_07_authentication_services_virtualization_template = $directory_data."/07_authentication_services_virtualization.template-$local_modus";
@@ -1716,7 +1723,7 @@ sub configureOpenLDAP {
   ### Working on the file /etc/openldap/ldap.conf if needed by $modus
   ##############################################################################
 
-  if ( $local_modus eq "primary_master" )
+  if ( $local_modus eq "primary-master" )
   {
       # Working on the file /etc/openldap/ldap.conf
       print "\n";
@@ -1913,8 +1920,10 @@ sub configureOpenLDAP {
   foreach $line (@output) {
     if ($line =~ "^OPTS=") {
       print  "Found:          $line";
-      $line =~ s/OPTS=.*/OPTS=\" -h 'ldap:\/\/$localIntIP ldap:\/\/$int_vip'\"/g;
-      print "Replacing with: OPTS=\" -h 'ldap:\/\/$localIntIP ldap:\/\/$int_vip'\"\n";
+#      $line =~ s/OPTS=.*/OPTS=\" -h 'ldap:\/\/$localIntIP ldap:\/\/$int_vip'\"/g;
+#      print "Replacing with: OPTS=\" -h 'ldap:\/\/$localIntIP ldap:\/\/$int_vip'\"\n";
+      $line =~ s/OPTS=.*/OPTS=\" -h 'ldap:\/\/0.0.0.0'\"/g;
+      print "Replacing with: OPTS=\" -h 'ldap:\/\/0.0.0.0'\"\n";
       $error = 0;
     } # End of if ($line =~ "listen_addr")
   } # End of foreach $line (@output)
@@ -1975,7 +1984,6 @@ sub configureOpenLDAP {
            -r $file_02_group_mapping_administration ||
            -r $file_03_reseller ||
            -r $file_04_customers ||
-           -r $file_05_people ||
            -r $file_06_groups ||
            -r $file_06_services_virtualization
          )
@@ -1990,7 +1998,7 @@ sub configureOpenLDAP {
   loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_02_group_mapping_administration);
 
   ##############################################################################
-  # Working on /etc/openldap/data/07_services-administration.ldif
+  # Working on /etc/openldap/data/02_services-administration.ldif
   # if needed by $modus
   ##############################################################################
 
@@ -2033,6 +2041,142 @@ sub configureOpenLDAP {
 
   loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_03_reseller);
   loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_04_customers);
+
+  ##############################################################################
+  # Working on /etc/openldap/data/05_people.ldif
+  # if needed by $modus
+  ##############################################################################
+
+  if ( ( $local_modus eq "primary-master" ) || ( $local_modus eq "vm-node" ) )
+  {
+
+    # Variables we need
+    my $givenname;
+    my $surname;
+    my $gender = "";
+    my $mail = "";
+    my $timezone = "";
+    my $language = "";
+    my $password;
+
+    # Gives the user the possibility to reenter all information
+    my $correct = 0;
+
+    while ( ! $correct )
+    {
+        # Ask for all necessary information
+        print "\n";
+        print "Please enter the the information for the FOSS-Cloud ";
+        print "administrator\n(username 'admin'):";
+        print "\n\n";
+        print "Givenname: ";
+        chomp( $givenname = <STDIN> );
+
+        print "\n";
+        print "Surname: ";
+        chomp( $surname = <STDIN> );
+
+        # Local gender validation
+        while ( $gender !~ m/^[fmn]$/ )
+        {
+            print "\n";
+            print "Gender [f/m/n]: ";
+            chomp( $gender = <STDIN> );
+        }
+
+        # Local mail address validation
+        while ( $mail !~ m/^.+\@.+\..{2,3}$/ )
+        {
+            print "\n";
+            print "Mailaddress: ";
+            chomp( $mail = <STDIN> );
+        }
+
+        # Local language validation
+        while ( $language !~ m/^\w{2}\-\w{2}$/ )
+        {
+            print "\n";
+            print "Language, in the form of 'en-GB' (default: en-GB): ";
+            chomp( $language = <STDIN> );
+
+            # Assign default if nothing was entered
+            $language = "en-GB" unless ( $language );
+
+        }
+
+        # Local timezone validation
+        while ( $timezone !~ m/^UTC[+-]\d{2}$/ )
+        {
+            print "\n";
+            print "Timezone offset, in the form of 'UTC+01' (default: UTC+01) : ";
+            chomp( $timezone = <STDIN> );
+
+            # Assign default if nothing was entered
+            $timezone = "UTC+01" unless ( $timezone );
+
+        }
+
+        # Newline as always
+        print "\n";
+
+        # Ask for the password: 
+        ($password, my $uncrypted) = askForOpenLDAPPassword("admin");
+
+        # Show the user what he entered: 
+        print "\nIs the follwing information correct?:\n";
+        print "\nGivenname:   $givenname\n";
+        print "Surname:     $surname\n";
+        print "Gender:      $gender\n";
+        print "Language:    $language\n";
+        print "Mailaddress: $mail\n";
+        print "Timezone:    $timezone\n";
+        print "Password:    $password\n\n";
+
+        my $user_correct = "";
+
+        while ( $user_correct !~ m/^[yn]$/i )
+        {
+            print "\nIs everything correct? [Y/n]: ";
+
+            chomp( $user_correct = <STDIN> );
+
+            # Check if the user entered something, if not take default
+            $user_correct = "y" unless ( $user_correct );
+        }
+        
+        # If everything is correct we can quit the while loop and continue
+        if ( $user_correct =~ m/^y$/i )
+        {
+            $correct = 1;
+        } else
+        {
+            # Otherwise we need to reset all information
+            $gender = "";
+            $mail = "";
+            $timezone = "";
+            $language = "";
+        }
+
+    }
+
+    # Now lets replace the information in the template and create a ldif
+    @sar_commands = ( {search => "<FOSS-CLOUD-PEOPLE-GENDER>", replace => $gender },
+                      {search => "<FOSS-CLOUD-PEOPLE-GIVENNAME>", replace => $givenname},
+                      {search => "<FOSS-CLOUD-PEOPLE-SURNAME>", replace => $surname},
+                      {search => "<FOSS-CLOUD-PEOPLE-LANGUAGE>", replace => $language},
+                      {search => "<FOSS-CLOUD-PEOPLE-PASSWORD>", replace => $password},
+                      {search => "<FOSS-CLOUD-PEOPLE-MAIL>", replace => $mail},
+                      {search => "<FOSS-CLOUD-PEOPLE-TIMEZONE>", replace => $timezone},
+                    );
+
+    searchAndReplace( $file_05_people_template,
+                      $file_05_people,
+                      @sar_commands
+                     );    
+
+
+  }
+
   loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_05_people);
   loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_06_groups);
   loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_06_services_virtualization);
@@ -2788,10 +2932,10 @@ sub configureApache2 {
   } # End of if (!$dryrun)
 
   # Start the apache2 daemon
-  startDaemon("apache2");
+#  startDaemon("apache2");
 
   # Add the apache2 daemon to the default runlevel
-  rcUpdate("apache2","default");
+#  rcUpdate("apache2","default");
 
 } # End of configureApache2
 
@@ -2809,11 +2953,343 @@ sub configureApache2 {
 ################################################################################
 sub configureUcarp
 {
+    #TODO: this method with search replace
 
+  # Public interface
+
+  my $localNetworkHash = shift;
   # Configuring ucarp
   print "\n";
   header("Configuring ucarp ...");
-    # TODO 
+
+  # Ucarp permission
+  my $uid = $cfg->val("General","uid_root");
+  my $gid = $cfg->val("General","gid_root");
+  my $permissions = 0755;
+
+  my $ucarp_dir = "/etc/ucarp";
+
+  # Create the /etc/ucarp directory if it does not exsist
+  unless ( -e $ucarp_dir )
+  {
+      if ( !mkdir($ucarp_dir,0755) )
+      {
+        # TODO
+    #    returnError();
+      }
+  }
+
+  # Create the vip-up.sh script: 
+  my $pub_vip_up_script = '#!/bin/bash
+# Copyright 2005 Mike Glenn & Homechicken Software
+# Distributed under the terms of the GNU General Public License v2
+ 
+# read in the configuration file
+source /etc/conf.d/ucarp.pub
+ 
+# bring up the virtual interface
+$IP_ADDR add $PUB_VIRTUAL_ADDRESS/$PUB_VIRTUAL_NETMASK dev $PUB_INTERFACE
+
+# start apache 
+/etc/init.d/apache2 start';
+
+  # Write the script
+  if( ! open(VIP_UP,">$ucarp_dir/pub-vip-up.sh") )
+  {
+    # TODO
+#    returnError();
+  }
+
+  print VIP_UP $pub_vip_up_script;
+  close VIP_UP;
+
+  # Set proper file permission 
+  setSingleFilePermissions("file",$uid,$gid,$permissions,"$ucarp_dir/pub-vip-up.sh");
+
+
+  # Create the vip_down script
+  my $pub_vip_down_script = '#!/bin/bash
+# Copyright 2005 Mike Glenn & Homechicken Software
+# Distributed under the terms of the GNU General Public License v2
+ 
+# read in the configuration file
+source /etc/conf.d/ucarp.pub
+ 
+#
+# bring down the virtual interface
+$IP_ADDR del $PUB_VIRTUAL_ADDRESS/$PUB_VIRTUAL_NETMASK dev $PUB_INTERFACE
+
+# stop the apache
+/etc/init.d/apache2 stop';
+
+  # Write the script
+  if( ! open(VIP_DOWN,">$ucarp_dir/pub-vip-down.sh") )
+  {
+    # TODO
+#    returnError();
+  }
+
+  print VIP_DOWN $pub_vip_down_script;
+  close VIP_DOWN;
+
+  # Set proper file permission 
+  setSingleFilePermissions("file",$uid,$gid,$permissions,"$ucarp_dir/pub-vip-down.sh");
+
+  # Create the file /etc/conf.d/ucarp
+  my $pub_ucarp_config = '# Copyright 2005 Mike Glenn & Homechicken Software
+# Distributed under the terms of the GNU General Public License v2
+ 
+# Location of the ucarp executable
+UCARP_EXEC=/usr/sbin/ucarp
+IP_ADDR="/sbin/ip addr"
+ 
+#
+# Location of the ucarp pid file
+PUB_UCARP_PIDFILE=/var/run/ucarp-pub.pid
+ 
+#
+# ucarp options
+# -z run shudown script on exit
+# -P force perferred master
+OPTIONS="-z"
+ 
+#
+# ucarp base, lower number will be perfered master
+# set to same to have master stay alive as long as possible
+PUB_UCARP_BASE=1
+ 
+#
+# Interface for Ipaddress
+PUB_INTERFACE=vmbr0
+ 
+#
+# Instance id
+# any number from 1 to 255
+# Master and Backup need to be the same
+PUB_INSTANCE_ID=1
+ 
+#
+# Password so servers can trust who they are talking to
+PUB_PASSWORD=admin
+ 
+#
+# The start and stop scripts
+PUB_START_SCRIPT=/etc/ucarp/pub-vip-up.sh
+PUB_STOP_SCRIPT=/etc/ucarp/pub-vip-down.sh
+ 
+#
+# The Application Address that will failover
+PUB_VIRTUAL_ADDRESS='.$localNetworkHash->{'pub'}->{'vip'}.'
+PUB_VIRTUAL_BROADCAST='.$localNetworkHash->{'pub'}->{'broadcast'}.'
+PUB_VIRTUAL_NETMASK='.$localNetworkHash->{'pub'}->{'netmask'}.'
+ 
+#
+# The Maintanence Address of the local machine
+PUB_SOURCE_ADDRESS='.$localNetworkHash->{'pub'}->{'ip'}.'
+ 
+#
+# DO NOT EDIT BELOW THIS LINE!
+PUB_UCARP_OPTS="$OPTIONS -b $PUB_UCARP_BASE -i $PUB_INTERFACE -v $PUB_INSTANCE_ID -p $PUB_PASSWORD -u $PUB_START_SCRIPT -d $PUB_STOP_SCRIPT -a $PUB_VIRTUAL_ADDRESS -s $PUB_SOURCE_ADDRESS"';
+
+  if( ! open(UCARP, ">/etc/conf.d/ucarp.pub") )
+  {
+    # TODO
+#    returnError();
+  }
+
+  print UCARP $pub_ucarp_config;
+  close UCARP;
+
+  # Create the deamon
+  my $pub_ucarp_start_stop = '#!/sbin/runscript
+# Copyright 2005 Mike Glenn & Homechicken Software
+# Distributed under the terms of the GNU General Public License v2
+ 
+depend() {
+       use logger net
+}
+ 
+start() {
+       ebegin "Starting UCARP_PUB"
+       start-stop-daemon --start --background --make-pidfile --pidfile ${PUB_UCARP_PIDFILE} --quiet --exec ${UCARP_EXEC} -- ${PUB_UCARP_OPTS}
+       eend $?
+}
+ 
+stop()  {
+        ebegin "Stopping UCARP_PUB"
+        start-stop-daemon --stop --pidfile ${PUB_UCARP_PIDFILE}
+        eend $?
+}';
+
+  if( ! open(UCARP, ">/etc/init.d/ucarp.pub") )
+  {
+    # TODO
+#    returnError();
+  }
+
+  print UCARP $pub_ucarp_start_stop;
+  close UCARP;
+
+  # Set proper file permission 
+  setSingleFilePermissions("file",$uid,$gid,$permissions,"/etc/init.d/ucarp.pub");
+
+
+
+
+
+
+  ##### int interface
+
+
+  # Create the vip-up.sh script: 
+  my $int_vip_up_script = '#!/bin/bash
+# Copyright 2005 Mike Glenn & Homechicken Software
+# Distributed under the terms of the GNU General Public License v2
+ 
+# read in the configuration file
+source /etc/conf.d/ucarp.int 
+ 
+# bring up the virtual interface
+$IP_ADDR add $INT_VIRTUAL_ADDRESS/$INT_VIRTUAL_NETMASK dev $INT_INTERFACE';
+
+  # Write the script
+  if( ! open(VIP_UP,">$ucarp_dir/int-vip-up.sh") )
+  {
+    # TODO
+#    returnError();
+  }
+
+  print VIP_UP $int_vip_up_script;
+  close VIP_UP;
+
+  # Set proper file permission 
+  setSingleFilePermissions("file",$uid,$gid,$permissions,"$ucarp_dir/int-vip-up.sh");
+
+
+  # Create the vip_down script
+  my $int_vip_down_script = '#!/bin/bash
+# Copyright 2005 Mike Glenn & Homechicken Software
+# Distributed under the terms of the GNU General Public License v2
+ 
+# read in the configuration file
+source /etc/conf.d/ucarp.int
+ 
+#
+# bring down the virtual interface
+$IP_ADDR del $INT_VIRTUAL_ADDRESS/$INT_VIRTUAL_NETMASK dev $INT_INTERFACE';
+
+  # Write the script
+  if( ! open(VIP_DOWN,">$ucarp_dir/int-vip-down.sh") )
+  {
+    # TODO
+#    returnError();
+  }
+
+  print VIP_DOWN $int_vip_down_script;
+  close VIP_DOWN;
+
+  # Set proper file permission 
+  setSingleFilePermissions("file",$uid,$gid,$permissions,"$ucarp_dir/int-vip-down.sh");
+
+  # Create the file /etc/conf.d/ucarp
+  my $int_ucarp_config = '# Copyright 2005 Mike Glenn & Homechicken Software
+# Distributed under the terms of the GNU General Public License v2
+ 
+# Location of the ucarp executable
+UCARP_EXEC=/usr/sbin/ucarp
+IP_ADDR="/sbin/ip addr"
+ 
+#
+# Location of the ucarp pid file
+INT_UCARP_PIDFILE=/var/run/ucarp-int.pid
+ 
+#
+# ucarp options
+# -z run shudown script on exit
+# -P force perferred master
+OPTIONS="-z"
+ 
+#
+# ucarp base, lower number will be perfered master
+# set to same to have master stay alive as long as possible
+INT_UCARP_BASE=1
+ 
+#
+# Interface for Ipaddress
+INT_INTERFACE=vlan'.$localNetworkHash->{'int'}->{'id'}.'
+ 
+#
+# Instance id
+# any number from 1 to 255
+# Master and Backup need to be the same
+INT_INSTANCE_ID=1
+ 
+#
+# Password so servers can trust who they are talking to
+INT_PASSWORD=admin
+ 
+#
+# The start and stop scripts
+INT_START_SCRIPT=/etc/ucarp/int-vip-up.sh
+INT_STOP_SCRIPT=/etc/ucarp/int-vip-down.sh
+ 
+#
+# The Application Address that will failover
+INT_VIRTUAL_ADDRESS='.$localNetworkHash->{'int'}->{'vip'}.'
+INT_VIRTUAL_BROADCAST='.$localNetworkHash->{'int'}->{'broadcast'}.'
+INT_VIRTUAL_NETMASK='.$localNetworkHash->{'int'}->{'netmask'}.'
+ 
+#
+# The Maintanence Address of the local machine
+INT_SOURCE_ADDRESS='.$localNetworkHash->{'int'}->{'ip'}.'
+ 
+#
+# DO NOT EDIT BELOW THIS LINE!
+INT_UCARP_OPTS="$OPTIONS -b $INT_UCARP_BASE -i $INT_INTERFACE -v $INT_INSTANCE_ID -p $INT_PASSWORD -u $INT_START_SCRIPT -d $INT_STOP_SCRIPT -a $INT_VIRTUAL_ADDRESS -s $INT_SOURCE_ADDRESS"';
+
+  if( ! open(UCARP, ">/etc/conf.d/ucarp.int") )
+  {
+    # TODO
+#    returnError();
+  }
+
+  print UCARP $int_ucarp_config;
+  close UCARP;
+
+  # Create the deamon
+  my $int_ucarp_start_stop = '#!/sbin/runscript
+# Copyright 2005 Mike Glenn & Homechicken Software
+# Distributed under the terms of the GNU General Public License v2
+ 
+depend() {
+       use logger net
+}
+ 
+start() {
+       ebegin "Starting UCARP_INT"
+       start-stop-daemon --start --background --make-pidfile --pidfile ${INT_UCARP_PIDFILE} --quiet --exec ${UCARP_EXEC} -- ${INT_UCARP_OPTS}
+       eend $?
+}
+ 
+stop()  {
+        ebegin "Stopping UCARP_INT"
+        start-stop-daemon --stop --pidfile ${INT_UCARP_PIDFILE}
+        eend $?
+}';
+
+  if( ! open(UCARP, ">/etc/init.d/ucarp.int") )
+  {
+    # TODO
+#    returnError();
+  }
+
+  print UCARP $int_ucarp_start_stop;
+  close UCARP;
+
+  # Set proper file permission 
+  setSingleFilePermissions("file",$uid,$gid,$permissions,"/etc/init.d/ucarp.int");
+
+
 
 }
 
@@ -3211,7 +3687,7 @@ sub askForOpenLDAPPassword {
   } # End of if($errorCode != 0)
 
   # Return the OpenLDAP Manager password
-  return ($password,$unencrypted_password);;
+  return ($password,$unencrypted_password);
 
 } # End of sub askForOpenLDAPPassword
 
