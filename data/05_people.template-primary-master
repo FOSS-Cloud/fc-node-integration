@@ -41,14 +41,14 @@ dn: uid=4000002,ou=people,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstPerson
 uid: 4000002
-sstGender: m
-givenName: FOSS-Cloud
-surname: Administrator
-preferredLanguage: en-GB
-userPassword: {SSHA}B2nioD05ZT1KqWML/QGRiAD6/fs9KWMp
-mail: demo.user1@example.com
+sstGender: <FOSS-CLOUD-PEOPLE-GENDER>
+givenName: <FOSS-CLOUD-PEOPLE-GIVENNAME>
+surname: <FOSS-CLOUD-PEOPLE-SURNAME>
+preferredLanguage: <FOSS-CLOUD-PEOPLE-LANGUAGE>
+userPassword: <FOSS-CLOUD-PEOPLE-PASSWORD>
+mail: <FOSS-CLOUD-PEOPLE-MAIL>
 cn: admin
-sstTimeZoneOffset: UTC+01
+sstTimeZoneOffset: <FOSS-CLOUD-PEOPLE-TIMEZONE>
 sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
 
