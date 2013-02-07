@@ -2604,7 +2604,7 @@ sub configureOpenLDAP {
   {
       # If not write the version tag file
       open(VERSION,">$directory_hdb_data/.version-tag") || die ("Cannot open $directory_hdb_data/.version-tag for writing");
-      print VERSION "OLDPF='openldap-2.4.30\n".
+      print VERSION "OLDPF='openldap-2.4.30'\n".
                     "# do NOT delete this. it is used\n".
                     "# to track versions for upgrading.";
       close VERSION;
