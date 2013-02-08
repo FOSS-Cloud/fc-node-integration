@@ -1,4 +1,39 @@
-################################################################################
+# Copyright (C) 2013 FOSS-Group
+#                    Germany
+#                    http://www.foss-group.de
+#                    support@foss-group.de
+#
+# Authors:
+#  Michael Eichenberger <michael.eichenberger@stepping-stone.ch>
+#  
+# Licensed under the EUPL, Version 1.1 or – as soon they
+# will be approved by the European Commission - subsequent
+# versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the
+# Licence.
+# You may obtain a copy of the Licence at:
+#
+# http://www.osor.eu/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+#
+# 
+#
+#
+#####################################################################################################################
+# /etc/openldap/data/06_groups.ldif
+#####################################################################################################################
+# Description:
+#  This LDIF defines two working example groups.
+#####################################################################################################################
+
+#####################################################################################################################
 # uid=4000014,ou=groups,dc=foss-cloud,dc=org
 ################################################################################
 # Description:
@@ -10,7 +45,7 @@ objectclass: sstGroupObjectClass
 objectclass: sstRelationship
 objectclass: labeledURIObject
 uid: 4000014
-sstGroupName: Technology
+sstDisplayName: Technology
 description: This is an example group mapping with the name "Technology".
 labeledURI: ldap:///ou=people,dc=foss-cloud,dc=org??one?(sstGroupUID=4000014)
 sstBelongsToResellerUID: 4000000
@@ -28,7 +63,7 @@ objectclass: sstGroupObjectClass
 objectclass: sstRelationship
 objectclass: labeledURIObject
 uid: 4000015
-sstGroupName: Office
+sstDisplayName: Office
 description: This is an example group mapping with the name "Office".
 labeledURI: ldap:///ou=people,dc=foss-cloud,dc=org??one?(sstGroupUID=4000015)
 sstBelongsToResellerUID: 4000000
