@@ -54,6 +54,8 @@ use Net::LDAP;
 use Net::LDAP::Constant qw(
   LDAP_SUCCESS
 );
+use Crypt::GeneratePassword qw(chars);
+
 
 $| = 1;                        # Turn buffering off, so that the output is flushed immediately
 
@@ -1971,6 +1973,9 @@ sub configureOpenLDAP {
                   "Could not open $file_slapd for reading");
   }
 
+  # Generate a passwor for the syncrepl user
+  my $syncrepl_password = chars(8,8);
+
   # Replacing OPTS=" -h 'ldap://127.0.0.1'" with OPTS=" -h 'ldap://$localIntIP'"
   open(FILE,$file_slapd);
   @output = <FILE>;
@@ -2082,6 +2087,7 @@ sub configureOpenLDAP {
       # the correct values
       @sar_commands = ( {search => "<FOSS-CLOUD-PROV-BACKUP-KVM-PASSWORD>", replace => $prov_backup_kvm_password},
                         {search => "<FOSS-CLOUD-DHCP-PASSWORD>", replace => $dhcp_password},
+                        {search => "<FOSS-CLOUD-SYNCREPL-PASSWORD>", replace => $syncrepl_password},
                       );
 
       # Replace the template with the correct values which are specified in the
@@ -2106,7 +2112,7 @@ sub configureOpenLDAP {
   # if needed by $modus
   ##############################################################################
 
-  if ( ( $local_modus eq "primary-master" ) || ( $local_modus eq "vm-node" ) )
+  if ( ( $local_modus eq "primary-master" ) )
   {
 
     # Variables we need
@@ -2126,9 +2132,10 @@ sub configureOpenLDAP {
         # Ask for all necessary information
         print "\n";
         print "Please enter the the information for the FOSS-Cloud ";
-        print "administrator\n(username 'admin'):";
+        print "administrator with which\nyou will log in on the webinterface ";
+        print "(username is 'admin'):";
         print "\n\n";
-        print "Givenname: ";
+        print "Given name: ";
         chomp( $givenname = <STDIN> );
 
         print "\n";
@@ -2139,7 +2146,7 @@ sub configureOpenLDAP {
         while ( $gender !~ m/^[fmn]$/ )
         {
             print "\n";
-            print "Gender [f/m/n]: ";
+            print "Gender [f(emale)/m(ale)/n(eutral)]: ";
             chomp( $gender = <STDIN> );
         }
 
@@ -2147,7 +2154,7 @@ sub configureOpenLDAP {
         while ( $mail !~ m/^.+\@.+\..{2,3}$/ )
         {
             print "\n";
-            print "Mailaddress: ";
+            print "Mail address: ";
             chomp( $mail = <STDIN> );
         }
 
@@ -2163,16 +2170,34 @@ sub configureOpenLDAP {
 
         }
 
-        # Local timezone validation
-        while ( $timezone !~ m/^UTC[+-]\d{2}$/ )
+        # Get the systems timezone in the form +0100
+        my $timezone = strftime "%z",localtime();
+
+        if ( $timezone =~ m/^([+-]\d{2})(\d{2})/ )
         {
-            print "\n";
-            print "Timezone offset, in the form of 'UTC+01' (default: UTC+01) : ";
-            chomp( $timezone = <STDIN> );
+            # Test if the second part is 00 if yes just take the UTC+first part
+            if ( $2 eq "00" )
+            {
+                $timezone = "UTC$1";
+            } else
+            {
+                $timezone = "UTC$1:$2";
+            }
+        } else
+        {
+            # Timezone does not match expected format, ask the user to enter 
+            # it
+            # Local timezone validation
+            while ( $timezone !~ m/^UTC[+-]\d{2}$/ )
+            {
+                print "\n";
+                print "Timezone offset, in the form of 'UTC+01' (default: UTC+01) : ";
+                chomp( $timezone = <STDIN> );
 
-            # Assign default if nothing was entered
-            $timezone = "UTC+01" unless ( $timezone );
+                # Assign default if nothing was entered
+                $timezone = "UTC+01" unless ( $timezone );
 
+            }
         }
 
         # Newline as always
