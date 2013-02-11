@@ -1,4 +1,4 @@
-# Copyright (C) 2012 FOSS-Group
+# Copyright (C) 2013 FOSS-Group
 #                    Germany
 #                    http://www.foss-group.de
 #                    support@foss-group.de
@@ -49,3 +49,11 @@ objectclass: inetOrgPerson
 cn: prov-backup-kvm
 sn: prov-backup-kvm
 userPassword: <FOSS-CLOUD-PROV-BACKUP-KVM-PASSWORD>
+
+dn: cn=slapd-mirrormode,ou=services,ou=administration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalPerson
+objectclass: inetOrgPerson
+cn: slapd-mirrormode 
+sn: slapd-mirrormode
+userPassword: <FOSS-CLOUD-SYNCREPL-PASSWORD>
