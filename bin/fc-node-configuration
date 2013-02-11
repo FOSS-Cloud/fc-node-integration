@@ -54,7 +54,8 @@ use Net::LDAP;
 use Net::LDAP::Constant qw(
   LDAP_SUCCESS
 );
-use Crypt::GeneratePassword qw(chars);
+#use Crypt::GeneratePassword qw(chars);
+use POSIX;
 
 
 $| = 1;                        # Turn buffering off, so that the output is flushed immediately
@@ -529,7 +530,7 @@ sub primaryMasterNode{
   configureLibvirt($localNetworkHash);
 
   # Configure the slapd daemon
-  my $unencrypted_password = configureOpenLDAP($localNetworkHash,$password);
+  my $unencrypted_password = configureOpenLDAP($localNetworkHash,0,$password);
 
   # Configure the VM-Manger
   configureVMManager($localNetworkHash,$unencrypted_password);
@@ -590,7 +591,7 @@ sub secondaryMasterNode{
   # Get the network config from primary master node (we also need to know the 
   # VIPs)
   # Ask the user for the information of the first storage Node.
-  my ($host,$user,$password)=askRemoteHostInfo("primary Master-Node","admin",$localNetworkHash->{"admin"}->{"id"});
+  my ($host,$user,$password)= askRemoteHostInfo("primary Master-Node","admin",$localNetworkHash->{"admin"}->{"id"});
 
   # Retreive the network information of the first Storage-Node
   my $remoteNetworkHash = checkRemoteNetwork($host,$user,$password);
@@ -876,7 +877,7 @@ sub demoSystem{
   configureLibvirt($localNetworkHash);
 
   # Configure the slapd daemon
-  my $unencrypted_password = configureOpenLDAP($localNetworkHash,$password);
+  my $unencrypted_password = configureOpenLDAP($localNetworkHash,0,$password);
 
   # Configure the VM-Manger
   configureVMManager($localNetworkHash,$unencrypted_password);
@@ -1694,7 +1695,7 @@ sub configureLibvirt {
 #   $unencrypted_password : The unencrypted OpenLDAP Manager password.
 ######################################################################################################
 sub configureOpenLDAP {
-  my ($localNetworkHash,$password)=@_;
+  my ($localNetworkHash,$remoteNetworkHash,$password)=@_;
 
   # Retake the modus, we need it to deal with the ldifs later on
   my $local_modus = $modus;
@@ -1844,6 +1845,11 @@ sub configureOpenLDAP {
   ### Working on the file /etc/openldap/slapd.conf if needed by $modus
   ##############################################################################
 
+  # Generate a passwor for the syncrepl user
+#  my $syncrepl_password = chars(8,8);
+  my $syncrepl_password = "mysecretpassword";
+  my $crypted_syncrepl_password = `/usr/sbin/slappasswd -s '$syncrepl_password'`;
+
   if ( $local_modus eq "primary-master" )
   {
       # Working on the file /etc/openldap/slapd.conf
@@ -1881,6 +1887,22 @@ sub configureOpenLDAP {
       # With:
       # rootpw          {SSHA}McZMZiKDM5/EpeexPxG4qOojndoJeM2D
 
+      # Get the syncrepl provider
+      my $syncrepl_provider;
+
+      # Check what modus we have
+      if ( $modus eq "primary-master" )
+      {
+        # Its the secondary ip from the int-interface (we asked this information 
+        # at the start of the script when asking for the VIPs)
+        $syncrepl_provider = $localNetworkHash->{'int'}->{'secondary_master_ip'};
+      } else
+      {
+        # If its the secondary storage node, its the remote networks int ip
+        $syncrepl_provider = $remoteNetworkHash->{'int'}->{'ip'};
+      }
+
+
       # Test if the file exists and is readable
       unless ( -r $file_slapd_conf )
       {
@@ -1900,6 +1922,37 @@ sub configureOpenLDAP {
           print "Replacing with: rootpw          $password\n";
           $error = 0;
         } # End of if ($line =~ "^rootpw")
+        if ( $line =~ m/<FOSS-CLOUD-SLAPD-SERVER-ID>/ )
+        {
+            # Replace the Serverid
+            my $server_id = $cfg->val($modus,"openldap_server_id");
+            $line =~ s/<FOSS-CLOUD-SLAPD-SERVER-ID>/$server_id/;
+            print "Replacing <FOSS-CLOUD-SLAPD-SERVER-ID> with: $server_id\n";
+            $error = 0;
+        }
+        if ( $line =~ m/<FOSS-CLOUD-SLAPD-SYNCREPL-RID>/ )
+        {
+            # Replace the sycnrepl rid
+            my $syncrepl_rid = $cfg->val($modus,"syncrepl_rid");
+            $line =~ s/<FOSS-CLOUD-SLAPD-SYNCREPL-RID>/$syncrepl_rid/;
+            print "Replacing <FOSS-CLOUD-SLAPD-SERVER-ID> with: $syncrepl_rid\n";
+            $error = 0;
+        }
+        if ( $line =~ m/<FOSS-CLOUD-SLAPD-SYNCREPL-PROVIDER>/ )
+        {
+            # Replace the syncrepl provider
+            $line =~ s/provider=.+$/provider=ldap:\/\/$syncrepl_provider/;
+            # TODO change the line above, just replace <FOSS-CLOUD-SLAPD-SYNCREPL-PROVIDER>
+            print "Replacing <FOSS-CLOUD-SLAPD-SYNCREPL-PROVIDER> with: $syncrepl_provider\n";
+            $error = 0;
+        }
+        if ( $line =~ m/<FOSS-CLOUD-SLAPD-SYNCREPL-CREDENTIALS>/ )
+        {
+            # Replace the syncrepl password
+            $line =~ s/<FOSS-CLOUD-SLAPD-SYNCREPL-CREDENTIALS>/$crypted_syncrepl_password/;
+            print "Replacing <FOSS-CLOUD-SLAPD-SYNCREPL-CREDENTIALS> with: $crypted_syncrepl_password\n";
+            $error = 0;
+        }
       } # End of foreach $line (@output)
 
       if (!$dryrun) {
@@ -1921,6 +1974,7 @@ sub configureOpenLDAP {
 
       # Setting the proper permisions on the file /etc/openldap/slapd.conf ...
       setSingleFilePermissions("file",$uid_root,$gid_ldap,0640,$file_slapd_conf);
+
   } #   if ( $local_modus eq "primary-master" )
   #  End of working on the file /etc/openldap/slapd.conf
 
@@ -1973,8 +2027,6 @@ sub configureOpenLDAP {
                   "Could not open $file_slapd for reading");
   }
 
-  # Generate a passwor for the syncrepl user
-  my $syncrepl_password = chars(8,8);
 
   # Replacing OPTS=" -h 'ldap://127.0.0.1'" with OPTS=" -h 'ldap://$localIntIP'"
   open(FILE,$file_slapd);
@@ -2171,7 +2223,7 @@ sub configureOpenLDAP {
         }
 
         # Get the systems timezone in the form +0100
-        my $timezone = strftime "%z",localtime();
+        $timezone = strftime "%z",localtime();
 
         if ( $timezone =~ m/^([+-]\d{2})(\d{2})/ )
         {
