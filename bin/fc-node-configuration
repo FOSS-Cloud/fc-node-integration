@@ -200,9 +200,16 @@ my $dryrun = 0;     # Dry-Run modus: 0: off, 1: on
 my $password = "";
 my $prov_backup_kvm_password = "";
 my $prov_backup_kvm_unencrypted_password = "";
+my $fc_brokerd_unencrypted_password = "";
 my $dhcp_password = "";
 my $dhcp_unencrypted_password = "";
 my $modus = "";
+
+# For secondary master node
+my $primary_master_host = "";
+my $primary_master_user = "";
+my $primary_master_password = "";
+my $apache_vip_name = "";
 
 my $helper_scripts_path = $location;
 my $remote_helper_scripts_path = $cfg->val("General","remote_helper_script_location");
@@ -258,7 +265,8 @@ use constant ERROR_CANNOT_CREATE_BACKUP_DIR_CODE    => 22;
 use constant ERROR_CANNOT_CREATE_BACKUP_DIR_STRING  => "Cannot create the backup directory /var/virtualization/backup";
 use constant ERROR_NETWORK_CONF_MISSING_CODE        => 23;
 use constant ERROR_NETWORK_CONF_MISSING_STRING      => "The specified network configuration is not writable";
-
+use constant ERROR_PASSWORD_NOT_FOUND_CODE          => 24;
+use constant ERROR_PASSWORD_NOT_FOUND_STRING        => "Could not get all necessary passwords form primary master node";
 
 use constant VIP            => 'vip';
 use constant SECONDARY_IP   => 'secondary_ip';
@@ -538,13 +546,6 @@ sub primaryMasterNode{
   # Configure phpLDAPadmin
   configurePhpLDAPadmin($localNetworkHash);
 
-  # Configure DHCP
-  configureDHCP($localNetworkHash);
-
-  # Start the dhcp daemon and add it to the default runlevel
-  startDaemon("dhcpd");
-  rcUpdate("dhcpd","default");
-
   # Configure the apache2 daemon
   configureApache2($localNetworkHash);
 
@@ -552,15 +553,26 @@ sub primaryMasterNode{
   configureUcarp($localNetworkHash);
 
   # Start the ucarp for int and pub
-  startDaemon("ucarp.pub");
+  startDaemon("ucarp.pub",5);
   rcUpdate("ucarp.pub","default");
-  startDaemon("ucarp.int");
+  startDaemon("ucarp.int",5);
   rcUpdate("ucarp.int","default");
+
+  # Configure DHCP
+  configureDHCP($localNetworkHash);
+
+  # Start the dhcp daemon and add it to the default runlevel
+  startDaemon("dhcpd");
+  rcUpdate("dhcpd","default");
 
   # Configure the fc-brockerd daemon
   configureFcBrokerd($localNetworkHash,$unencrypted_password);
 
-  configureProvBackupKVM($localNetworkHash, $localNetworkHash->{'int'}->{'ip'}, $prov_backup_kvm_unencrypted_password);
+  # Start the daemon and add it to de default runlevel
+  startDaemon("fc-brokerd");
+  rcUpdate("fc-brokerd","default");
+
+  configureProvBackupKVM($localNetworkHash, $localNetworkHash->{'int'}->{'vip'}, $prov_backup_kvm_unencrypted_password);
 
   # Create the backup directory symlink
   createBackupDirectorySymlink();
@@ -591,10 +603,12 @@ sub secondaryMasterNode{
   # Get the network config from primary master node (we also need to know the 
   # VIPs)
   # Ask the user for the information of the first storage Node.
-  my ($host,$user,$password)= askRemoteHostInfo("primary Master-Node","admin",$localNetworkHash->{"admin"}->{"id"});
+ ($primary_master_host,
+  $primary_master_user,
+  $primary_master_password)= askRemoteHostInfo("primary Master-Node","admin",$localNetworkHash->{"admin"}->{"id"});
 
   # Retreive the network information of the first Storage-Node
-  my $remoteNetworkHash = checkRemoteNetwork($host,$user,$password);
+  my $remoteNetworkHash = checkRemoteNetwork($primary_master_host,$primary_master_user,$primary_master_password);
 
   # Add the VIPs to the local network
   my @vips = (
@@ -642,9 +656,45 @@ sub secondaryMasterNode{
   # Configure the libvirtd daemon
   configureLibvirt($localNetworkHash);
 
+  # Configure the openldap directory
+  my $unencrypted_password = configureOpenLDAP($localNetworkHash,
+                                               $remoteNetworkHash,
+                                               $password);
+
+  # Configure the VM-Manger
+  configureVMManager($localNetworkHash,$unencrypted_password);
+
+  # Configure phpLDAPadmin
+  configurePhpLDAPadmin($localNetworkHash);
+  # Configure the apache2 daemon
+  configureApache2($localNetworkHash);
+
+  # Configure ucarp
+  configureUcarp($localNetworkHash);
+
+  # Start the ucarp for int and pub
+  startDaemon("ucarp.pub",5);
+  rcUpdate("ucarp.pub","default");
+  startDaemon("ucarp.int",5);
+  rcUpdate("ucarp.int","default");
+
+  # Configure DHCP
+  configureDHCP($localNetworkHash);
+
+  # Start the dhcp daemon and add it to the default runlevel
+  startDaemon("dhcpd");
+  rcUpdate("dhcpd","default");
+
+  # Configure the fc-brockerd daemon
+  configureFcBrokerd($localNetworkHash,$fc_brokerd_unencrypted_password);
+
+  configureProvBackupKVM($localNetworkHash, $localNetworkHash->{'int'}->{'vip'}, $prov_backup_kvm_unencrypted_password);
+
+  # Create the backup directory symlink
+  createBackupDirectorySymlink();
+
   # Tell the administrator, that the installation and configuration of this node is complete.
-  #print "\nCongratulations, you have finished the installation and configuration of this Node!\n\n"
-  print "Not implemented fully yet.\n";
+  print "\nCongratulations, you have finished the installation and configuration of this Node!\n\n"
 
 } # End of sub secondaryMasterNode
 
@@ -1785,7 +1835,7 @@ sub configureOpenLDAP {
   ### Working on the file /etc/openldap/ldap.conf if needed by $modus
   ##############################################################################
 
-  if ( $local_modus eq "primary-master" )
+  if ( $local_modus eq "primary-master" || $local_modus eq "secondary-master" )
   {
       # Working on the file /etc/openldap/ldap.conf
       print "\n";
@@ -1846,11 +1896,14 @@ sub configureOpenLDAP {
   ##############################################################################
 
   # Generate a passwor for the syncrepl user
-#  my $syncrepl_password = chars(8,8);
-  my $syncrepl_password = "mysecretpassword";
-  my $crypted_syncrepl_password = `/usr/sbin/slappasswd -s '$syncrepl_password'`;
-
+  my $syncrepl_password;
   if ( $local_modus eq "primary-master" )
+  {
+#    $syncrepl_password = chars(8,8);
+    $syncrepl_password = "mysecretpassword";
+  }
+
+  if ( $local_modus eq "primary-master" || $local_modus eq "secondary-master")
   {
       # Working on the file /etc/openldap/slapd.conf
       print "\n";
@@ -1861,6 +1914,26 @@ sub configureOpenLDAP {
       # specified in command line args, ask the user to enter a password
 
       my $openldap_binddn = $cfg->val("openLDAP","binddn");
+
+      # Get the syncrepl provider
+      my $syncrepl_provider;
+
+      # Check what modus we have
+      if ( $modus eq "primary-master" )
+      {
+        # Its the secondary ip from the int-interface (we asked this information 
+        # at the start of the script when asking for the VIPs)
+        $syncrepl_provider = $localNetworkHash->{'int'}->{'secondary_master_ip'};
+      } else
+      {
+        # If its the secondary storage node, its the remote networks int ip
+        $syncrepl_provider = $remoteNetworkHash->{'int'}->{'ip'};
+        ($syncrepl_password, 
+         $dhcp_unencrypted_password,
+         $prov_backup_kvm_unencrypted_password,
+         $fc_brokerd_unencrypted_password ) = getRemoteConfiguration();
+      }
+
 
       unless ( defined($password) && $password ne "" )
       {
@@ -1886,22 +1959,6 @@ sub configureOpenLDAP {
       # rootpw          <FOSS-CLOUD-SLAPD-ROOT-PW>
       # With:
       # rootpw          {SSHA}McZMZiKDM5/EpeexPxG4qOojndoJeM2D
-
-      # Get the syncrepl provider
-      my $syncrepl_provider;
-
-      # Check what modus we have
-      if ( $modus eq "primary-master" )
-      {
-        # Its the secondary ip from the int-interface (we asked this information 
-        # at the start of the script when asking for the VIPs)
-        $syncrepl_provider = $localNetworkHash->{'int'}->{'secondary_master_ip'};
-      } else
-      {
-        # If its the secondary storage node, its the remote networks int ip
-        $syncrepl_provider = $remoteNetworkHash->{'int'}->{'ip'};
-      }
-
 
       # Test if the file exists and is readable
       unless ( -r $file_slapd_conf )
@@ -1949,8 +2006,8 @@ sub configureOpenLDAP {
         if ( $line =~ m/<FOSS-CLOUD-SLAPD-SYNCREPL-CREDENTIALS>/ )
         {
             # Replace the syncrepl password
-            $line =~ s/<FOSS-CLOUD-SLAPD-SYNCREPL-CREDENTIALS>/$crypted_syncrepl_password/;
-            print "Replacing <FOSS-CLOUD-SLAPD-SYNCREPL-CREDENTIALS> with: $crypted_syncrepl_password\n";
+            $line =~ s/<FOSS-CLOUD-SLAPD-SYNCREPL-CREDENTIALS>/$syncrepl_password/;
+            print "Replacing <FOSS-CLOUD-SLAPD-SYNCREPL-CREDENTIALS> with: $syncrepl_password\n";
             $error = 0;
         }
       } # End of foreach $line (@output)
@@ -2089,6 +2146,9 @@ sub configureOpenLDAP {
   # Now we can start adding the data to the OpenLDAP directory with ldapadd
   print "\n";
 
+  # We don't want to add anything if we are the secondary master, the syncrepl
+  # will take care of that
+  return $unencrypted_password if ( $local_modus eq "secondary-master" );
 
   ##############################################################################
   ### Worked on files needed by $modus
@@ -2135,11 +2195,15 @@ sub configureOpenLDAP {
       # With:
       # sstLDAPBindPassword: admin
 
+      # Create the crypted syncreply password
+      my $crypted_syncrepl_password = `/usr/sbin/slappasswd -s '$syncrepl_password'`;
+      chomp($crypted_syncrepl_password);
+
       # Create the search_and_replace commands to replace the LDIF template with
       # the correct values
       @sar_commands = ( {search => "<FOSS-CLOUD-PROV-BACKUP-KVM-PASSWORD>", replace => $prov_backup_kvm_password},
                         {search => "<FOSS-CLOUD-DHCP-PASSWORD>", replace => $dhcp_password},
-                        {search => "<FOSS-CLOUD-SYNCREPL-PASSWORD>", replace => $syncrepl_password},
+                        {search => "<FOSS-CLOUD-SYNCREPL-PASSWORD>", replace => $crypted_syncrepl_password},
                       );
 
       # Replace the template with the correct values which are specified in the
@@ -2784,7 +2848,7 @@ sub configureDHCP {
 
     # Generate the search and replace commands to replace the placeholders in
     # template
-    my @sar_commands = ( { search => "<FOSS-CLOUD-LDAP-SERVER>", replace => $localNetworkHash->{"int"}->{"ip"} },
+    my @sar_commands = ( { search => "<FOSS-CLOUD-LDAP-SERVER>", replace => $localNetworkHash->{"int"}->{"vip"} },
                          { search => "<FOSS-CLOUD-DHCP-PASSWORD>", replace => $dhcp_unencrypted_password}, 
                          { search => "<FOSS-CLOUD-LDAP-PORT>", replace => $ldap_port});
 
@@ -2814,7 +2878,7 @@ sub configureVMManager {
   my $line;
 
   # OpenLDAP runs on the int VLAN
-  my $localIntIP = $localNetworkHash->{"int"}->{"ip"};
+  my $localIntIP = $localNetworkHash->{"int"}->{"vip"};
 
   # Configuring the VM-Manager
   header("Configuring the VM-Manager daemon ...");
@@ -2917,6 +2981,8 @@ sub configurePhpLDAPadmin {
 
   # OpenLDAP runs on the int VLAN
   my $localIntIP = $localNetworkHash->{"int"}->{"ip"};
+  my $localIntVIP = $localNetworkHash->{"int"}->{"vip"};
+  my $remoteIntIP = $localNetworkHash->{"int"}->{"secondary_master_ip"};
 
   # Configuring the phpLDAPadmin
   header("Configuring phpLDAPadmin ...");
@@ -2938,9 +3004,9 @@ sub configurePhpLDAPadmin {
   # Generate the search-and-replace commands:
   # Take care of port and address ldap:// => 389 ldaps:// => 636
   my @sar_commands = (
-                      {search => "<FOSS-CLOUD-LDAP-VIP>",replace => "ldap://".$localIntIP},
+                      {search => "<FOSS-CLOUD-LDAP-VIP>",replace => "ldap://".$localIntVIP},
                       {search => "<FOSS-CLOUD-LDAP-RIP1>",replace => "ldap://".$localIntIP},
-                      #{search => "<FOSS-CLOUD-LDAP-RIP2>",replace => $localIntIP},
+                      {search => "<FOSS-CLOUD-LDAP-RIP2>",replace => "ldap://".$remoteIntIP},
                       {search => "<FOSS-CLOUD-LDAP-PORT>",replace => 389},
                      );
 
@@ -2978,7 +3044,6 @@ sub configureApache2 {
   my $localPubIP = $localNetworkHash->{"pub"}->{"ip"};
   my $localPubDomain =  $localNetworkHash->{"pub"}->{"domain"};
   my $pub_vip = $localNetworkHash->{"pub"}->{"vip"};
-  my $apache_vip_name = "";
 
   # Configuring the apache2 daemon
   print "\n";
@@ -3104,6 +3169,7 @@ sub configureUcarp
   my $permissions = 0755;
 
   my $ucarp_dir = "/etc/ucarp";
+  my $ucarp_options = $cfg->val($modus,"ucarp_options");
 
   # Create the /etc/ucarp directory if it does not exsist
   unless ( -e $ucarp_dir )
@@ -3187,7 +3253,7 @@ PUB_UCARP_PIDFILE=/var/run/ucarp-pub.pid
 # ucarp options
 # -z run shudown script on exit
 # -P force perferred master
-OPTIONS="-z"
+OPTIONS="'.$ucarp_options.'"
  
 #
 # ucarp base, lower number will be perfered master
@@ -3454,7 +3520,7 @@ sub configureFcBrokerd {
   my $fc_brokerd_config_file = $cfg->val("General","file_fc_brokerd_conf");
 
   # OpenLDAP runs on the int VLAN
-  my $localIntIP = $localNetworkHash->{"int"}->{"ip"};
+  my $localIntIP = $localNetworkHash->{"int"}->{"vip"};
   my $openldap_port = $cfg->val("openLDAP","port");
 
   # Get the bind- and basedn
@@ -3486,9 +3552,9 @@ sub configureFcBrokerd {
   # Change the permission for the config file
   setSingleFilePermissions("file",$uid_root,$gid_root,0640,$fc_brokerd_config_file);
 
-  # Start the daemon and add it to de default runlevel
-  startDaemon("fc-brokerd");
-  rcUpdate("fc-brokerd","default");
+#  # Start the daemon and add it to de default runlevel
+#  startDaemon("fc-brokerd");
+#  rcUpdate("fc-brokerd","default");
 }
 
 ################################################################################
@@ -4053,6 +4119,8 @@ sub searchAndReplace
 
 sub createBackupDirectorySymlink
 {
+    # Check if the directory already exists
+    return if ( -d "/var/backup" );
 
     # Arguments for system calls
     my @args; 
@@ -4284,4 +4352,130 @@ sub addVIPsToNetworkConfig{
     print "\nSuccesfully added VIP information to the network configuration ";
     print "(".$network_conf.")\n";
 
+}
+
+sub getRemoteConfiguration
+{
+    # We will return these
+    my $broker_password = "";
+    my $syncrepl_password = "";
+    my $strict_host_key_check;
+    my $kvm_password = "";
+    my $dhcp_password = "";
+
+    # Check if the known_hosts file exists or not
+    if ( -e "~/.ssh/known_hosts" ) {
+      
+        # If it exists, set the StrictHostKeyChecking option for SSH to yes which
+        # means that we check if we connect to the correct host
+        $strict_host_key_check = "StrictHostKeyChecking=yes";
+
+    }
+    else {
+
+        # If it does not exist, set the StrictHostKeyChecking option to no, which
+        # means that we add the host key to the file
+        # This is actually not a very good idea, but up to now the only
+        # way to ensure that the script completes its tasks
+        $strict_host_key_check = "StrictHostKeyChecking=no";
+
+    }
+
+    # Establish the ssh connection to the remote host $host
+    my $ssh = Net::OpenSSH->new($primary_master_host,
+                                user => $primary_master_user,
+                                password => $primary_master_password,
+                                master_opts => [-o => $strict_host_key_check],
+                                master_stderr_discard => 1 # quiet
+                               );
+
+    if($ssh->error){
+        returnError(ERROR_NO_SSH_CONNECTION_CODE,ERROR_NO_SSH_CONNECTION_STRING,$ssh->error);
+    }
+
+    # Get the slapd config file
+    my $slapd_config = $cfg->val("General","directory_openldap");
+    $slapd_config .= $cfg->val("General","file_slapd_conf");
+
+    # Create the command which is simply cat + the slapd config
+    my $cmd = "cat '$slapd_config'";
+
+    # Execute the command on the remote host
+    my $output = $ssh->capture($cmd);
+
+    # Parse the output if there was no error
+    if(!$ssh->error)
+    {
+        # get the syncrepl password
+        $output =~ m/\n\s+credentials=(.+)\n/;
+        $syncrepl_password = $1;
+        $1 = "";
+
+        # Now cat the prov-backup-kvm config to get the uncrypted master 
+        # password
+        my $kvm_backup_conf = $cfg->val("General","file_prov_backup_kvm_conf");
+        $cmd = "cat '$kvm_backup_conf'";
+
+        # Execute the command on the remote host
+        $output = $ssh->capture($cmd);
+
+        if ( !$ssh->error )
+        {
+            $output =~ m/\nADMIN_PASSWORD\s*=\s*(.*)\n/;
+            $kvm_password = $1;
+        } else
+        {
+            returnError(ERROR_SSH_CMD_FAILED_CODE,ERROR_SSH_CMD_FAILED_STRING,$ssh->error);
+        }
+
+        # Get the dhcp password
+        my $dhcp_conf = $cfg->val($modus,"file_dhcp_conf");
+        $cmd = "cat '$dhcp_conf'";
+
+        # Execute the command on the remote host
+        $output = $ssh->capture($cmd);
+
+        if ( !$ssh->error )
+        {
+            $output =~ m/\nldap-password\s*\"(.+)\";\n/;
+            $dhcp_password = $1;
+        } else
+        {
+            returnError(ERROR_SSH_CMD_FAILED_CODE,ERROR_SSH_CMD_FAILED_STRING,$ssh->error);
+        }
+
+        # Get the master password
+        my $broker_conf = $cfg->val("General","file_fc_brokerd_conf");
+        $cmd = "cat '$broker_conf'";
+
+        # Execute the command on the remote host
+        $output = $ssh->capture($cmd);
+
+        if ( !$ssh->error )
+        {
+            $output =~ m/\nbindpwd\s*=\s*(.+)\n/;
+            $broker_password = $1;
+        } else
+        {
+            returnError(ERROR_SSH_CMD_FAILED_CODE,ERROR_SSH_CMD_FAILED_STRING,$ssh->error);
+        }
+
+    }
+    else{
+        # If we reach this point, it means that the ssh command could not be executed.
+        returnError(ERROR_SSH_CMD_FAILED_CODE,ERROR_SSH_CMD_FAILED_STRING,$ssh->error);
+    }
+
+    # Quit the connection
+    $ssh->system("exit");
+
+    # Test if both passwords were found
+    if ( $syncrepl_password eq "" or $dhcp_password eq "" or $kvm_password eq "" 
+         or $broker_password eq "" )
+    {
+        returnError(ERROR_PASSWORD_NOT_FOUND_CODE,ERROR_PASSWORD_NOT_FOUND_STRING);
+    }
+
+    # Return the passwords
+    return ( $syncrepl_password, $dhcp_password, $kvm_password, $broker_password );
 }
