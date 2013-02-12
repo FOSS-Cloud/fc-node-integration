@@ -549,6 +549,9 @@ sub primaryMasterNode{
   # Configure the apache2 daemon
   configureApache2($localNetworkHash);
 
+  # Write to the hosts file
+  wirteVIPToHosts($localNetworkHash);
+
   # Configure ucarp
   configureUcarp($localNetworkHash);
 
@@ -666,8 +669,12 @@ sub secondaryMasterNode{
 
   # Configure phpLDAPadmin
   configurePhpLDAPadmin($localNetworkHash);
+
   # Configure the apache2 daemon
   configureApache2($localNetworkHash);
+
+  # Write to the hosts file
+  wirteVIPToHosts($localNetworkHash);
 
   # Configure ucarp
   configureUcarp($localNetworkHash);
@@ -1488,7 +1495,7 @@ sub startDaemon {
   if ($output =~ "started") {
     print "The daemon $daemon is already running, restarting...\n";
 
-    restartDaemon($daemon);
+    restartDaemon($daemon,$delay);
 
   } else {
 
@@ -1613,7 +1620,7 @@ sub restartDaemon {
 
   print "\nRestarting the daemon $daemon ...\n";
 
-  stopDaemon($daemon,$delay);
+  stopDaemon($daemon);
 
   startDaemon($daemon,$delay);
 
@@ -1931,7 +1938,8 @@ sub configureOpenLDAP {
         ($syncrepl_password, 
          $dhcp_unencrypted_password,
          $prov_backup_kvm_unencrypted_password,
-         $fc_brokerd_unencrypted_password ) = getRemoteConfiguration();
+         $fc_brokerd_unencrypted_password,
+         $apache_vip_name ) = getRemoteConfiguration();
       }
 
 
@@ -4354,6 +4362,20 @@ sub addVIPsToNetworkConfig{
 
 }
 
+################################################################################
+# getRemoteConfiguration
+################################################################################
+# Description:
+#   
+################################################################################
+# Usage:
+#   getRemoteConfiguration( );
+################################################################################
+# Return Values:
+#   Differnt passwords for fc-broker, syncrepl, prov-backup-kvm and dhcp user
+#   to bind to the ldap direcory as well as the apache vip name
+################################################################################
+
 sub getRemoteConfiguration
 {
     # We will return these
@@ -4362,6 +4384,7 @@ sub getRemoteConfiguration
     my $strict_host_key_check;
     my $kvm_password = "";
     my $dhcp_password = "";
+    my $apache_name = "";
 
     # Check if the known_hosts file exists or not
     if ( -e "~/.ssh/known_hosts" ) {
@@ -4444,7 +4467,7 @@ sub getRemoteConfiguration
             returnError(ERROR_SSH_CMD_FAILED_CODE,ERROR_SSH_CMD_FAILED_STRING,$ssh->error);
         }
 
-        # Get the master password
+        # Get the broker password
         my $broker_conf = $cfg->val("General","file_fc_brokerd_conf");
         $cmd = "cat '$broker_conf'";
 
@@ -4455,6 +4478,22 @@ sub getRemoteConfiguration
         {
             $output =~ m/\nbindpwd\s*=\s*(.+)\n/;
             $broker_password = $1;
+        } else
+        {
+            returnError(ERROR_SSH_CMD_FAILED_CODE,ERROR_SSH_CMD_FAILED_STRING,$ssh->error);
+        }
+
+        # Get the apache vip name
+        my $apache_conf = $cfg->val("primary-master","/etc/apache2/vhosts.d/localhost.conf");
+        $cmd = "cat '$apache_conf'";
+
+        # Execute the command on the remote host
+        $output = $ssh->capture($cmd);
+
+        if ( !$ssh->error )
+        {
+            $output =~ m/\n\s*Servername\s+(.+)\n/;
+            $apache_name = $1;
         } else
         {
             returnError(ERROR_SSH_CMD_FAILED_CODE,ERROR_SSH_CMD_FAILED_STRING,$ssh->error);
@@ -4477,5 +4516,61 @@ sub getRemoteConfiguration
     }
 
     # Return the passwords
-    return ( $syncrepl_password, $dhcp_password, $kvm_password, $broker_password );
+    return ( $syncrepl_password, $dhcp_password, $kvm_password, $broker_password,
+             $apache_name );
+}
+
+################################################################################
+# wirteVIPToHosts
+################################################################################
+# Description:
+#   
+################################################################################
+# Usage:
+#   wirteVIPToHosts( $localNetworkHash );
+################################################################################
+# Return Values:
+#   none
+################################################################################
+
+sub wirteVIPToHosts
+{
+    my $local_network_hash = shift;
+
+    # What is the hosts file
+    my $hosts_file = $cfg->val("General","file_hosts");
+
+    # If the hosts file is not writable we cannot continue
+    if ( ! open( HOSTS, ">>$hosts_file" ) )
+    {
+        # TODO 
+#        returnError();
+    } else
+    {
+        # Get the ldap vip this is the int vip
+        my $ldap_vip = $local_network_hash->{'int'}->{'vip'};
+        my $ldap_name = $cfg->val("General","ldap_vip_name");
+        $ldap_name .=  ".".$local_network_hash->{'pub'}->{'domain'};
+
+        # Write the ldap vip name and the ip to the hosts file
+        print HOSTS "$ldap_vip\t$ldap_name\n";
+
+        # Write the secondary ldap ip and name to the hosts file
+        my $second_ldap_ip = $local_network_hash->{'int'}->{'secondary_master_ip'};
+        my $second_ldap_name = $cfg->val($modus,"ldap_domaim_name_for_hosts_file");
+        $second_ldap_name .= ".".$local_network_hash->{'pub'}->{'domain'};
+  
+      # Write the secondary ldap name and the ip to the hosts file
+        print HOSTS "$second_ldap_ip\t$second_ldap_name\n";        
+
+        # Get the apache vip this is the pub vip
+        my $apache_vip = $local_network_hash->{'pub'}->{'vip'};
+        
+        # Write the apache vip name and ip to the hosts file
+        print HOSTS "$apache_vip\t$apache_vip_name\n";
+        
+        # Close the fh 
+        close HOSTS;
+    }
+
 }
