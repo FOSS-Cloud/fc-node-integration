@@ -4645,37 +4645,123 @@ sub wirteVIPToHosts
 
     # What is the hosts file
     my $hosts_file = $cfg->val("General","file_hosts");
+    my @hosts;
+
+    # Line numbers to replace
+    my $int_vip_line_number = 0;
+    my $int_second_ip_line_number = 0;
+    my $pub_vip_line_number = 0;
 
     # If the hosts file is not writable we cannot continue
-    if ( ! open( HOSTS, ">>$hosts_file" ) )
+    if ( ! open( HOSTS, "$hosts_file" ) )
     {
         # TODO 
 #        returnError();
     } else
     {
+
+        # Read the hosts file and close the FH
+        @hosts = <HOSTS>;
+        close HOSTS;
+
+        # Go through the hosts file and check if there is already a vip added
+        # for the internal and public interface
+        # Initialize the counter to remember the line
+        my $line_number = 0;
+        foreach my $host_line ( @hosts )
+        {
+            # If the current line is the comment for the internal VIP then the
+            # next line will be the LDAP VIP and LDAP VIP name 
+            if ( $host_line eq "# Int VIP for LDAP\n" )
+            {
+                $int_vip_line_number = $line_number + 1;
+            }
+
+            # If the current line is the comment for the internal second IP then
+            # the next line will be the LDAP IP and LDAP name for the second 
+            # master node
+            if ( $host_line eq "# Seconadary master IP for LDAP\n" )
+            {
+                $int_second_ip_line_number = $line_number + 1;
+            }
+
+            # If the current line is the comment for the public VIP then the
+            # next line will be the apache VIP and apache VIP name 
+            if ( $host_line eq "# Public VIP for apache\n" )
+            {
+                $pub_vip_line_number = $line_number + 1;
+            }
+
+            # Increase the line number
+            $line_number++;
+        }
+        
+
         # Get the ldap vip this is the int vip
         my $ldap_vip = $local_network_hash->{'int'}->{'vip'};
         my $ldap_name = $cfg->val("General","ldap_vip_name");
         $ldap_name .=  ".".$local_network_hash->{'pub'}->{'domain'};
 
-        # Write the ldap vip name and the ip to the hosts file
-        print HOSTS "# Int VIP for LDAP\n$ldap_vip\t$ldap_name\n";
+#        # Write the ldap vip name and the ip to the hosts file
+#        print HOSTS "# Int VIP for LDAP\n$ldap_vip\t$ldap_name\n";
 
         # Write the secondary ldap ip and name to the hosts file
         my $second_ldap_ip = $local_network_hash->{'int'}->{'secondary_master_ip'};
         my $second_ldap_name = $cfg->val($modus,"ldap_domaim_name_for_hosts_file");
         $second_ldap_name .= ".".$local_network_hash->{'pub'}->{'domain'};
   
-        # Write the secondary ldap name and the ip to the hosts file
-        print HOSTS "# Seconadary master IP for LDAP\n";
-        print HOSTS "$second_ldap_ip\t$second_ldap_name\n";        
+#        # Write the secondary ldap name and the ip to the hosts file
+#        print HOSTS "# Seconadary master IP for LDAP\n";
+#        print HOSTS "$second_ldap_ip\t$second_ldap_name\n";        
 
         # Get the apache vip this is the pub vip
         my $apache_vip = $local_network_hash->{'pub'}->{'vip'};
         
-        # Write the apache vip name and ip to the hosts file
-        print HOSTS "# Public VIP for apache\n$apache_vip\t$apache_vip_name\n";
+#        # Write the apache vip name and ip to the hosts file
+#        print HOSTS "# Public VIP for apache\n$apache_vip\t$apache_vip_name\n";
         
+        # Now we need to check if the lines were found, if yes replace it, if
+        # not append it to the file
+        # Test the int vip
+        if ( $int_vip_line_number > 0 )
+        {
+            $hosts[$int_vip_line_number] = "$ldap_vip\t$ldap_name\n";
+        } else
+        {
+            push ( @hosts, "\n# Int VIP for LDAP\n" );
+            push ( @hosts, "$ldap_vip\t$ldap_name\n" );
+        }
+
+        # Test the int second ip
+        if ( $int_second_ip_line_number > 0 )
+        {
+            $hosts[$int_second_ip_line_number] = "$second_ldap_ip\t"
+                                                ."$second_ldap_name\n";
+        } else
+        {
+            push ( @hosts, "# Seconadary master IP for LDAP\n" );
+            push ( @hosts, "$second_ldap_ip\t$second_ldap_name\n" );
+        }
+
+        # Test the pub vip
+        if ( $pub_vip_line_number > 0 )
+        {
+            $hosts[$pub_vip_line_number] = "$apache_vip\t$apache_vip_name\n";
+        } else
+        {
+            push ( @hosts, "# Public VIP for apache\n" );
+            push ( @hosts, "$apache_vip\t$apache_vip_name\n" );
+        }
+
+        # Open the hosts file again for writing
+        open( HOSTS, ">$hosts_file" );
+
+        # And now rewrite the hosts file
+        foreach my $line ( @hosts )
+        {
+            print HOSTS $line;
+        }
+
         # Close the fh 
         close HOSTS;
     }
