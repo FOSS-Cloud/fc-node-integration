@@ -615,10 +615,10 @@ sub secondaryMasterNode{
 
   # Add the VIPs to the local network
   my @vips = (
-                { VIP => $remoteNetworkHash->{'pub'}->{'vip'}, SECONDARY_IP => $remoteNetworkHash->{'pub'}->{'secondary_master_ip'} },
-                { VIP => $remoteNetworkHash->{'admin'}->{'vip'}, SECONDARY_IP => $remoteNetworkHash->{'admin'}->{'secondary_master_ip'} },
-                { VIP => $remoteNetworkHash->{'data'}->{'vip'}, SECONDARY_IP => $remoteNetworkHash->{'data'}->{'secondary_master_ip'} },
-                { VIP => $remoteNetworkHash->{'int'}->{'vip'}, SECONDARY_IP => $remoteNetworkHash->{'int'}->{'secondary_master_ip'} },
+                { VIP => $remoteNetworkHash->{'pub'}->{'vip'}, SECONDARY_IP => $remoteNetworkHash->{'pub'}->{'ip'} },
+                { VIP => $remoteNetworkHash->{'admin'}->{'vip'}, SECONDARY_IP => $remoteNetworkHash->{'admin'}->{'ip'} },
+                { VIP => $remoteNetworkHash->{'data'}->{'vip'}, SECONDARY_IP => $remoteNetworkHash->{'data'}->{'ip'} },
+                { VIP => $remoteNetworkHash->{'int'}->{'vip'}, SECONDARY_IP => $remoteNetworkHash->{'int'}->{'ip'} },
              );
   addVIPsToNetworkConfig(@vips);
 
@@ -3417,7 +3417,7 @@ INT_UCARP_PIDFILE=/var/run/ucarp-int.pid
 # ucarp options
 # -z run shudown script on exit
 # -P force perferred master
-OPTIONS="-z"
+OPTIONS="'.$ucarp_options.'"
  
 #
 # ucarp base, lower number will be perfered master
@@ -4295,49 +4295,120 @@ sub addVIPsToNetworkConfig{
 
     my @configuration;
 
+    # Get the current network configuration
+    my $current_network_conf = checkLocalNetwork();
+
     # Open the network config file: 
     my $network_conf = $cfg->val($modus,"file_network_conf");
     if ( -w $network_conf )
     {
-        open(READ_FH,$network_conf);
-        
-        # Read the file and store each line in the configuration array
-        while ( <READ_FH> )
-        {
-            push( @configuration, $_ );
-        }
 
-        # Close the reading FH
-        close READ_FH;
+        # Overwrite the current VIPs and secondary master IPs
+        $current_network_conf->{'pub'}->{'vip'} = $vips[0]->{VIP} || "";
+        $current_network_conf->{'pub'}->{'secondary_master_ip'} = $vips[0]->{SECONDARY_IP} || "";
+        $current_network_conf->{'admin'}->{'vip'} = $vips[1]->{VIP} || "";
+        $current_network_conf->{'admin'}->{'secondary_master_ip'} = $vips[1]->{SECONDARY_IP} || "";
+        $current_network_conf->{'data'}->{'vip'} = $vips[2]->{VIP} || "";
+        $current_network_conf->{'data'}->{'secondary_master_ip'} = $vips[2]->{SECONDARY_IP} || "";
+        $current_network_conf->{'int'}->{'vip'} = $vips[3]->{VIP} || "";
+        $current_network_conf->{'int'}->{'secondary_master_ip'} = $vips[3]->{SECONDARY_IP} || "";
 
-        # Add the VIP information to each line of the file
-        my $i = 0;
-        foreach my $tmp ( @vips )
-        {
-            # Check if vip and/or secondary master node ip is specified and
-            # append it to the line
-            my $vip = $tmp->{VIP};
-            my $second_ip = $tmp->{SECONDARY_IP};
+        # Test if a gateway is defined, if not set it to "" to avoid warning 
+        # messages on STDOUT
+        $current_network_conf->{'pub'}->{'gateway'} = "" unless ($current_network_conf->{'pub'}->{'gateway'});
+        $current_network_conf->{'admin'}->{'gateway'} = "" unless ($current_network_conf->{'admin'}->{'gateway'});
+        $current_network_conf->{'data'}->{'gateway'} = "" unless ($current_network_conf->{'data'}->{'gateway'});
+        $current_network_conf->{'int'}->{'gateway'} = "" unless ($current_network_conf->{'int'}->{'gateway'});
 
-            # remove the newline at the end of the line
-            chomp( $configuration[$i] );
 
-            # Append the comma to the line
-            $configuration[$i] .= ",";
+        # Generate the new public interface string
+        my $pub_string = $current_network_conf->{'Node Name'}.","
+                        ."pub,"
+                        .$current_network_conf->{'pub'}->{'id'}.","
+                        .$current_network_conf->{'pub'}->{'ip'}.","
+                        .$current_network_conf->{'pub'}->{'domain'}.","
+                        .$current_network_conf->{'pub'}->{'netmask'}.","
+                        .$current_network_conf->{'pub'}->{'broadcast'}.","
+                        .$current_network_conf->{'pub'}->{'gateway'}.","
+                        .$current_network_conf->{'pub'}->{'vip'}.","
+                        .$current_network_conf->{'pub'}->{'secondary_master_ip'};
 
-            # Append the vip to the line
-            $configuration[$i] .= $vip if ( $vip );
+        # Add this new string to the configuration
+        push ( @configuration, $pub_string );
 
-            # Append the comma to the line
-            $configuration[$i] .= ",";
+        # Generate the new admin interface string
+        my $adm_string = $current_network_conf->{'Node Name'}.","
+                        ."admin,"
+                        .$current_network_conf->{'admin'}->{'id'}.","
+                        .$current_network_conf->{'admin'}->{'ip'}.","
+                        .$current_network_conf->{'admin'}->{'domain'}.","
+                        .$current_network_conf->{'admin'}->{'netmask'}.","
+                        .$current_network_conf->{'admin'}->{'broadcast'}.","
+                        .$current_network_conf->{'admin'}->{'gateway'}.","
+                        .$current_network_conf->{'admin'}->{'vip'}.","
+                        .$current_network_conf->{'admin'}->{'secondary_master_ip'};
 
-            # Append the secondary ip to the line
-            $configuration[$i] .= $second_ip if ( $second_ip );
+        # Add this new string to the configuration
+        push ( @configuration, $adm_string );
 
-            # increase the index
-            $i++;
+        # Generate the new data interface string
+        my $data_string = $current_network_conf->{'Node Name'}.","
+                        ."data,"
+                        .$current_network_conf->{'data'}->{'id'}.","
+                        .$current_network_conf->{'data'}->{'ip'}.","
+                        .$current_network_conf->{'data'}->{'domain'}.","
+                        .$current_network_conf->{'data'}->{'netmask'}.","
+                        .$current_network_conf->{'data'}->{'broadcast'}.","
+                        .$current_network_conf->{'data'}->{'gateway'}.","
+                        .$current_network_conf->{'data'}->{'vip'}.","
+                        .$current_network_conf->{'data'}->{'secondary_master_ip'};
 
-        }
+        # Add this new string to the configuration
+        push ( @configuration, $data_string );
+
+        # Generate the new internal interface string
+        my $int_string = $current_network_conf->{'Node Name'}.","
+                        ."int,"
+                        .$current_network_conf->{'int'}->{'id'}.","
+                        .$current_network_conf->{'int'}->{'ip'}.","
+                        .$current_network_conf->{'int'}->{'domain'}.","
+                        .$current_network_conf->{'int'}->{'netmask'}.","
+                        .$current_network_conf->{'int'}->{'broadcast'}.","
+                        .$current_network_conf->{'int'}->{'gateway'}.","
+                        .$current_network_conf->{'int'}->{'vip'}.","
+                        .$current_network_conf->{'int'}->{'secondary_master_ip'};
+
+        # Add this new string to the configuration
+        push ( @configuration, $int_string );
+
+#        # Add the VIP information to each line of the file
+#        my $i = 0;
+#        foreach my $tmp ( @vips )
+#        {
+#            # Check if vip and/or secondary master node ip is specified and
+#            # append it to the line
+#            my $vip = $tmp->{VIP};
+#            my $second_ip = $tmp->{SECONDARY_IP};
+#
+#            # remove the newline at the end of the line
+#            chomp( $configuration[$i] );
+#
+#            # Append the comma to the line
+#            $configuration[$i] .= ",";
+#
+#            # Append the vip to the line
+#            $configuration[$i] .= $vip if ( $vip );
+#
+#            # Append the comma to the line
+#            $configuration[$i] .= ",";
+#
+#            # Append the secondary ip to the line
+#            $configuration[$i] .= $second_ip if ( $second_ip );
+#
+#            # increase the index
+#            $i++;
+#
+#        }
 
         # Write the changes back to the file
         open(WRITE_FH,">$network_conf");
@@ -4430,9 +4501,7 @@ sub getRemoteConfiguration
     if(!$ssh->error)
     {
         # get the syncrepl password
-        $output =~ m/\n\s+credentials=(.+)\n/;
-        $syncrepl_password = $1;
-        $1 = "";
+        $syncrepl_password = $1 if ( $output =~ m/\n\s+credentials=(.+)\n/ );
 
         # Now cat the prov-backup-kvm config to get the uncrypted master 
         # password
@@ -4444,8 +4513,7 @@ sub getRemoteConfiguration
 
         if ( !$ssh->error )
         {
-            $output =~ m/\nADMIN_PASSWORD\s*=\s*(.*)\n/;
-            $kvm_password = $1;
+            $kvm_password = $1 if ($output =~ m/\nADMIN_PASSWORD\s*=\s*(.*)\n/);
         } else
         {
             returnError(ERROR_SSH_CMD_FAILED_CODE,ERROR_SSH_CMD_FAILED_STRING,$ssh->error);
@@ -4460,8 +4528,7 @@ sub getRemoteConfiguration
 
         if ( !$ssh->error )
         {
-            $output =~ m/\nldap-password\s*\"(.+)\";\n/;
-            $dhcp_password = $1;
+            $dhcp_password = $1 if ($output =~ m/\nldap-password\s*\"(.+)\";\n/);
         } else
         {
             returnError(ERROR_SSH_CMD_FAILED_CODE,ERROR_SSH_CMD_FAILED_STRING,$ssh->error);
@@ -4476,15 +4543,14 @@ sub getRemoteConfiguration
 
         if ( !$ssh->error )
         {
-            $output =~ m/\nbindpwd\s*=\s*(.+)\n/;
-            $broker_password = $1;
+            $broker_password = $1 if ($output =~ m/\nbindpwd\s*=\s*(.+)\n/ );
         } else
         {
             returnError(ERROR_SSH_CMD_FAILED_CODE,ERROR_SSH_CMD_FAILED_STRING,$ssh->error);
         }
 
         # Get the apache vip name
-        my $apache_conf = $cfg->val("primary-master","/etc/apache2/vhosts.d/localhost.conf");
+        my $apache_conf = $cfg->val("primary-master","file_localhost_conf");
         $cmd = "cat '$apache_conf'";
 
         # Execute the command on the remote host
@@ -4492,8 +4558,7 @@ sub getRemoteConfiguration
 
         if ( !$ssh->error )
         {
-            $output =~ m/\n\s*Servername\s+(.+)\n/;
-            $apache_name = $1;
+            $apache_name = $1 if ( $output =~ m/\n\s*ServerName\s+(.+)\n/ );
         } else
         {
             returnError(ERROR_SSH_CMD_FAILED_CODE,ERROR_SSH_CMD_FAILED_STRING,$ssh->error);
@@ -4553,21 +4618,22 @@ sub wirteVIPToHosts
         $ldap_name .=  ".".$local_network_hash->{'pub'}->{'domain'};
 
         # Write the ldap vip name and the ip to the hosts file
-        print HOSTS "$ldap_vip\t$ldap_name\n";
+        print HOSTS "# Int VIP for LDAP\n$ldap_vip\t$ldap_name\n";
 
         # Write the secondary ldap ip and name to the hosts file
         my $second_ldap_ip = $local_network_hash->{'int'}->{'secondary_master_ip'};
         my $second_ldap_name = $cfg->val($modus,"ldap_domaim_name_for_hosts_file");
         $second_ldap_name .= ".".$local_network_hash->{'pub'}->{'domain'};
   
-      # Write the secondary ldap name and the ip to the hosts file
+        # Write the secondary ldap name and the ip to the hosts file
+        print HOSTS "# Seconadary master IP for LDAP\n";
         print HOSTS "$second_ldap_ip\t$second_ldap_name\n";        
 
         # Get the apache vip this is the pub vip
         my $apache_vip = $local_network_hash->{'pub'}->{'vip'};
         
         # Write the apache vip name and ip to the hosts file
-        print HOSTS "$apache_vip\t$apache_vip_name\n";
+        print HOSTS "# Public VIP for apache\n$apache_vip\t$apache_vip_name\n";
         
         # Close the fh 
         close HOSTS;
