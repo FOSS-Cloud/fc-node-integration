@@ -1,0 +1,169 @@
+# Copyright (C) 2013 FOSS-Group
+#                    Germany
+#                    http://www.foss-group.de
+#                    support@foss-group.de
+#
+# Authors:
+#  Michael Eichenberger <michael.eichenberger@stepping-stone.ch>
+#  
+# Licensed under the EUPL, Version 1.1 or – as soon they
+# will be approved by the European Commission - subsequent
+# versions of the EUPL (the "Licence");
+# You may not use this work except in compliance with the
+# Licence.
+# You may obtain a copy of the Licence at:
+#
+# http://www.osor.eu/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+#
+# 
+#
+#
+################################################################################
+## /etc/openldap/data/16_secondary-master-node.template
+#################################################################################
+# Description:
+#  admin: Administrative network, used for administration and monitoring purposes. 
+#   <FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN> 
+#    For example: foss-cloud-node-01.example.com
+#   <FOSS-CLOUD-ADMIN-NETWORK-ADDRESS> 
+#    For example: 10.1.110.13            Admin segment IP 
+#   <FOSS-CLOUD-DATA-NETWORK-ADDRESS> 
+#    For example: 10.1.120.13            Data segment IP 
+#   <FOSS-CLOUD-INT-NETWORK-ADDRESS>
+#    For example: 10.1.130.13            Int segment IP
+#   <FOSS-CLOUD-PUB-NETWORK-ADDRESS>
+#    For example: 192.168.140.13         Public segment IP
+#
+################################################################################
+dn: sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: The node <FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>.
+labeleduri: ldap:///ou=virtual machines,ou=virtualization,ou=services,dc=foss-cloud,dc=org??sub?(sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>)
+objectclass: top
+objectclass: sstVirtualizationNode
+objectclass: sstRelationship
+objectclass: labeledURIObject
+sstbelongstocustomeruid: 4000001
+sstbelongstoreselleruid: 4000000
+sstnode: <FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>
+
+dn: ou=networks,sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: This subtree contains the network information.
+objectclass: top
+objectclass: organizationalUnit
+ou: networks
+
+dn: ou=admin,ou=networks,sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: Administrative network, used for administration and monitoring purposes.
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstNetworkNode
+ou: admin
+sstnetworkipaddress: <FOSS-CLOUD-ADMIN-NETWORK-ADDRESS>
+
+dn: sstService=sshd,ou=admin,ou=networks,sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: OpenSSH is used for remote management and access.
+objectclass: top
+objectclass: sstServicesNode
+sstdisplayname: OpenSSH daemon
+sstservice: sshd
+
+dn: ou=data,ou=networks,sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: Data network, used for GlusterFS (in later versions NFS and Ceph as well) traffic.
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstNetworkNode
+ou: data
+sstnetworkipaddress: <FOSS-CLOUD-DATA-NETWORK-ADDRESS>
+
+dn: sstService=glusterd,ou=data,ou=networks,sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: The GlusterFS File service is used as the virtual machine storage.
+objectclass: top
+objectclass: sstServicesNode
+sstdisplayname: GlusterFS File Service
+sstservice: glusterd
+
+dn: ou=int,ou=networks,sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: Internal network, used for internal traffic such as LDAP, libvirt and more.
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstNetworkNode
+ou: int
+sstnetworkipaddress: <FOSS-CLOUD-INT-NETWORK-ADDRESS>
+
+dn: sstService=libvirtd,ou=int,ou=networks,sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: The libvirtd daemon is used for the administration of the virtual servers.
+objectclass: top
+objectclass: sstServicesNode
+sstdisplayname: libvirtd Service
+sstservice: libvirtd
+
+dn: sstService=slapd,ou=int,ou=networks,sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: The OpenLDAP directory is used for the storage of all service related data.
+objectclass: top
+objectclass: sstServicesNode
+sstdisplayname: OpenLDAP Secondary Master
+sstnetworkhostname: ldapm-01
+sstservice: slapd
+
+dn: ou=pub,ou=networks,sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: Public network, used for accessing the VM-Manager web interface, Spice traffic and internet access.
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstNetworkNode
+ou: pub
+sstnetworkipaddress: <FOSS-CLOUD-PUB-NETWORK-ADDRESS>
+
+dn: sstService=apache2,ou=pub,ou=networks,sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: The Apache web server is used for the VM-Manager web interface.
+objectclass: top
+objectclass: sstServicesNode
+sstdisplayname: VM-Manager Service
+sstnetworkhostname: vm-manager
+sstservice: apache2
+
+dn: sstService=dhcpd,ou=pub,ou=networks,sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: The DHCP server is used for the distribution of IP addresses.
+objectclass: top
+objectclass: sstServices
+sstdisplayname: DHCP Service
+sstnetworkvirtualhostname: dhcpd
+sstservice: dhcpd
+
+dn: sstService=qemu-system-x86_64,ou=pub,ou=networks,sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: The QEMU (spice) service is used for the interaction with virtualized desktop devices.
+objectclass: top
+objectclass: sstServicesNode
+sstdisplayname: QEMU (spice) Service
+sstservice: qemu-system-x86_64
+
+dn: ou=node-types,sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: This subtree contains the node type definition(s).
+objectclass: top
+objectclass: organizationalUnit
+ou: node-types
+
+dn: sstNodeType=Secondary-Master-Node,ou=node-types,sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: This is the first node of a multi-node installation.
+objectclass: top
+objectclass: sstTypeNode
+sstdisplayname: Secondary-Master-Node
+sstnodestate: active
+sstnodesubtype: KVM
+sstnodetype: Secondary-Master-Node
+
+dn: sstNodeType=VM-Node,ou=node-types,sstNode=<FOSS-CLOUD-NODE-NAME>.<FOSS-CLOUD-PUB-DOMAIN>,ou=nodes,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+description: The VM-Node is used to run the VM-Templates and VMs.
+objectclass: top
+objectclass: sstTypeNode
+sstdisplayname: VM-Node
+sstnodestate: active
+sstnodesubtype: KVM
+sstnodetype: VM-Node

@@ -1805,6 +1805,8 @@ sub configureOpenLDAP {
   my $file_15_vms_services_virtualization            = $directory_data."/15_vms_services_virtualization.ldif";
   my $file_16_primary_master_node                    = $directory_data."/16_primary-master-node.ldif";
   my $file_16_primary_master_node_template           = $directory_data."/16_primary-master-node.template-$local_modus";
+  my $file_16_secondary_master_node                  = $directory_data."/16_secondary-master-node.ldif";
+  my $file_16_secondary_master_node_template         = $directory_data."/16_secondary-master-node.template-$local_modus";
   my $file_17_ranges_networks_services_virtualization = $directory_data."/17_ranges_networks_services_virtualization.ldif";
   my $file;
   my $line;
@@ -2154,9 +2156,48 @@ sub configureOpenLDAP {
   # Now we can start adding the data to the OpenLDAP directory with ldapadd
   print "\n";
 
-  # We don't want to add anything if we are the secondary master, the syncrepl
-  # will take care of that
-  return $unencrypted_password if ( $local_modus eq "secondary-master" );
+  # We just want to add the node if we are the secondary master, the syncrepl
+  # will take care of the rest
+  if ( $local_modus eq "secondary-master" )
+  {
+      ### Working on 16_secondary-master-node
+      #
+
+      @sar_commands = (## general ##
+                       {search => "<FOSS-CLOUD-NODE-NAME>",replace => $localNetworkHash->{"Node Name"}},
+
+                       ## admin segment hashes ##
+                       {search => "<FOSS-CLOUD-ADMIN-NETWORK-ADDRESS>",replace => $localNetworkHash->{"admin"}->{"ip"}},
+
+                       ## int segment hashes ##
+                       {search => "<FOSS-CLOUD-INT-NETWORK-ADDRESS>",replace => $localNetworkHash->{"int"}->{"ip"}},
+
+                       ## data segment hashes##
+                       {search => "<FOSS-CLOUD-DATA-NETWORK-ADDRESS>",replace => $localNetworkHash->{"data"}->{"ip"}},
+
+                       ## pub segment hashes ##
+                       {search => "<FOSS-CLOUD-PUB-NETWORK-ADDRESS>",replace => $localNetworkHash->{"pub"}->{"ip"}},
+                       {search => "<FOSS-CLOUD-PUB-DOMAIN>",replace => $localNetworkHash->{"pub"}->{"domain"}},
+
+                       # Path
+                       {search  => "16_secondary-master-node.template",
+                        replace => "16_secondary-master-node.ldif"
+                       },
+                      );
+
+
+      # Replace the template with the correct values which are specified in the
+      # @sar_commands array
+      searchAndReplace( $file_16_secondary_master_node_template,
+                        $file_16_secondary_master_node,
+                        @sar_commands
+                       );
+
+      # Load the created ldif into the LDAP
+      loadOpenLDAPsingleLDIF($int_vip,$unencrypted_password,$file_16_secondary_master_node);
+
+    return $unencrypted_password;
+  }
 
   ##############################################################################
   ### Worked on files needed by $modus
