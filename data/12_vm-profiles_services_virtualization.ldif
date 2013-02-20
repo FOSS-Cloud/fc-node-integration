@@ -169,7 +169,7 @@ objectclass: sstVirtualizationVirtualMachineDisk
 objectclass: sstVirtualizationVirtualMachineDiskDefaults
 sstdevice: disk
 sstdisk: vda
-sstdrivercache: writeback
+sstdrivercache: none
 sstdrivername: qemu
 sstdrivertype: qcow2
 sstreadonly: FALSE
@@ -329,7 +329,7 @@ objectclass: sstVirtualizationVirtualMachineDisk
 objectclass: sstVirtualizationVirtualMachineDiskDefaults
 sstdevice: disk
 sstdisk: vda
-sstdrivercache: writeback
+sstdrivercache: none
 sstdrivername: qemu
 sstdrivertype: qcow2
 sstreadonly: FALSE
