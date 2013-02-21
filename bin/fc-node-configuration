@@ -3203,344 +3203,82 @@ sub configureApache2 {
 ################################################################################
 sub configureUcarp
 {
-    #TODO: this method with search replace
-
-  # Public interface
+    
+  #TODO: this method with search replace
 
   my $localNetworkHash = shift;
   # Configuring ucarp
   print "\n";
   header("Configuring ucarp ...");
 
-  # Ucarp permission
-  my $uid = $cfg->val("General","uid_root");
-  my $gid = $cfg->val("General","gid_root");
-  my $permissions = 0755;
+  # Public interface
+  # Edit the /etc/conf.d/ucarp.pub 
+  my $ucarp_pub_conf = $cfg->val("General","ucarp_pub_config");
+  my $ucarp_pub_interface = $cfg->val("General","ucarp_pub_interface");
+  my $ucarp_pub_advskew = $cfg->val($modus,"ucarp_advskew");
+  my $ucarp_pub_rip = $localNetworkHash->{'pub'}->{'ip'};
+  my $ucarp_pub_vip = $localNetworkHash->{'pub'}->{'vip'};
+  my $ucarp_pub_netmask = $localNetworkHash->{'pub'}->{'netmask'};
 
-  my $ucarp_dir = "/etc/ucarp";
-  my $ucarp_options = $cfg->val($modus,"ucarp_options");
+  # Read the configuration file
+  open(FILE,$ucarp_pub_conf) || die("Could not open $ucarp_pub_conf for reading.");
+  @output = <FILE>;
+  close FILE;
 
-  # Create the /etc/ucarp directory if it does not exsist
-  unless ( -e $ucarp_dir )
+  # Write the file and directly change what needs to be changed
+  open(FILE,">$ucarp_pub_conf") || die("Could not open $ucarp_pub_conf for writting.");
+  foreach my $line ( @output )
   {
-      if ( !mkdir($ucarp_dir,0755) )
-      {
-        # TODO
-    #    returnError();
-      }
+    # Check it the line matches
+    $line = "UCARP_PUBERFACE=".$ucarp_pub_interface."\n" if ( $line =~ m/<FOSS-CLOUD-PUB-INTERFACE>/ );
+    $line = "UCARP_SOURCEADDRESS=$ucarp_pub_rip\n" if ( $line =~ m/<FOSS-CLOUD-PUB-RIP-ADDRESS>/); 
+    $line = "UCARP_VIRTUALADDRESS=$ucarp_pub_vip\n" if ( $line =~ m/<FOSS-CLOUD-PUB-VIP-ADDRESS>/); 
+    $line = "UCARP_VIRTUALPREFIX=$ucarp_pub_netmask\n" if ( $line =~ m/<FOSS-CLOUD-PUB-NETMASK>/); 
+    $line = "UCARP_OPTS=\"--shutdown --advskew $ucarp_pub_advskew\"\n" if ( $line =~ m/<FOSS-CLOUD-UCARP-ADVSKEW>/); 
+
+    # Write the line to the file
+    print FILE $line;
+
   }
+  close FILE;
 
-  # Create the vip-up.sh script: 
-  my $pub_vip_up_script = '#!/bin/bash
-# Copyright 2005 Mike Glenn & Homechicken Software
-# Distributed under the terms of the GNU General Public License v2
- 
-# read in the configuration file
-source /etc/conf.d/ucarp.pub
- 
-# bring up the virtual interface
-$IP_ADDR add $PUB_VIRTUAL_ADDRESS/$PUB_VIRTUAL_NETMASK dev $PUB_INTERFACE
 
-# start apache 
-/etc/init.d/apache2 start';
+  # Do the same thing for the internal interface
+  # Public interface
+  # Edit the /etc/conf.d/ucarp.int
+  my $ucarp_int_conf = $cfg->val("General","ucarp_int_config");
+  my $ucarp_int_advskew = $cfg->val($modus,"ucarp_advskew");
+  my $ucarp_int_interface = "vlan".$localNetworkHash->{'int'}->{'ip'};
+  my $ucarp_int_rip = $localNetworkHash->{'int'}->{'ip'};
+  my $ucarp_int_vip = $localNetworkHash->{'int'}->{'vip'};
+  my $ucarp_int_netmask = $localNetworkHash->{'int'}->{'netmask'};
 
-  # Write the script
-  if( ! open(VIP_UP,">$ucarp_dir/pub-vip-up.sh") )
+  # Read the configuration file
+  open(FILE,$ucarp_int_conf) || die("Could not open $ucarp_int_conf for reading.");
+  @output = <FILE>;
+  close FILE;
+
+  # Write the file and directly change what needs to be changed
+  open(FILE,">$ucarp_int_conf") || die("Could not open $ucarp_int_conf for writting.");
+  foreach my $line ( @output )
   {
-    # TODO
-#    returnError();
+    # Check it the line matches
+    $line = "UCARP_PUBERFACE=$ucarp_int_interface\n" if ( $line =~ m/<FOSS-CLOUD-PUB-INTERFACE>/ );
+    $line = "UCARP_SOURCEADDRESS=$ucarp_int_rip\n" if ( $line =~ m/<FOSS-CLOUD-PUB-RIP-ADDRESS>/); 
+    $line = "UCARP_VIRTUALADDRESS=$ucarp_int_vip\n" if ( $line =~ m/<FOSS-CLOUD-PUB-VIP-ADDRESS>/); 
+    $line = "UCARP_VIRTUALPREFIX=$ucarp_int_netmask\n" if ( $line =~ m/<FOSS-CLOUD-PUB-NETMASK>/); 
+    $line = "UCARP_OPTS=\"--shutdown --advskew $ucarp_int_advskew\"\n" if ( $line =~ m/<FOSS-CLOUD-UCARP-ADVSKEW>/); 
+
+    # Write the line to the file
+    print FILE $line;
+
   }
+  close FILE;
 
-  print VIP_UP $pub_vip_up_script;
-  close VIP_UP;
-
-  # Set proper file permission 
-  setSingleFilePermissions("file",$uid,$gid,$permissions,"$ucarp_dir/pub-vip-up.sh");
-
-
-  # Create the vip_down script
-  my $pub_vip_down_script = '#!/bin/bash
-# Copyright 2005 Mike Glenn & Homechicken Software
-# Distributed under the terms of the GNU General Public License v2
- 
-# read in the configuration file
-source /etc/conf.d/ucarp.pub
- 
-#
-# bring down the virtual interface
-$IP_ADDR del $PUB_VIRTUAL_ADDRESS/$PUB_VIRTUAL_NETMASK dev $PUB_INTERFACE
-
-# stop the apache
-/etc/init.d/apache2 stop';
-
-  # Write the script
-  if( ! open(VIP_DOWN,">$ucarp_dir/pub-vip-down.sh") )
-  {
-    # TODO
-#    returnError();
-  }
-
-  print VIP_DOWN $pub_vip_down_script;
-  close VIP_DOWN;
-
-  # Set proper file permission 
-  setSingleFilePermissions("file",$uid,$gid,$permissions,"$ucarp_dir/pub-vip-down.sh");
-
-  # Create the file /etc/conf.d/ucarp
-  my $pub_ucarp_config = '# Copyright 2005 Mike Glenn & Homechicken Software
-# Distributed under the terms of the GNU General Public License v2
- 
-# Location of the ucarp executable
-UCARP_EXEC=/usr/sbin/ucarp
-IP_ADDR="/sbin/ip addr"
- 
-#
-# Location of the ucarp pid file
-PUB_UCARP_PIDFILE=/var/run/ucarp-pub.pid
- 
-#
-# ucarp options
-# -z run shudown script on exit
-# -P force perferred master
-OPTIONS="'.$ucarp_options.'"
- 
-#
-# ucarp base, lower number will be perfered master
-# set to same to have master stay alive as long as possible
-PUB_UCARP_BASE=1
- 
-#
-# Interface for Ipaddress
-PUB_INTERFACE=vmbr0
- 
-#
-# Instance id
-# any number from 1 to 255
-# Master and Backup need to be the same
-PUB_INSTANCE_ID=1
- 
-#
-# Password so servers can trust who they are talking to
-PUB_PASSWORD=admin
- 
-#
-# The start and stop scripts
-PUB_START_SCRIPT=/etc/ucarp/pub-vip-up.sh
-PUB_STOP_SCRIPT=/etc/ucarp/pub-vip-down.sh
- 
-#
-# The Application Address that will failover
-PUB_VIRTUAL_ADDRESS='.$localNetworkHash->{'pub'}->{'vip'}.'
-PUB_VIRTUAL_BROADCAST='.$localNetworkHash->{'pub'}->{'broadcast'}.'
-PUB_VIRTUAL_NETMASK='.$localNetworkHash->{'pub'}->{'netmask'}.'
- 
-#
-# The Maintanence Address of the local machine
-PUB_SOURCE_ADDRESS='.$localNetworkHash->{'pub'}->{'ip'}.'
- 
-#
-# DO NOT EDIT BELOW THIS LINE!
-PUB_UCARP_OPTS="$OPTIONS -b $PUB_UCARP_BASE -i $PUB_INTERFACE -v $PUB_INSTANCE_ID -p $PUB_PASSWORD -u $PUB_START_SCRIPT -d $PUB_STOP_SCRIPT -a $PUB_VIRTUAL_ADDRESS -s $PUB_SOURCE_ADDRESS"';
-
-  if( ! open(UCARP, ">/etc/conf.d/ucarp.pub") )
-  {
-    # TODO
-#    returnError();
-  }
-
-  print UCARP $pub_ucarp_config;
-  close UCARP;
-
-  # Create the deamon
-  my $pub_ucarp_start_stop = '#!/sbin/runscript
-# Copyright 2005 Mike Glenn & Homechicken Software
-# Distributed under the terms of the GNU General Public License v2
- 
-depend() {
-       use logger net
-}
- 
-start() {
-       ebegin "Starting UCARP_PUB"
-       start-stop-daemon --start --background --make-pidfile --pidfile ${PUB_UCARP_PIDFILE} --quiet --exec ${UCARP_EXEC} -- ${PUB_UCARP_OPTS}
-       eend $?
-}
- 
-stop()  {
-        ebegin "Stopping UCARP_PUB"
-        start-stop-daemon --stop --pidfile ${PUB_UCARP_PIDFILE}
-        eend $?
-}';
-
-  if( ! open(UCARP, ">/etc/init.d/ucarp.pub") )
-  {
-    # TODO
-#    returnError();
-  }
-
-  print UCARP $pub_ucarp_start_stop;
-  close UCARP;
-
-  # Set proper file permission 
-  setSingleFilePermissions("file",$uid,$gid,$permissions,"/etc/init.d/ucarp.pub");
-
-
-
-
-
-
-  ##### int interface
-
-
-  # Create the vip-up.sh script: 
-  my $int_vip_up_script = '#!/bin/bash
-# Copyright 2005 Mike Glenn & Homechicken Software
-# Distributed under the terms of the GNU General Public License v2
- 
-# read in the configuration file
-source /etc/conf.d/ucarp.int 
- 
-# bring up the virtual interface
-$IP_ADDR add $INT_VIRTUAL_ADDRESS/$INT_VIRTUAL_NETMASK dev $INT_INTERFACE';
-
-  # Write the script
-  if( ! open(VIP_UP,">$ucarp_dir/int-vip-up.sh") )
-  {
-    # TODO
-#    returnError();
-  }
-
-  print VIP_UP $int_vip_up_script;
-  close VIP_UP;
-
-  # Set proper file permission 
-  setSingleFilePermissions("file",$uid,$gid,$permissions,"$ucarp_dir/int-vip-up.sh");
-
-
-  # Create the vip_down script
-  my $int_vip_down_script = '#!/bin/bash
-# Copyright 2005 Mike Glenn & Homechicken Software
-# Distributed under the terms of the GNU General Public License v2
- 
-# read in the configuration file
-source /etc/conf.d/ucarp.int
- 
-#
-# bring down the virtual interface
-$IP_ADDR del $INT_VIRTUAL_ADDRESS/$INT_VIRTUAL_NETMASK dev $INT_INTERFACE';
-
-  # Write the script
-  if( ! open(VIP_DOWN,">$ucarp_dir/int-vip-down.sh") )
-  {
-    # TODO
-#    returnError();
-  }
-
-  print VIP_DOWN $int_vip_down_script;
-  close VIP_DOWN;
-
-  # Set proper file permission 
-  setSingleFilePermissions("file",$uid,$gid,$permissions,"$ucarp_dir/int-vip-down.sh");
-
-  # Create the file /etc/conf.d/ucarp
-  my $int_ucarp_config = '# Copyright 2005 Mike Glenn & Homechicken Software
-# Distributed under the terms of the GNU General Public License v2
- 
-# Location of the ucarp executable
-UCARP_EXEC=/usr/sbin/ucarp
-IP_ADDR="/sbin/ip addr"
- 
-#
-# Location of the ucarp pid file
-INT_UCARP_PIDFILE=/var/run/ucarp-int.pid
- 
-#
-# ucarp options
-# -z run shudown script on exit
-# -P force perferred master
-OPTIONS="'.$ucarp_options.'"
- 
-#
-# ucarp base, lower number will be perfered master
-# set to same to have master stay alive as long as possible
-INT_UCARP_BASE=1
- 
-#
-# Interface for Ipaddress
-INT_INTERFACE=vlan'.$localNetworkHash->{'int'}->{'id'}.'
- 
-#
-# Instance id
-# any number from 1 to 255
-# Master and Backup need to be the same
-INT_INSTANCE_ID=1
- 
-#
-# Password so servers can trust who they are talking to
-INT_PASSWORD=admin
- 
-#
-# The start and stop scripts
-INT_START_SCRIPT=/etc/ucarp/int-vip-up.sh
-INT_STOP_SCRIPT=/etc/ucarp/int-vip-down.sh
- 
-#
-# The Application Address that will failover
-INT_VIRTUAL_ADDRESS='.$localNetworkHash->{'int'}->{'vip'}.'
-INT_VIRTUAL_BROADCAST='.$localNetworkHash->{'int'}->{'broadcast'}.'
-INT_VIRTUAL_NETMASK='.$localNetworkHash->{'int'}->{'netmask'}.'
- 
-#
-# The Maintanence Address of the local machine
-INT_SOURCE_ADDRESS='.$localNetworkHash->{'int'}->{'ip'}.'
- 
-#
-# DO NOT EDIT BELOW THIS LINE!
-INT_UCARP_OPTS="$OPTIONS -b $INT_UCARP_BASE -i $INT_INTERFACE -v $INT_INSTANCE_ID -p $INT_PASSWORD -u $INT_START_SCRIPT -d $INT_STOP_SCRIPT -a $INT_VIRTUAL_ADDRESS -s $INT_SOURCE_ADDRESS"';
-
-  if( ! open(UCARP, ">/etc/conf.d/ucarp.int") )
-  {
-    # TODO
-#    returnError();
-  }
-
-  print UCARP $int_ucarp_config;
-  close UCARP;
-
-  # Create the deamon
-  my $int_ucarp_start_stop = '#!/sbin/runscript
-# Copyright 2005 Mike Glenn & Homechicken Software
-# Distributed under the terms of the GNU General Public License v2
- 
-depend() {
-       use logger net
-}
- 
-start() {
-       ebegin "Starting UCARP_INT"
-       start-stop-daemon --start --background --make-pidfile --pidfile ${INT_UCARP_PIDFILE} --quiet --exec ${UCARP_EXEC} -- ${INT_UCARP_OPTS}
-       eend $?
-}
- 
-stop()  {
-        ebegin "Stopping UCARP_INT"
-        start-stop-daemon --stop --pidfile ${INT_UCARP_PIDFILE}
-        eend $?
-}';
-
-  if( ! open(UCARP, ">/etc/init.d/ucarp.int") )
-  {
-    # TODO
-#    returnError();
-  }
-
-  print UCARP $int_ucarp_start_stop;
-  close UCARP;
-
-  # Set proper file permission 
-  setSingleFilePermissions("file",$uid,$gid,$permissions,"/etc/init.d/ucarp.int");
-
-
+  # Now the configuration phase is finished, we can create the symlinks to the
+  # init script
+  symlink("/etc/init.d/ucarp","/etc/init.d/ucarp.pub");
+  symlink("/etc/init.d/ucarp","/etc/init.d/ucarp.int");
 
 }
 
