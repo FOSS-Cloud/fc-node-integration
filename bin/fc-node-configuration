@@ -648,14 +648,6 @@ sub secondaryMasterNode{
   # Mount the GlusterFS volume
   mountGlusterFS($remoteNetworkHash1,$remoteNetworkHash2);
 
-  # Unpack virtualization data tarball and test if it's ok
-  my $tarball = $cfg->val($modus,"file_tarball_source");
-  my $destination = $cfg->val($modus,"file_tarball_destination");
-  if ( unpackVirtualizationDataTarball($tarball, $destination) )
-  {
-      returnError(ERROR_UNPACKING_TARBALL_CODE,ERROR_UNPACKING_TARBALL_STRING);
-  }
-
   # Configure the libvirtd daemon
   configureLibvirt($localNetworkHash);
 
@@ -841,7 +833,7 @@ sub vmNode{
         # Also ask the user for the password for the user with which the prov-backup-
         # daemon binds to the LDAP
         $binddn = $cfg->val("prov-backup-kvm","ldap_binddn");
-        ($ldap_crypt, $prov_backup_kvm_unencrypted_password ) = askForOpenLDAPPassword($binddn);
+        ($ldap_crypt, $prov_backup_kvm_unencrypted_password ) = askForOpenLDAPPassword($binddn, "enter");
 
         $bind = $ldap_connection->bind($binddn , password => $prov_backup_kvm_unencrypted_password);
 
@@ -909,26 +901,28 @@ sub demoSystem{
   {
       returnError(ERROR_UNPACKING_TARBALL_CODE,ERROR_UNPACKING_TARBALL_STRING);
   }
+#
+#
+#  # Unpack virtualization iso data tarball if it exists and test if it's ok
+#  $tarball = $cfg->val($modus,"file_tarball_iso_source");
+#  $destination = $cfg->val($modus,"file_tarball_iso_destination");
+#
+#  # Check if the tarball exists or not
+#  if ( -r $tarball )
+#  {
+#      # Unpack the tarball and check for success
+#      if ( unpackVirtualizationDataTarball($tarball,$destination) )
+#      {
+#          returnError(ERROR_UNPACKING_TARBALL_CODE,ERROR_UNPACKING_TARBALL_STRING);
+#      }
+#  } else
+#  {
+#      # If the tarball is does not exists, tell the user
+#      print "Tarball $tarball does not exist\n\n";
+#  }
 
-
-  # Unpack virtualization iso data tarball if it exists and test if it's ok
-  $tarball = $cfg->val($modus,"file_tarball_iso_source");
-  $destination = $cfg->val($modus,"file_tarball_iso_destination");
-
-  # Check if the tarball exists or not
-  if ( -r $tarball )
-  {
-      # Unpack the tarball and check for success
-      if ( unpackVirtualizationDataTarball($tarball,$destination) )
-      {
-          returnError(ERROR_UNPACKING_TARBALL_CODE,ERROR_UNPACKING_TARBALL_STRING);
-      }
-  } else
-  {
-      # If the tarball is does not exists, tell the user
-      print "Tarball $tarball does not exist\n\n";
-  }
-
+  # Enable the IPv4 forwarding on the demo system
+  enableIPv4Forwarding();
 
   # Configure the libvirtd daemon
   configureLibvirt($localNetworkHash);
@@ -948,11 +942,19 @@ sub demoSystem{
   # Configure the apache2 daemon
   configureApache2($localNetworkHash);
 
+  # Start the apache
+  startDaemon("apache2");
+  rcUpdate("apache2","default");
+
   # Configure the iptables
   configureIPtables($cfg);
 
+  configureProvBackupKVM($localNetworkHash, $localNetworkHash->{'int'}->{'ip'}, $prov_backup_kvm_unencrypted_password);
+
   # Configure the fc-brockerd daemon
   configureFcBrokerd($localNetworkHash,$unencrypted_password);
+  startDaemon("fc-brokerd");
+  rcUpdate("fc-brokerd","default");
 
   # Start and add the PowerDNS recursor to the default runlevel
   startDaemon("precursor");
@@ -961,6 +963,9 @@ sub demoSystem{
   # Start the dhcp daemon and add it to the default runlevel
   startDaemon("dhcpd");
   rcUpdate("dhcpd","default");
+
+  # Create the backup directory symlink
+  createBackupDirectorySymlink();
 
   # Remove the firstboot file
   my $first_boot_file = $cfg->val($modus,"file_first_boot");
@@ -1823,6 +1828,10 @@ sub configureOpenLDAP {
   my $dns_host_string = "";
   my $ntp_host_string = "";
 
+  # Check if the modus is demo-system, if yes change the vip to the internal 
+  # interface ip
+  $int_vip = $localIntIP if ( $modus eq "demo-system" );
+
   # Used for commands later
   my $search;
   my $replace;
@@ -1928,11 +1937,12 @@ sub configureOpenLDAP {
       my $syncrepl_provider;
 
       # Check what modus we have
-      if ( $modus eq "primary-master" )
+      if ( $local_modus eq "primary-master" )
       {
         # Its the secondary ip from the int-interface (we asked this information 
         # at the start of the script when asking for the VIPs)
         $syncrepl_provider = $localNetworkHash->{'int'}->{'secondary_master_ip'};
+        $syncrepl_provider = "127.0.0.2" if ( $modus eq "demo-system" );
       } else
       {
         # If its the secondary storage node, its the remote networks int ip
@@ -1948,7 +1958,13 @@ sub configureOpenLDAP {
       unless ( defined($password) && $password ne "" )
       {
           # Ask the user for the Manager password
-          ($password,$unencrypted_password) = askForOpenLDAPPassword($openldap_binddn);
+          if ( $modus eq "primary_master" )
+          {
+            ($password,$unencrypted_password) = askForOpenLDAPPassword($openldap_binddn,"define");
+          } else 
+          {
+            ($password,$unencrypted_password) = askForOpenLDAPPassword($openldap_binddn,"enter");
+          }
       } else
       {
           # Create a crypted version of the password specified in command line args
@@ -2055,10 +2071,22 @@ sub configureOpenLDAP {
 
       my $openldap_binddn = $cfg->val("prov-backup-kvm","ldap_binddn");
 
+      # Remember we don't want the user to set anythign so just set the password
+      # for the backup deamon to the password that was passed
+      $prov_backup_kvm_unencrypted_password = $unencrypted_password;
+      $prov_backup_kvm_password = `/usr/sbin/slappasswd -s '$prov_backup_kvm_unencrypted_password'`;
+      chomp( $prov_backup_kvm_password );
+
       unless ( defined($prov_backup_kvm_password) && $prov_backup_kvm_password ne "" )
       {
           # Ask the user for the prov-backup-kvm password
-          ($prov_backup_kvm_password,$prov_backup_kvm_unencrypted_password) = askForOpenLDAPPassword($openldap_binddn);
+          if ( $modus eq "primary_master" )
+          {
+            ($prov_backup_kvm_password,$prov_backup_kvm_unencrypted_password) = askForOpenLDAPPassword($openldap_binddn,"define");
+          } else
+          {
+            ($prov_backup_kvm_password,$prov_backup_kvm_unencrypted_password) = askForOpenLDAPPassword($openldap_binddn,"enter");
+          }
       } else
       {
         # Error ...
@@ -2067,10 +2095,23 @@ sub configureOpenLDAP {
       # If the user already is entering some passwords, also ask him the
       # password for the dhcp user
       my $openldap_dhcp_binddn = $cfg->val("General","dhcp_binddn");
+
+      # Again no input from the user: 
+      $dhcp_unencrypted_password = "gugus"; # TODO generate
+      $dhcp_password = `/usr/sbin/slappasswd -s '$dhcp_unencrypted_password'`;
+      chomp( $dhcp_password );
+
+
       unless ( defined($dhcp_password) && $dhcp_password ne "" )
       {
-          # Ask the user for the prov-backup-kvm password
-          ($dhcp_password,$dhcp_unencrypted_password) = askForOpenLDAPPassword($openldap_dhcp_binddn);
+          # Ask the user for the pdhcpd password
+          if ( $modus eq "primary_master" )
+          {
+            ($dhcp_password,$dhcp_unencrypted_password) = askForOpenLDAPPassword($openldap_dhcp_binddn,"define");
+          } else
+          {
+            ($dhcp_password,$dhcp_unencrypted_password) = askForOpenLDAPPassword($openldap_dhcp_binddn,"enter");
+          }
       } else
       {
         # Error ...
@@ -2277,7 +2318,7 @@ sub configureOpenLDAP {
   # if needed by $modus
   ##############################################################################
 
-  if ( ( $local_modus eq "primary-master" ) )
+  if ( $local_modus eq "primary-master" )
   {
 
     # Variables we need
@@ -2291,6 +2332,20 @@ sub configureOpenLDAP {
 
     # Gives the user the possibility to reenter all information
     my $correct = 0;
+
+    # We don't want user input in the demo system
+    if ( $modus eq "demo-system" )
+    {
+        $givenname = "FOSS-Cloud";
+        $surname = "Administrator";
+        $gender = "n";
+        $mail = 'info@foss-cloud.org';
+        $timezone = "UTC+01";
+        $language = "en-GB";
+        $password = `/usr/sbin/slappasswd -s admin`;
+        chomp($password);
+        $correct = 1; 
+    }
 
     while ( ! $correct )
     {
@@ -2369,7 +2424,7 @@ sub configureOpenLDAP {
         print "\n";
 
         # Ask for the password: 
-        ($password, my $uncrypted) = askForOpenLDAPPassword("admin");
+        ($password, my $uncrypted) = askForOpenLDAPPassword("admin","define");
 
         # Show the user what he entered: 
         print "\nIs the follwing information correct?:\n";
@@ -2897,7 +2952,9 @@ sub configureDHCP {
 
     # Generate the search and replace commands to replace the placeholders in
     # template
-    my @sar_commands = ( { search => "<FOSS-CLOUD-LDAP-SERVER>", replace => $localNetworkHash->{"int"}->{"vip"} },
+    my $ldap_uri = $localNetworkHash->{"int"}->{"vip"};
+    $ldap_uri = "127.0.0.1" if ( $modus eq "demo-system" );
+    my @sar_commands = ( { search => "<FOSS-CLOUD-LDAP-SERVER>", replace =>  $ldap_uri },
                          { search => "<FOSS-CLOUD-DHCP-PASSWORD>", replace => $dhcp_unencrypted_password}, 
                          { search => "<FOSS-CLOUD-LDAP-PORT>", replace => $ldap_port});
 
@@ -3094,6 +3151,8 @@ sub configureApache2 {
   my $localPubDomain =  $localNetworkHash->{"pub"}->{"domain"};
   my $pub_vip = $localNetworkHash->{"pub"}->{"vip"};
 
+  $pub_vip = $localNetworkHash->{"pub"}->{"ip"} if ( $modus eq "demo-system" );
+
   # Configuring the apache2 daemon
   print "\n";
   header("Configuring the apache2 daemon ...");
@@ -3101,6 +3160,8 @@ sub configureApache2 {
   # Make sure, that the web server daemon apache2 is not running
   stopDaemon("apache2");
 
+  # Apache vip name for demo system
+  $apache_vip_name = "foss-cloud.".$localPubDomain if ( $modus eq "demo-system" );
 
   while ( $apache_vip_name !~ m/.+\..+\..{2,3}/ )
   {
@@ -3211,6 +3272,9 @@ sub configureUcarp
   print "\n";
   header("Configuring ucarp ...");
 
+  my @output;
+  my $ucarp_password = "mysecretpassword";
+
   # Public interface
   # Edit the /etc/conf.d/ucarp.pub 
   my $ucarp_pub_conf = $cfg->val("General","ucarp_pub_config");
@@ -3242,13 +3306,18 @@ sub configureUcarp
   }
   close FILE;
 
+  # Write the password to the password file
+  my $ucarp_password_file = $cfg->val("General","ucarp_pub_password_file");
+  open(FILE,">$ucarp_password_file") || die("Could not open $ucarp_password_file for writting.");
+  print FILE $ucarp_password;
+  close FILE;
 
   # Do the same thing for the internal interface
   # Public interface
   # Edit the /etc/conf.d/ucarp.int
   my $ucarp_int_conf = $cfg->val("General","ucarp_int_config");
   my $ucarp_int_advskew = $cfg->val($modus,"ucarp_advskew");
-  my $ucarp_int_interface = "vlan".$localNetworkHash->{'int'}->{'ip'};
+  my $ucarp_int_interface = "vlan".$localNetworkHash->{'int'}->{'id'};
   my $ucarp_int_rip = $localNetworkHash->{'int'}->{'ip'};
   my $ucarp_int_vip = $localNetworkHash->{'int'}->{'vip'};
   my $ucarp_int_netmask = $localNetworkHash->{'int'}->{'netmask'};
@@ -3263,16 +3332,22 @@ sub configureUcarp
   foreach my $line ( @output )
   {
     # Check it the line matches
-    $line = "UCARP_PUBERFACE=$ucarp_int_interface\n" if ( $line =~ m/<FOSS-CLOUD-PUB-INTERFACE>/ );
-    $line = "UCARP_SOURCEADDRESS=$ucarp_int_rip\n" if ( $line =~ m/<FOSS-CLOUD-PUB-RIP-ADDRESS>/); 
-    $line = "UCARP_VIRTUALADDRESS=$ucarp_int_vip\n" if ( $line =~ m/<FOSS-CLOUD-PUB-VIP-ADDRESS>/); 
-    $line = "UCARP_VIRTUALPREFIX=$ucarp_int_netmask\n" if ( $line =~ m/<FOSS-CLOUD-PUB-NETMASK>/); 
+    $line = "UCARP_PUBERFACE=$ucarp_int_interface\n" if ( $line =~ m/<FOSS-CLOUD-INT-INTERFACE>/ );
+    $line = "UCARP_SOURCEADDRESS=$ucarp_int_rip\n" if ( $line =~ m/<FOSS-CLOUD-INT-RIP-ADDRESS>/); 
+    $line = "UCARP_VIRTUALADDRESS=$ucarp_int_vip\n" if ( $line =~ m/<FOSS-CLOUD-INT-VIP-ADDRESS>/); 
+    $line = "UCARP_VIRTUALPREFIX=$ucarp_int_netmask\n" if ( $line =~ m/<FOSS-CLOUD-INT-NETMASK>/); 
     $line = "UCARP_OPTS=\"--shutdown --advskew $ucarp_int_advskew\"\n" if ( $line =~ m/<FOSS-CLOUD-UCARP-ADVSKEW>/); 
 
     # Write the line to the file
     print FILE $line;
 
   }
+  close FILE;
+
+  # Write the password to the password file
+  $ucarp_password_file = $cfg->val("General","ucarp_int_password_file");
+  open(FILE,">$ucarp_password_file") || die("Could not open $ucarp_password_file for writting.");
+  print FILE $ucarp_password;
   close FILE;
 
   # Now the configuration phase is finished, we can create the symlinks to the
@@ -3308,6 +3383,7 @@ sub configureFcBrokerd {
 
   # OpenLDAP runs on the int VLAN
   my $localIntIP = $localNetworkHash->{"int"}->{"vip"};
+  $localIntIP = $localNetworkHash->{"int"}->{"ip"} if ( $modus eq "demo-system" );
   my $openldap_port = $cfg->val("openLDAP","port");
 
   # Get the bind- and basedn
@@ -3530,6 +3606,48 @@ sub proceed {
 } # End of sub proceed
 
 ######################################################################################################
+# enableIPv4Forwarding
+######################################################################################################
+# Description: 
+#   Enables IPv4 forwarding by creating the file /etc/sysctl/routing.conf and 
+#   executing the corresponding sysctl command
+######################################################################################################
+# Usage:
+#   enableIPv4Forwarding();
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+sub enableIPv4Forwarding 
+{
+
+    # Create the file /etc/sysctl.d/routing.conf and add net.ipv4.ip_forward = 1
+    # to it
+    if ( ! open( FILE, ">/etc/sysctl.d/routing.conf" ) )
+    {
+        #TODO
+#        returnError();
+    } else
+    {
+        # Write the content to the file
+        print FILE "# enable routing for NAT\n";
+        print FILE "net.ipv4.ip_forward = 1\n";
+        close FILE;
+    }
+
+    # And finally execute the sysctl command that the changes take place 
+    # immediatly
+    if ( system ("sysctl net.ipv4.ip_forward=1") )
+    {
+        print "Cloud not execute command: \n\nsysctl net.ipv4.ip_forward=1\n\n";
+        print "Execute it after the installation manually to enable IPv4";
+        print "forwarding\n";
+        sleep 10;
+    }
+
+}
+
+######################################################################################################
 # setSingleFilePermissions
 ######################################################################################################
 # Description: 
@@ -3623,7 +3741,7 @@ sub setMultipleFilePermissions {
 sub askForOpenLDAPPassword {
 
   # Set the binddn
-  my $openldap_binddn = shift;
+  my ($openldap_binddn, $modus) = shift;
 
   my $password;
   my $unencrypted_password;
@@ -3638,11 +3756,13 @@ sub askForOpenLDAPPassword {
   {
 
       # Ask the user for the OpenLDAP Manager password
-      print "Please enter the password for $openldap_binddn: ";
+      print "Please $modus the password for $openldap_binddn: ";
 
       # Disable the echo on the terminal, so no one can see your top secret password
       system('stty','-echo');
       chomp($pass1 = <STDIN>);
+
+      return ("",$pass1) if ( $modus eq "enter" );
 
       # Enable the echo on the terminal for the following output 
       system('stty','echo');
