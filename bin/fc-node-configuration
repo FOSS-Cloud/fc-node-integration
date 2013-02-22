@@ -3294,7 +3294,7 @@ sub configureUcarp
   foreach my $line ( @output )
   {
     # Check it the line matches
-    $line = "UCARP_PUBERFACE=".$ucarp_pub_interface."\n" if ( $line =~ m/<FOSS-CLOUD-PUB-INTERFACE>/ );
+    $line = "UCARP_INTERFACE=".$ucarp_pub_interface."\n" if ( $line =~ m/<FOSS-CLOUD-PUB-INTERFACE>/ );
     $line = "UCARP_SOURCEADDRESS=$ucarp_pub_rip\n" if ( $line =~ m/<FOSS-CLOUD-PUB-RIP-ADDRESS>/); 
     $line = "UCARP_VIRTUALADDRESS=$ucarp_pub_vip\n" if ( $line =~ m/<FOSS-CLOUD-PUB-VIP-ADDRESS>/); 
     $line = "UCARP_VIRTUALPREFIX=$ucarp_pub_netmask\n" if ( $line =~ m/<FOSS-CLOUD-PUB-NETMASK>/); 
@@ -3332,7 +3332,7 @@ sub configureUcarp
   foreach my $line ( @output )
   {
     # Check it the line matches
-    $line = "UCARP_PUBERFACE=$ucarp_int_interface\n" if ( $line =~ m/<FOSS-CLOUD-INT-INTERFACE>/ );
+    $line = "UCARP_INTERFACE=$ucarp_int_interface\n" if ( $line =~ m/<FOSS-CLOUD-INT-INTERFACE>/ );
     $line = "UCARP_SOURCEADDRESS=$ucarp_int_rip\n" if ( $line =~ m/<FOSS-CLOUD-INT-RIP-ADDRESS>/); 
     $line = "UCARP_VIRTUALADDRESS=$ucarp_int_vip\n" if ( $line =~ m/<FOSS-CLOUD-INT-VIP-ADDRESS>/); 
     $line = "UCARP_VIRTUALPREFIX=$ucarp_int_netmask\n" if ( $line =~ m/<FOSS-CLOUD-INT-NETMASK>/); 
