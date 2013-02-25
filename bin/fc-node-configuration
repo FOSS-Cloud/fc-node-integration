@@ -54,7 +54,7 @@ use Net::LDAP;
 use Net::LDAP::Constant qw(
   LDAP_SUCCESS
 );
-#use Crypt::GeneratePassword qw(chars);
+use Crypt::GeneratePassword qw(chars);
 use POSIX;
 
 
@@ -210,6 +210,8 @@ my $primary_master_host = "";
 my $primary_master_user = "";
 my $primary_master_password = "";
 my $apache_vip_name = "";
+my $ucarp_int_password = "";
+my $ucarp_pub_password = "";
 
 my $helper_scripts_path = $location;
 my $remote_helper_scripts_path = $cfg->val("General","remote_helper_script_location");
@@ -1917,8 +1919,7 @@ sub configureOpenLDAP {
   my $syncrepl_password;
   if ( $local_modus eq "primary-master" )
   {
-#    $syncrepl_password = chars(8,8);
-    $syncrepl_password = "mysecretpassword";
+    $syncrepl_password = chars(8,8);
   }
 
   if ( $local_modus eq "primary-master" || $local_modus eq "secondary-master")
@@ -1951,14 +1952,16 @@ sub configureOpenLDAP {
          $dhcp_unencrypted_password,
          $prov_backup_kvm_unencrypted_password,
          $fc_brokerd_unencrypted_password,
-         $apache_vip_name ) = getRemoteConfiguration();
+         $apache_vip_name,
+         $ucarp_pub_password,
+         $ucarp_int_password ) = getRemoteConfiguration();
       }
 
 
       unless ( defined($password) && $password ne "" )
       {
           # Ask the user for the Manager password
-          if ( $modus eq "primary_master" )
+          if ( $modus eq "primary-master" )
           {
             ($password,$unencrypted_password) = askForOpenLDAPPassword($openldap_binddn,"define");
           } else 
@@ -3273,7 +3276,16 @@ sub configureUcarp
   header("Configuring ucarp ...");
 
   my @output;
-  my $ucarp_password = "mysecretpassword";
+  my $ucarp_password;
+
+  # Check if the password is defined, if not generate a new one
+  if ( $ucarp_pub_password eq "" )
+  {
+    $ucarp_password = chars(8,8);
+  } else
+  {
+    $ucarp_password = $ucarp_pub_password;
+  }
 
   # Public interface
   # Edit the /etc/conf.d/ucarp.pub 
@@ -3343,6 +3355,15 @@ sub configureUcarp
 
   }
   close FILE;
+
+  # Check the ucarp password for the int interface
+  if ( $ucarp_int_password eq "" )
+  {
+    $ucarp_password = chars(8,8);
+  } else
+  {
+    $ucarp_password = $ucarp_int_password;
+  }
 
   # Write the password to the password file
   $ucarp_password_file = $cfg->val("General","ucarp_int_password_file");
@@ -3741,7 +3762,7 @@ sub setMultipleFilePermissions {
 sub askForOpenLDAPPassword {
 
   # Set the binddn
-  my ($openldap_binddn, $modus) = shift;
+  my ($openldap_binddn, $type) = @_;
 
   my $password;
   my $unencrypted_password;
@@ -3756,16 +3777,22 @@ sub askForOpenLDAPPassword {
   {
 
       # Ask the user for the OpenLDAP Manager password
-      print "Please $modus the password for $openldap_binddn: ";
+      print "Please $type the password for $openldap_binddn: ";
 
       # Disable the echo on the terminal, so no one can see your top secret password
       system('stty','-echo');
       chomp($pass1 = <STDIN>);
+      system('stty','echo');
 
-      return ("",$pass1) if ( $modus eq "enter" );
+      if ( $type eq "enter" )
+      {
+        $unencrypted_password = $pass1;
+        $password = `/usr/sbin/slappasswd -s '$unencrypted_password'`;
+        chomp($password);
+        return ($password,$unencrypted_password);
+      }
 
       # Enable the echo on the terminal for the following output 
-      system('stty','echo');
       print "\nPlease enter the same password again: ";
 
       # Disable the echo on the terminal, so no one can see your top secret password
@@ -4355,6 +4382,8 @@ sub getRemoteConfiguration
     my $kvm_password = "";
     my $dhcp_password = "";
     my $apache_name = "";
+    my $ucarp_pub_pwd = "";
+    my $ucarp_int_pwd = "";
 
     # Check if the known_hosts file exists or not
     if ( -e "~/.ssh/known_hosts" ) {
@@ -4463,6 +4492,38 @@ sub getRemoteConfiguration
             returnError(ERROR_SSH_CMD_FAILED_CODE,ERROR_SSH_CMD_FAILED_STRING,$ssh->error);
         }
 
+        # Get the ucarp int password
+        my $ucarp_int = $cfg->val("General","ucarp_int_password_file");
+        $cmd = "cat '$ucarp_int'";
+
+        # Execute the command on the remote host
+        $output = $ssh->capture($cmd);
+
+        if ( !$ssh->error )
+        {
+            $ucarp_int_pwd = $output;
+            chomp( $ucarp_int_pwd );
+        } else
+        {
+            returnError(ERROR_SSH_CMD_FAILED_CODE,ERROR_SSH_CMD_FAILED_STRING,$ssh->error);
+        }
+
+        # Get the ucarp pub password
+        my $ucarp_pub = $cfg->val("General","ucarp_pub_password_file");
+        $cmd = "cat '$ucarp_pub'";
+
+        # Execute the command on the remote host
+        $output = $ssh->capture($cmd);
+
+        if ( !$ssh->error )
+        {
+            $ucarp_pub_pwd = $output;
+            chomp( $ucarp_pub_pwd );
+        } else
+        {
+            returnError(ERROR_SSH_CMD_FAILED_CODE,ERROR_SSH_CMD_FAILED_STRING,$ssh->error);
+        }
+
     }
     else{
         # If we reach this point, it means that the ssh command could not be executed.
@@ -4474,14 +4535,15 @@ sub getRemoteConfiguration
 
     # Test if both passwords were found
     if ( $syncrepl_password eq "" or $dhcp_password eq "" or $kvm_password eq "" 
-         or $broker_password eq "" )
+         or $broker_password eq "" or $ucarp_pub_pwd eq "" 
+         or $ucarp_int_pwd eq "" )
     {
         returnError(ERROR_PASSWORD_NOT_FOUND_CODE,ERROR_PASSWORD_NOT_FOUND_STRING);
     }
 
     # Return the passwords
     return ( $syncrepl_password, $dhcp_password, $kvm_password, $broker_password,
-             $apache_name );
+             $apache_name, $ucarp_pub_pwd, $ucarp_int_pwd );
 }
 
 ################################################################################
