@@ -2240,6 +2240,65 @@ sub configureOpenLDAP {
       # Load the created ldif into the LDAP
       loadOpenLDAPsingleLDIF($int_vip,$unencrypted_password,$file_16_secondary_master_node);
 
+      # Create the cronjob for the backup
+
+      # Get the values from the configuration file
+      my $cronjob_string = $cfg->val("Cron","LDAPBackupString");
+      my $cronjob_location = $cfg->val("Cron","LDAPBackupLocation");
+      my $cronjob_file = $cfg->val("Cron","LDAPBackupFile");
+
+      # Check whether the directory exists, if not create it
+      unless ( -d $cronjob_location )
+      {
+          system("mkdir -p $cronjob_location");
+          system("chmod 755 $cronjob_location");
+      }
+
+
+      # Open the file and write the cronjob if possible
+      unless ( open(CRON,">$cronjob_location/$cronjob_file") )
+      {
+          # If the file could not be opened, tell the user so
+          print "Could not open cronjob file ($cronjob_location/$cronjob_file) for";
+          print "writing, please create the LDAP backup crobjob yourself!\n";
+          sleep 5;
+      } else
+      {
+          # Write the string to the file and close the file
+          print CRON "# MIN HOUR DAY MONTH DAYOFWEEK\n";
+          print CRON "# * * * * *\n";
+          print CRON "# Cronjob for the LDAP backup\n";
+          print CRON $cronjob_string."\n";
+          close CRON;
+
+          # Set the correct permission to the file
+          system("chmod 644 $cronjob_location/$cronjob_file");
+
+          print "Cronjob for LDAP Backup created!\n";
+      }
+
+      # Check it the .keep_net-nds_openldap-0 file already exists or not
+      unless ( -e "$directory_hdb_data/.keep_net-nds_openldap-0" )
+      {
+          # If not write the .keep_net-nds_openldap-0 file and set proper permission
+          system("touch $directory_hdb_data/.keep_net-nds_openldap-0");
+          setSingleFilePermissions("file",$uid_root,$gid_root,0644,"$directory_hdb_data/.keep_net-nds_openldap-0");
+      }
+
+      # Check if the version-tag file already exists
+      unless ( -e "$directory_hdb_data/.version-tag" )
+      {
+          # If not write the version tag file
+          open(VERSION,">$directory_hdb_data/.version-tag") || die ("Cannot open $directory_hdb_data/.version-tag for writing");
+          print VERSION "OLDPF='openldap-2.4.30'\n".
+                        "# do NOT delete this. it is used\n".
+                        "# to track versions for upgrading.";
+          close VERSION;
+
+          # Set correct permission 
+          setSingleFilePermissions("file",$uid_root,$gid_root,0644,"$directory_hdb_data/.version-tag");
+      }
+
     return $unencrypted_password;
   }
 
