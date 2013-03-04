@@ -2100,10 +2100,9 @@ sub configureOpenLDAP {
       my $openldap_dhcp_binddn = $cfg->val("General","dhcp_binddn");
 
       # Again no input from the user: 
-      $dhcp_unencrypted_password = "gugus"; # TODO generate
+      $dhcp_unencrypted_password = chars(8,8);
       $dhcp_password = `/usr/sbin/slappasswd -s '$dhcp_unencrypted_password'`;
       chomp( $dhcp_password );
-
 
       unless ( defined($dhcp_password) && $dhcp_password ne "" )
       {
