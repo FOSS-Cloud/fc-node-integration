@@ -3349,7 +3349,7 @@ sub configureUcarp
   # Edit the /etc/conf.d/ucarp.pub 
   my $ucarp_pub_conf = $cfg->val("General","ucarp_pub_config");
   my $ucarp_pub_interface = $cfg->val("General","ucarp_pub_interface");
-  my $ucarp_pub_advskew = $cfg->val($modus,"ucarp_advskew");
+  my $ucarp_pub_opts = $cfg->val($modus,"ucarp_opts");
   my $ucarp_pub_rip = $localNetworkHash->{'pub'}->{'ip'};
   my $ucarp_pub_vip = $localNetworkHash->{'pub'}->{'vip'};
   my $ucarp_pub_netmask = $localNetworkHash->{'pub'}->{'netmask'};
@@ -3368,7 +3368,7 @@ sub configureUcarp
     $line = "UCARP_SOURCEADDRESS=$ucarp_pub_rip\n" if ( $line =~ m/<FOSS-CLOUD-PUB-RIP-ADDRESS>/); 
     $line = "UCARP_VIRTUALADDRESS=$ucarp_pub_vip\n" if ( $line =~ m/<FOSS-CLOUD-PUB-VIP-ADDRESS>/); 
     $line = "UCARP_VIRTUALPREFIX=$ucarp_pub_netmask\n" if ( $line =~ m/<FOSS-CLOUD-PUB-NETMASK>/); 
-    $line = "UCARP_OPTS=\"--shutdown --advskew $ucarp_pub_advskew\"\n" if ( $line =~ m/<FOSS-CLOUD-UCARP-ADVSKEW>/); 
+    $line = "UCARP_OPTS=\"--shutdown $ucarp_pub_opts\"\n" if ( $line =~ m/<FOSS-CLOUD-UCARP-ADVSKEW>/); 
 
     # Write the line to the file
     print FILE $line;
@@ -3386,7 +3386,7 @@ sub configureUcarp
   # Public interface
   # Edit the /etc/conf.d/ucarp.int
   my $ucarp_int_conf = $cfg->val("General","ucarp_int_config");
-  my $ucarp_int_advskew = $cfg->val($modus,"ucarp_advskew");
+  my $ucarp_int_opts = $cfg->val($modus,"ucarp_opts");
   my $ucarp_int_interface = "vlan".$localNetworkHash->{'int'}->{'id'};
   my $ucarp_int_rip = $localNetworkHash->{'int'}->{'ip'};
   my $ucarp_int_vip = $localNetworkHash->{'int'}->{'vip'};
@@ -3406,7 +3406,7 @@ sub configureUcarp
     $line = "UCARP_SOURCEADDRESS=$ucarp_int_rip\n" if ( $line =~ m/<FOSS-CLOUD-INT-RIP-ADDRESS>/); 
     $line = "UCARP_VIRTUALADDRESS=$ucarp_int_vip\n" if ( $line =~ m/<FOSS-CLOUD-INT-VIP-ADDRESS>/); 
     $line = "UCARP_VIRTUALPREFIX=$ucarp_int_netmask\n" if ( $line =~ m/<FOSS-CLOUD-INT-NETMASK>/); 
-    $line = "UCARP_OPTS=\"--shutdown --advskew $ucarp_int_advskew\"\n" if ( $line =~ m/<FOSS-CLOUD-UCARP-ADVSKEW>/); 
+    $line = "UCARP_OPTS=\"--shutdown $ucarp_int_opts\"\n" if ( $line =~ m/<FOSS-CLOUD-UCARP-ADVSKEW>/); 
 
     # Write the line to the file
     print FILE $line;
