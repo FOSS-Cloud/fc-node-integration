@@ -3368,7 +3368,7 @@ sub configureUcarp
     $line = "UCARP_SOURCEADDRESS=$ucarp_pub_rip\n" if ( $line =~ m/<FOSS-CLOUD-PUB-RIP-ADDRESS>/); 
     $line = "UCARP_VIRTUALADDRESS=$ucarp_pub_vip\n" if ( $line =~ m/<FOSS-CLOUD-PUB-VIP-ADDRESS>/); 
     $line = "UCARP_VIRTUALPREFIX=$ucarp_pub_netmask\n" if ( $line =~ m/<FOSS-CLOUD-PUB-NETMASK>/); 
-    $line = "UCARP_OPTS=\"--shutdown $ucarp_pub_opts\"\n" if ( $line =~ m/<FOSS-CLOUD-UCARP-ADVSKEW>/); 
+    $line = "UCARP_OPTS=\"--shutdown $ucarp_pub_opts\"\n" if ( $line =~ m/<FOSS-CLOUD-UCARP-OPTS>/); 
 
     # Write the line to the file
     print FILE $line;
@@ -3406,7 +3406,7 @@ sub configureUcarp
     $line = "UCARP_SOURCEADDRESS=$ucarp_int_rip\n" if ( $line =~ m/<FOSS-CLOUD-INT-RIP-ADDRESS>/); 
     $line = "UCARP_VIRTUALADDRESS=$ucarp_int_vip\n" if ( $line =~ m/<FOSS-CLOUD-INT-VIP-ADDRESS>/); 
     $line = "UCARP_VIRTUALPREFIX=$ucarp_int_netmask\n" if ( $line =~ m/<FOSS-CLOUD-INT-NETMASK>/); 
-    $line = "UCARP_OPTS=\"--shutdown $ucarp_int_opts\"\n" if ( $line =~ m/<FOSS-CLOUD-UCARP-ADVSKEW>/); 
+    $line = "UCARP_OPTS=\"--shutdown $ucarp_int_opts\"\n" if ( $line =~ m/<FOSS-CLOUD-UCARP-OPTS>/); 
 
     # Write the line to the file
     print FILE $line;
