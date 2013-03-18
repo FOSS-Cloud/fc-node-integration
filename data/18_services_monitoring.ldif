@@ -27,20 +27,13 @@
 #
 #
 #####################################################################################################################
-# /etc/openldap/data/06_services_virtualization.ldif
+# /etc/openldap/data/18_services_monitoring.ldif
 #####################################################################################################################
 # Description:
-#  Initialises the virtualization (virtual desktop and server infrastructure) subtree. 
+#  This LDIF defines the sub tree for the monitoring service. 
 #####################################################################################################################
-
-#####################################################################################################################
-# ou=virtualization,ou=services,dc=foss-cloud,dc=org
-#####################################################################################################################
-# Description:
-#  The virtualization (virtual desktop and server infrastructure) sub tree.
-#####################################################################################################################
-dn: ou=virtualization,ou=services,dc=foss-cloud,dc=org
+dn: ou=monitoring,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
-ou: virtualization
-description: The virtualization (virtual desktop and server infrastructure) sub tree.
+ou: monitoring
+description: The sub tree for the monitoring service.
