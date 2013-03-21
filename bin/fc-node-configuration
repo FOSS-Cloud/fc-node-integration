@@ -1903,17 +1903,39 @@ sub configureOpenLDAP {
       @output = <FILE>;
       close FILE;
 
+      # Create the replace string 
+      my $replace_string;
+      my $cert_file;
+      my $req_cert;
+      if ( $modus eq "demo-system" )
+      {
+        # LDAP
+        $replace_string = "URI             ldap:\/\/$int_vip:389";
+        $cert_file = "#TLS_CACERT <FOSS-CLOUD-LDAP-CA-CERTIFICATE-FILE>";
+        $req_cert = "#TLS_REQCERT demand"; 
+      } else
+      {
+        # LDAPS
+        $replace_string = "URI             ldaps:\/\/$int_vip:636";
+        my $ldap_cert_name;
+        $ldap_cert_name = "ldapm-01." if ( $modus eq "primary-master");
+        $ldap_cert_name = "ldapm-02." if ( $modus eq "secondary-master");
+        $ldap_cert_name .= $localNetworkHash->{'pub'}->{'domain'}.".cert.pem";
+        $cert_file = "TLS_CACERT /etc/openldap/ssl/".$ldap_cert_name;
+        $req_cert = "TLS_REQCERT demand"; 
+      }
+
       foreach $line (@output) {
         if ($line =~ "^URI") {
           print "Found:          $line";
-          $line =~ s/URI.*/URI             ldap:\/\/$int_vip:389/g;
-          print "Replacing with: URI             ldap://$int_vip:389\n";
+          $line =~ s/URI.*/$replace_string/g;
+          print "Replacing with: $replace_string\n";
           $error = 0;
         } # End of if ($line =~ "listen_addr")
       } # End of foreach $line (@output)
 
       if (!$dryrun) {
-        print "Writing:        URI             ldap://$int_vip:389\n";
+        print "Writing:        $replace_string\n";
         print "To the file:    $file_ldap_conf\n";
         open(FOUT,">$file_ldap_conf") || die("Could not open $file_ldap_conf for writing.");
         foreach $line (@output) {
@@ -1926,7 +1948,7 @@ sub configureOpenLDAP {
             print $line;
           } # End of foreach $line (@output)
         } # End of if ($debug)
-        print "--dry-run: Would write 'URI             ldap://$int_vip:389' to the file $file_ldap_conf!\n";
+        print "--dry-run: Would write '$replace_string' to the file $file_ldap_conf!\n";
       } # End of if (!$dryrun)
 
       # Setting the proper permisions on the file /etc/openldap/ldap.conf ...
@@ -1965,8 +1987,18 @@ sub configureOpenLDAP {
       {
         # Its the secondary ip from the int-interface (we asked this information 
         # at the start of the script when asking for the VIPs)
-        $syncrepl_provider = $localNetworkHash->{'int'}->{'secondary_master_ip'};
-        $syncrepl_provider = "127.0.0.2" if ( $modus eq "demo-system" );
+        # Check if ldaps or ldap
+        if ( $modus eq "demo-system" )
+        {
+            # LDAP
+            $syncrepl_provider = "ldap://";
+        } else
+        {
+            # LDAPS
+            $syncrepl_provider = "ldaps://";
+        }
+        $syncrepl_provider .= $localNetworkHash->{'int'}->{'secondary_master_ip'};
+        $syncrepl_provider .= "127.0.0.2" if ( $modus eq "demo-system" );
       } else
       {
         # If its the secondary storage node, its the remote networks int ip
@@ -2050,7 +2082,7 @@ sub configureOpenLDAP {
         if ( $line =~ m/<FOSS-CLOUD-SLAPD-SYNCREPL-PROVIDER>/ )
         {
             # Replace the syncrepl provider
-            $line =~ s/provider=.+$/provider=ldap:\/\/$syncrepl_provider/;
+            $line =~ s/provider=.+$/provider=$syncrepl_provider/;
             # TODO change the line above, just replace <FOSS-CLOUD-SLAPD-SYNCREPL-PROVIDER>
             print "Replacing <FOSS-CLOUD-SLAPD-SYNCREPL-PROVIDER> with: $syncrepl_provider\n";
             $error = 0;
@@ -2166,19 +2198,30 @@ sub configureOpenLDAP {
   @output = <FILE>;
   close FILE;
 
+  my $ldap_protocol;
+  if ( $modus eq "demo-system" )
+  {
+    # LDAP
+    $ldap_protocol = "ldap";
+  } else
+  {
+    # LDAPS
+    $ldap_protocol = "ldaps";
+  }
+
   foreach $line (@output) {
     if ($line =~ "^OPTS=") {
       print  "Found:          $line";
 #      $line =~ s/OPTS=.*/OPTS=\" -h 'ldap:\/\/$localIntIP ldap:\/\/$int_vip'\"/g;
 #      print "Replacing with: OPTS=\" -h 'ldap:\/\/$localIntIP ldap:\/\/$int_vip'\"\n";
-      $line =~ s/OPTS=.*/OPTS=\" -h 'ldap:\/\/0.0.0.0'\"/g;
-      print "Replacing with: OPTS=\" -h 'ldap:\/\/0.0.0.0'\"\n";
+      $line =~ s/OPTS=.*/OPTS=\" -h '$ldap_protocol\:\/\/0.0.0.0'\"/g;
+      print "Replacing with: OPTS=\" -h '$ldap_protocol\:\/\/0.0.0.0'\"\n";
       $error = 0;
     } # End of if ($line =~ "listen_addr")
   } # End of foreach $line (@output)
 
   if (!$dryrun) {
-    print "Writing:        OPTS=\" -h 'ldap:\/\/$localIntIP ldap:\/\/$int_vip'\"\n";
+    print "Writing:        OPTS=\" -h '$ldap_protocol$localIntIP $ldap_protocol$int_vip'\"\n";
     print "To the file:    $file_slapd\n";
     open(FOUT,">$file_slapd") || die("Could not open $file_slapd for writing.");
     foreach $line (@output) {
@@ -2191,7 +2234,7 @@ sub configureOpenLDAP {
         print $line;
       } # End of foreach $line (@output)
     } # End of if ($debug)
-    print "--dry-run: Would write 'OPTS=\" -h 'ldap:\/\/$localIntIP ldap:\/\/$int_vip'\"' to the file $file_slapd!\n";
+    print "--dry-run: Would write 'OPTS=\" -h '$ldap_protocol$localIntIP $ldap_protocol/$int_vip'\"' to the file $file_slapd!\n";
   } # End of if (!$dryrun)
 
   # Setting the proper permisions on the acl directory and files ...
@@ -3023,6 +3066,7 @@ sub configureDHCP {
     my $file_dhcp_conf_template = $cfg->val($modus,"file_dhcp_conf_template");
     my $file_dhcp_conf = $cfg->val($modus,"file_dhcp_conf");
     my $ldap_port = $cfg->val("openLDAP","port");
+    $ldap_port = "389" if ( $modus eq "demo-system" );
 
     # Configuring the DHCP Daemon
     header("Configuring the DHCP Daemon ...");
@@ -3033,7 +3077,7 @@ sub configureDHCP {
 
     # Generate the search and replace commands to replace the placeholders in
     # template
-    my $ldap_uri = $localNetworkHash->{"int"}->{"vip"};
+    my $ldap_uri = "ldapm.".$localNetworkHash->{"pub"}->{"domain"};
     $ldap_uri = "127.0.0.1" if ( $modus eq "demo-system" );
     my @sar_commands = ( { search => "<FOSS-CLOUD-LDAP-SERVER>", replace =>  $ldap_uri },
                          { search => "<FOSS-CLOUD-DHCP-PASSWORD>", replace => $dhcp_unencrypted_password}, 
@@ -3098,17 +3142,31 @@ sub configureVMManager {
   @output = <FILE>;
   close FILE;
 
+  my $ldap_uri;
+  my $ldap_port;
+  if ( $modus eq "demo-system" )
+  {
+    # LDAP
+    $ldap_uri = "ldap://".$localIntIP;
+    $ldap_port = "389";
+  } else
+  {
+    # LDAPS
+    $ldap_uri = "ldaps://ldapm.".$localNetworkHash->{'pub'}->{'domain'};
+    $ldap_port = "636";
+  }
+
   foreach $line (@output) {
     if ($line =~ "'server'") {
       print "Found:          $line";
-      $line =~ s/'server'.*/'server' => 'ldap:\/\/$localIntIP\/',/g; #'
-      print "Replacing with:                         'server' => 'ldap://$localIntIP/',\n";
+      $line =~ s/'server'.*/'server' => '$ldap_uri\/',/g; #'
+      print "Replacing with:                         'server' => '$ldap_uri/',\n";
       $error = 0;
     } # End of if ($line =~ "'server'")
     if ($line =~ "'port'") {
       print "Found:          $line";
-      $line =~ s/'port'.*/'port' => 389,/g;
-      print "Replacing with:                         'port' => 389,\n";
+      $line =~ s/'port'.*/'port' => $ldap_port,/g;
+      print "Replacing with:                         'port' => $ldap_port,\n";
       $error = 0;
     } # End of if ($line =~ "'port'")
     if ($line =~ "'bind_pwd'") {
@@ -3120,8 +3178,8 @@ sub configureVMManager {
   } # End of foreach $line (@output)
 
   if (!$dryrun) {
-    print "Writing:        'server' => 'ldap://$localIntIP/',\n";
-    print "Writing:        'port' => 389,\n";
+    print "Writing:        'server' => '$ldap_uri/',\n";
+    print "Writing:        'port' => $ldap_port,\n";
     print "Writing:        'bind_pwd' => '$unencrypted_password',\n";
     print "To the file:    $file_vmmanager_conf\n";
     open(FOUT,">$file_vmmanager_conf") || die("Could not open $file_vmmanager_conf for writing.");
@@ -3135,8 +3193,8 @@ sub configureVMManager {
         print $line;
       } # End of foreach $line (@output)
     } # End of if ($debug)
-    print "--dry-run: Would write ''server' => 'ldap://$localIntIP/,' to the file $file_vmmanager_conf!\n";
-    print "--dry-run: Would write ''port' => 389,' to the file $file_vmmanager_conf!\n";
+    print "--dry-run: Would write ''server' => '$ldap_uri/,' to the file $file_vmmanager_conf!\n";
+    print "--dry-run: Would write ''port' => $ldap_port,' to the file $file_vmmanager_conf!\n";
     print "--dry-run: Would write ''bind_pwd' => '$unencrypted_password',' to the file $file_vmmanager_conf!\n";
   } # End of if (!$dryrun)
 
@@ -3166,6 +3224,20 @@ sub configurePhpLDAPadmin {
   my @output;
   my $line;
 
+  my $ldap_protocol;
+  my $ldap_port;
+  if ( $modus eq "demo-system" )
+  {
+    # LDAP
+    $ldap_protocol = "ldap://";
+    $ldap_port = "389";
+  } else
+  {
+    # LDAPS
+    $ldap_protocol = "ldaps://";
+    $ldap_port = "636";
+  }
+
   # OpenLDAP runs on the int VLAN
   my $localIntIP = $localNetworkHash->{"int"}->{"ip"};
   my $localIntVIP = $localNetworkHash->{"int"}->{"vip"};
@@ -3190,11 +3262,22 @@ sub configurePhpLDAPadmin {
 
   # Generate the search-and-replace commands:
   # Take care of port and address ldap:// => 389 ldaps:// => 636
+  my $ldap_vip_uri = "ldapm".$localNetworkHash->{'pub'}->{'domain'};
+  my $ldap_rip1_uri = "ldapm-01".$localNetworkHash->{'pub'}->{'domain'};
+  my $ldap_rip2_uri = "ldapm-02".$localNetworkHash->{'pub'}->{'domain'};
+
+  if ( $modus eq "demo-system" )
+  {
+    $ldap_vip_uri = $localIntIP;
+    $ldap_rip1_uri = $localIntVIP;
+    $ldap_rip2_uri = $remoteIntIP;
+  }
+
   my @sar_commands = (
-                      {search => "<FOSS-CLOUD-LDAP-VIP>",replace => "ldap://".$localIntVIP},
-                      {search => "<FOSS-CLOUD-LDAP-RIP1>",replace => "ldap://".$localIntIP},
-                      {search => "<FOSS-CLOUD-LDAP-RIP2>",replace => "ldap://".$remoteIntIP},
-                      {search => "<FOSS-CLOUD-LDAP-PORT>",replace => 389},
+                      {search => "<FOSS-CLOUD-LDAP-VIP>",replace => $ldap_protocol.$ldap_vip_uri},
+                      {search => "<FOSS-CLOUD-LDAP-RIP1>",replace => $ldap_protocol.$ldap_rip1_uri},
+                      {search => "<FOSS-CLOUD-LDAP-RIP2>",replace => $ldap_protocol.$ldap_rip2_uri},
+                      {search => "<FOSS-CLOUD-LDAP-PORT>",replace => $ldap_port},
                      );
 
   searchAndReplace ( $file_phpldapadmin_template,
@@ -3282,20 +3365,45 @@ sub configureApache2 {
   @output = <FILE>;
   close FILE;
 
+  my $port;
+  if ( $modus eq "demo-system" )
+  {
+    $port = "80";
+  } else
+  {
+    $port = "443";
+  }
+
   foreach $line (@output) {
     if ($line =~ "^Listen") {
       print "Found:          $line";
-      $line =~ s/Listen.*/Listen $pub_vip:80/g;
-      print "Replacing with: Listen $localPubIP:80\n";
+      $line =~ s/Listen.*/Listen $pub_vip:$port/g;
+      print "Replacing with: Listen $localPubIP:$port\n";
       $error = 0;
     } # End of if ($line =~ "^Listen")
     if ($line =~ "^<VirtualHost") {
       print "Found:          $line";
-      $line =~ s/<VirtualHost.*/<VirtualHost $pub_vip:80>/g;
-      print "Replacing with: <VirtualHost $localPubIP:80>\n";
+      $line =~ s/<VirtualHost.*/<VirtualHost $pub_vip:$port>/g;
+      print "Replacing with: <VirtualHost $localPubIP:$port>\n";
       $error = 0;
     } # End of if ($line =~ "^<VirtualHost")
     
+    if ($line =~ m/^\s+SSLCertificateFile/) {
+      print "Found:          $line";
+      my $cert_file = $apache_vip_name.".cert.pem";
+      $line =~ s/<FOSS-CLOUD-APACHE-CERTIFICATE-FILE>/$cert_file/g;
+      print "Replacing with: $cert_file\n";
+      $error = 0;
+    } # End of if ($line =~ "^<VirtualHost")
+    if ($line =~ m/^\s+SSLCertificateKeyFile/) {
+      print "Found:          $line";
+      my $cert_key_file = $apache_vip_name.".key.pem";
+      $line =~ s/<FOSS-CLOUD-APACHE-CERTIFICATE-KEY-FILE>/$cert_key_file/g;
+      print "Replacing with: $cert_key_file\n";
+      $error = 0;
+    } # End of if ($line =~ "^<VirtualHost")
+
+
     if ( $line =~ m/^\s+ServerName/ )
     {
         $line =~ s/ServerName.*/ServerName $apache_vip_name/;
@@ -3305,10 +3413,10 @@ sub configureApache2 {
   } # End of foreach $line (@output)
 
   if (!$dryrun) {
-    print "Writing:        Listen $localPubIP:80\n";
-    print "Writing:        <VirtualHost $localPubIP:80>\n";
+    print "Writing:        Listen $localPubIP:$port\n";
+    print "Writing:        <VirtualHost $localPubIP:$port>\n";
     print "To the file:    $file_localhost_conf\n";
-    open(FOUT,">$file_localhost_conf") || die("Could not open $file_localhost_conf for writing.");
+    open(FOUT,">/etc/apache2/vhosts.d/localhost.conf") || die("Could not open $file_localhost_conf for writing.");
     foreach $line (@output) {
       print FOUT $line;
     } # End of foreach $line (@output)
@@ -3484,6 +3592,7 @@ sub configureFcBrokerd {
   my $localIntIP = $localNetworkHash->{"int"}->{"vip"};
   $localIntIP = $localNetworkHash->{"int"}->{"ip"} if ( $modus eq "demo-system" );
   my $openldap_port = $cfg->val("openLDAP","port");
+  $openldap_port = "389" if ( $modus eq "demo-system" );
 
   # Get the bind- and basedn
   my $openldap_binddn = $cfg->val("openLDAP","binddn");
@@ -3493,9 +3602,18 @@ sub configureFcBrokerd {
   print "\n";
   print "Working on $fc_brokerd_template_file ...\n";
 
+  my $ldap_uri;
+  if ( $modus eq "demo-system" )
+  {
+    $ldap_uri = "ldap://".$localIntIP;
+  } else
+  {
+    $ldap_uri = "ldaps://ldapm.".$localNetworkHash->{"pub"}->{"domain"};
+  }
+
   # Generate the search and replace commands
   my @sar_commands = (
-                      {search => "<FOSS-CLOUD-LDAP-VIP-URI>", replace => "ldap://".$localIntIP.":".$openldap_port},
+                      {search => "<FOSS-CLOUD-LDAP-VIP-URI>", replace => $ldap_uri.":".$openldap_port},
                       {search => "<FOSS-CLOUD-BINDDN>", replace => $openldap_binddn},
                       {search => "<FOSS-CLOUD-BINDPW>", replace => $openldap_bind_password},
                       {search => "<FOSS-CLOUD-BASEDN>", replace => $openldap_basedn}
@@ -3545,6 +3663,7 @@ sub configureProvBackupKVM {
   my $node_name = $localNetworkHash->{"Node Name"}.".".$localNetworkHash->{"pub"}->{"domain"};
 
   my $ldap_port = $cfg->val("openLDAP","port");
+  $ldap_port = "389" if ( $modus eq "demo-system" );
   my $ldap_binddn = $cfg->val("prov-backup-kvm","ldap_binddn");
   my $ldap_service_subtree = $cfg->val("prov-backup-kvm","ldap_service_subtree");
   my $ldap_cookie_file = $cfg->val("prov-backup-kvm","ldap_cookie_file");
@@ -3553,10 +3672,19 @@ sub configureProvBackupKVM {
   print "\n";
   print "Working on $prov_backup_kvm_config_file ...\n";
 
+  my $ldap_uri;
+  if ( $modus eq "demo-system" )
+  {
+    $ldap_uri = "ldap://".$ldap_server;
+  } else
+  {
+    $ldap_uri = "ldaps://ldapm.".$localNetworkHash->{"pub"}->{"domain"};
+  }
+
   # Generate the search and replace commands
   my @sar_commands = (
                       {search => "<FOSS-CLOUD-NODE-NAME>", replace => $node_name},
-                      {search => "<FOSS-CLOUD-LDAP-SERVER>", replace => $ldap_server},
+                      {search => "<FOSS-CLOUD-LDAP-SERVER>", replace => $ldap_uri},
                       {search => "<FOSS-CLOUD-LDAP-PORT>", replace => $ldap_port},
                       {search => "<FOSS-CLOUD-LDAP-BINDDN>", replace => $ldap_binddn},
                       {search => "<FOSS-CLOUD-LDAP-BIND-PASSWORD>", replace => $ldap_bind_password},
