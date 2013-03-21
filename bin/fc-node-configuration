@@ -1834,6 +1834,7 @@ sub configureOpenLDAP {
   my $file_16_secondary_master_node                  = $directory_data."/16_secondary-master-node.ldif";
   my $file_16_secondary_master_node_template         = $directory_data."/16_secondary-master-node.template-$local_modus";
   my $file_17_ranges_networks_services_virtualization = $directory_data."/17_ranges_networks_services_virtualization.ldif";
+  my $file_18_services_monitoring                    = $directory_data."/18_services_monitoring.ldif";
   my $file;
   my $line;
   my $unencrypted_password;
@@ -2928,6 +2929,9 @@ sub configureOpenLDAP {
       loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_17_ranges_networks_services_virtualization);
   }
   # Worked on 17_ranges_networks_services_virtualization
+
+  # And finally load the monitoring services into the ldap
+  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_18_services_monitoring);
 
   print "\n";
 
