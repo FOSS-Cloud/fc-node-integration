@@ -686,6 +686,9 @@ sub secondaryMasterNode{
   # Configure the apache2 daemon
   configureApache2($localNetworkHash);
 
+  # Create / get the apache certificate
+  createApacheCertificate($localNetworkHash);
+
   # Write to the hosts file
   wirteVIPToHosts($localNetworkHash);
 
@@ -3778,6 +3781,29 @@ sub createRootCA
 
 sub createApacheCertificate
 {
+
+    # If it is the secondary master node we just need to get the certificate 
+    # from the primary master
+    if ( $modus eq "secondary-master" )
+    {
+        # Establish the ssh connection to the remote host $host
+        my $ssh = Net::OpenSSH->new($primary_master_host,
+                              user => $primary_master_user,
+			      password => $primary_master_password,
+			      master_stderr_discard => 1 # quiet
+                             );
+
+        # Copy the request to the primary master to be able to sign it
+        my $rv = $ssh->scp_get("/etc/ssl/apache2/".$apache_vip_name.".cert.pem",
+                "/etc/ssl/apache2/".$apache_vip_name.".cert.pem" );
+        unless ( $rv )
+        {
+            print "Copy from primary master node failed: ".$ssh->error."\n";
+            exit 1;
+        }
+        
+        return;
+    }
 
     # Create and sign the certificate
 #    openssl req \
