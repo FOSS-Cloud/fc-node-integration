@@ -56,6 +56,7 @@ use Net::LDAP::Constant qw(
 );
 use Crypt::GeneratePassword qw(chars);
 use POSIX;
+use File::Copy;
 
 
 $| = 1;                        # Turn buffering off, so that the output is flushed immediately
@@ -285,6 +286,12 @@ openlog($0,"ndelay,pid","local0");
 
 # Check the command line arguments
 checkCommandLineArguments();
+
+# Generate a universal unique identifier
+my $foss_cloud_uuid = `uuidgen`;
+
+# And remove the newline at the end
+chomp($foss_cloud_uuid);
 
 SWITCH: {
   $opts{'node-type'} eq "primary-storage-node" and do {
@@ -539,8 +546,14 @@ sub primaryMasterNode{
   # Configure the libvirtd daemon
   configureLibvirt($localNetworkHash);
 
+  # Create the Root CA
+  createRootCA();
+
   # Configure the slapd daemon
   my $unencrypted_password = configureOpenLDAP($localNetworkHash,0,$password);
+
+  # Create the certificate for the LDAP 
+  createLDAPCertificate($localNetworkHash);
 
   # Configure the VM-Manger
   configureVMManager($localNetworkHash,$unencrypted_password);
@@ -550,6 +563,9 @@ sub primaryMasterNode{
 
   # Configure the apache2 daemon
   configureApache2($localNetworkHash);
+
+  # Create the certificate for the apache
+  createApacheCertificate($localNetworkHash);
 
   # Write to the hosts file
   wirteVIPToHosts($localNetworkHash);
@@ -657,6 +673,9 @@ sub secondaryMasterNode{
   my $unencrypted_password = configureOpenLDAP($localNetworkHash,
                                                $remoteNetworkHash,
                                                $password);
+
+  # Create the certicate for the LDAP
+  createLDAPCertificate($localNetworkHash);
 
   # Configure the VM-Manger
   configureVMManager($localNetworkHash,$unencrypted_password);
@@ -2639,12 +2658,6 @@ sub configureOpenLDAP {
         $ntp_host_string.="\nsstNetworkNTPHost: $ntp_host";
       }
 
-      # Generate a universal unique identifier
-      my $uuid = `uuidgen`;
-
-      # And remove the newline at the end
-      chomp($uuid);
-
       # Generate the search and replace commands for each segement.
       @sar_commands = (## admin segment hashes ##
                           {search => "<FOSS-CLOUD-ADMIN-VLAN-ID>",replace => $localNetworkHash->{"admin"}->{"id"}},
@@ -2678,7 +2691,7 @@ sub configureOpenLDAP {
                           {search => "<FOSS-CLOUD-DNS-INFO>",replace => $dns_host_string},
 
                           # General
-                          {search => "<FOSS-CLOUD-ID>" , replace => $uuid },
+                          {search => "<FOSS-CLOUD-ID>" , replace => $foss_cloud_uuid },
 
                           # Path
                           {search  => "08_configuration_services_virtualization.template",
@@ -3623,6 +3636,421 @@ sub configureIPtables {
     startDaemon("iptables");
 
 } # End of configureIPtables
+
+######################################################################################################
+# createRootCA
+######################################################################################################
+# Description: 
+#   
+######################################################################################################
+# Usage:
+#   createRootCA();
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+
+sub createRootCA
+{
+
+    # First of all set up the configuration for the CA generation: 
+    # chown -R root:root /etc/ssl/FOSS-Cloud_CA
+    # find /etc/ssl/FOSS-Cloud_CA -type d -exec chmod 755 {} \;
+    # chmod 700 /etc/ssl/FOSS-Cloud_CA/private
+    # chmod 644 /etc/ssl/FOSS-Cloud_CA/openssl.cnf
+    # chmod 600 /etc/ssl/FOSS-Cloud_CA/index.txt
+
+    # Set correct file ownership
+    my @args = ( "chown",
+              "-R",
+              "root:root",
+              "/etc/ssl/FOSS-Cloud_CA"
+            );
+    system( join( " ", @args ) );
+
+    # Set directory file permission: 
+    @args = ( "find",
+              "/etc/ssl/FOSS-Cloud_CA",
+              "-type",
+              "d",
+              "-exec",
+              "chmod",
+              "755",
+              "{}",
+              '\;'
+            );
+    system( join( " ", @args ) );
+
+    # Set proper permission for given files:
+    my $uid_root = $cfg->val("General","uid_root"); # root
+    my $gid_root = $cfg->val("General","gid_root"); # root
+
+    setSingleFilePermissions("directory",$uid_root,$gid_root,0700,"/etc/ssl/FOSS-Cloud_CA/private");
+    setSingleFilePermissions("file",$uid_root,$gid_root,0644,"/etc/ssl/FOSS-Cloud_CA/openssl.cnf");
+    setSingleFilePermissions("file",$uid_root,$gid_root,0600,"/etc/ssl/FOSS-Cloud_CA/index.txt");
+
+    # Now create the password file
+    my $password_file = "/etc/ssl/FOSS-Cloud_CA/private/passphrase.txt";
+    open(PASSWDFILE,">$password_file") or die "Cannot open $password_file for writting";
+    
+    # Set propper permission
+    setSingleFilePermissions("file",$uid_root,$gid_root,0400,$password_file);
+    
+    # Generate the password and write it to the file
+    my $ca_passwd = chars(16,16);
+    print PASSWDFILE $ca_passwd;
+    close PASSWDFILE;
+
+#    openssl req -new \
+#            -keyout /etc/ssl/FOSS-Cloud_CA/private/FOSS-Cloud_CA.key.pem \
+#            -out /etc/ssl/FOSS-Cloud_CA/requests/FOSS-Cloud_CA.req.pem \
+#            -subj "/DC=org/DC=foss-cloud/OU=Certificate Authority/OU=Local FOSS-Cloud Certificate Authority/OU=<UUID>/CN=Local FOSS-Cloud Certificate Authority <UUID>" \
+#            -passout file:/etc/ssl/FOSS-Cloud_CA/private/passphrase.txt
+
+    # Create the openssl request
+    @args = ("openssl","req","-new",
+             "-keyout","/etc/ssl/FOSS-Cloud_CA/private/FOSS-Cloud_CA.key.pem",
+             "-out","/etc/ssl/FOSS-Cloud_CA/requests/FOSS-Cloud_CA.req.pem",
+             "-subj",'"/DC=org/DC=foss-cloud/OU=Certificate Authority/OU=Local FOSS-Cloud Certificate Authority/OU='.$foss_cloud_uuid.'/CN=Local FOSS-Cloud CA '.$foss_cloud_uuid.'"',
+             "-passout","file:/etc/ssl/FOSS-Cloud_CA/private/passphrase.txt",
+            );
+    system( join( " ", @args ) );
+
+#    openssl ca -config /etc/ssl/FOSS-Cloud_CA/openssl.cnf \
+#           -create_serial \
+#           -out /etc/ssl/FOSS-Cloud_CA/FOSS-Cloud_CA.cert.pem \
+#           -days 18250 \
+#           -batch \
+#           -keyfile /etc/ssl/FOSS-Cloud_CA/private/FOSS-Cloud_CA.key.pem \
+#           -selfsign \
+#           -extensions v3_ca \
+#           -infiles /etc/ssl/FOSS-Cloud_CA/requests/FOSS-Cloud_CA.req.pem \
+#           -passin file:/etc/ssl/FOSS-Cloud_CA/private/passphrase.txt
+
+    # Now the request must be signed
+    @args = ("openssl","ca","-config","/etc/ssl/FOSS-Cloud_CA/openssl.cnf",
+             "-create_serial",
+             "-out","/etc/ssl/FOSS-Cloud_CA/FOSS-Cloud_CA.cert.pem",
+             "-days","18250",
+             "-batch",
+             "-keyfile","/etc/ssl/FOSS-Cloud_CA/private/FOSS-Cloud_CA.key.pem",
+             "-selfsign",
+             "-extensions","v3_ca",
+             "-passin","file:/etc/ssl/FOSS-Cloud_CA/private/passphrase.txt",
+             "-infiles","/etc/ssl/FOSS-Cloud_CA/requests/FOSS-Cloud_CA.req.pem",
+            );
+    system( join( " ", @args ) );
+
+#    cp /etc/ssl/FOSS-Cloud_CA/FOSS-Cloud_CA.cert.pem /etc/ssl/certs/.
+#    chown root:root /etc/ssl/certs/FOSS-Cloud_CA.cert.pem
+#    chmod 444 /etc/ssl/certs/FOSS-Cloud_CA.cert.pem
+#
+#    cd /etc/ssl/certs/
+#    c_rehash
+
+    # And finally install the certificate
+    copy("/etc/ssl/FOSS-Cloud_CA/FOSS-Cloud_CA.cert.pem","/etc/ssl/certs/.") 
+        or die "Copy failed: $!";
+    setSingleFilePermissions("file",$uid_root,$gid_root,0444,"/etc/ssl/certs/FOSS-Cloud_CA.cert.pem");
+    
+    # Rehash
+    @args = ("c_rehash","/etc/ssl/certs/");
+    system( join( " ", @args ) );
+
+}
+
+######################################################################################################
+# createApacheCertificate
+######################################################################################################
+# Description: 
+#   
+######################################################################################################
+# Usage:
+#   createApacheCertificate();
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+
+sub createApacheCertificate
+{
+
+    # Create and sign the certificate
+#    openssl req \
+#        -out /etc/ssl/apache2/foss-cloud.example.com.req.pem \
+#        -nodes \
+#        -keyout /etc/ssl/apache2/foss-cloud.example.com.key.pem \
+#        -newkey rsa:2048 \
+#        -sha1 \
+#        -subj "/DC=org/DC=foss-cloud/OU=Certificate Authority/OU=<UUID>/OU=domains/CN=foss-cloud.example.com" \
+#        -new \
+#        -passout pass:""
+
+    if ( $apache_vip_name eq "" )
+    {
+        # TODO return error
+        print "Apache VIP name not set, cannot create certificate request";
+        exit 1;
+    }
+
+
+    my $request = "/etc/ssl/apache2/".$apache_vip_name.".req.pem";
+    my $key = "/etc/ssl/apache2/".$apache_vip_name.".key.pem";
+    my $subject = "/DC=org/DC=foss-cloud/OU=Certificate Authority/OU="
+                  .$foss_cloud_uuid."/OU=domains/CN=".$apache_vip_name;
+
+    # Generate and execute the reqest command
+    my @args = ( 'openssl','req',
+                 '-out',$request,
+                 '-nodes',
+                 '-keyout',$key,
+                 '-newkey',"rsa:2048",
+                 '-sha1',
+                 '-subj',"'".$subject."'",
+                 '-new',
+                 '-passout','pass:""'
+               );
+     system ( join( " ", @args ) );
+
+     # Copy the files to the FOSS-Cloud CA directory
+     copy($request,"/etc/ssl/FOSS-Cloud_CA/requests/".$apache_vip_name.".req.pem")
+        or die "Copy failed: $!";
+     copy($key,"/etc/ssl/FOSS-Cloud_CA/requests/".$apache_vip_name.".key.pem")
+        or die "Copy failed: $!";
+
+     # Sign the request
+#     openssl ca -config /etc/ssl/FOSS-Cloud_CA/openssl.cnf \
+#           -in /etc/ssl/FOSS-Cloud_CA/requests/foss-cloud.example.com.req.pem \
+#           -out /etc/ssl/FOSS-Cloud_CA/certs/foss-cloud.example.com.cert.pem \
+#           -passin file:/etc/ssl/FOSS-Cloud_CA/private/passphrase.txt
+    @args = ( "openssl","ca","-config","/etc/ssl/FOSS-Cloud_CA/openssl.cnf",
+              "-in","/etc/ssl/FOSS-Cloud_CA/requests/".$apache_vip_name.".req.pem",
+              "-out","/etc/ssl/FOSS-Cloud_CA/certs/".$apache_vip_name.".cert.pem",
+              "-passin","file:/etc/ssl/FOSS-Cloud_CA/private/passphrase.txt",
+              "-batch"
+            );
+    system( join( " ", @args ) );
+
+    # Copy the signed cert back to the apache directory
+    copy("/etc/ssl/FOSS-Cloud_CA/certs/".$apache_vip_name.".cert.pem",
+         "/etc/ssl/apache2/".$apache_vip_name.".cert.pem") 
+         or die "Copy failed: $!";
+
+    # And finally set the correct permissions
+    my $uid_root = $cfg->val("General","uid_root"); # root
+    my $gid_root = $cfg->val("General","gid_root"); # root
+    setSingleFilePermissions("file",$uid_root,$gid_root,0400,"/etc/ssl/apache2/".$apache_vip_name.".cert.pem");
+    setSingleFilePermissions("file",$uid_root,$gid_root,0400,"/etc/ssl/apache2/".$apache_vip_name.".key.pem");
+
+}
+
+######################################################################################################
+# createLDAPCertificate
+######################################################################################################
+# Description: 
+#   
+######################################################################################################
+# Usage:
+#   createLDAPCertificate($loacl_network_hash);
+######################################################################################################
+# Return Values:
+#   none
+######################################################################################################
+
+sub createLDAPCertificate
+{
+    my $local_network_hash = shift;
+
+    my $domain_name = $local_network_hash->{'pub'}->{'domain'};
+    my $ldap_vip_name = $cfg->val("General","ldap_vip_name").".".$domain_name;
+
+    # Copy the ca config to create a temporary configuration with and alternativ
+    # subject name
+    copy("/etc/ssl/FOSS-Cloud_CA/openssl.cnf","/etc/ssl/FOSS-Cloud_CA/openssl-subjectAltName.cnf");
+
+    # Create a config ini file object to be able to edit the file properly
+    my $tmp_config = Config::IniFiles->new( -file => "/etc/ssl/FOSS-Cloud_CA/openssl-subjectAltName.cnf", -fallback => "General",  -nomultiline => 1 );
+
+    # Check if "req_extensions" is already defined
+    if ( $tmp_config->exists("req","req_extensions") )
+    {
+        # Overwrite the current value
+        $tmp_config->setval("req","req_extensions","v3_req");
+    } else
+    {
+        # Create the attribute req_extension with appropriate value
+        $tmp_config->newval("req","req_extensions","v3_req");
+    }
+
+    # Create the section v3_req if it does not already exists
+    unless( $tmp_config->SectionExists("v3_req") )
+    {
+        $tmp_config->AddSection("v3_req");
+    }
+
+    # Check if the given attributes exist and set proper values
+    if ( $tmp_config->exists("v3_req","basicConstraints") )
+    {
+        # Overwrite the current value
+        $tmp_config->setval("v3_req","basicConstraints","CA:FALSE");
+    } else
+    {
+        # Create the attribute req_extension with appropriate value
+        $tmp_config->newval("v3_req","basicConstraints","CA:FALSE");
+    }
+
+    # Check if the given attributes exist and set proper values
+    if ( $tmp_config->exists("v3_req","keyUsage") )
+    {
+        # Overwrite the current value
+        $tmp_config->setval("v3_req","keyUsage","nonRepudiation, digitalSignature, keyEncipherment");
+    } else
+    {
+        # Create the attribute req_extension with appropriate value
+        $tmp_config->newval("v3_req","keyUsage","nonRepudiation, digitalSignature, keyEncipherment");
+    }
+
+    # Check if the given attributes exist and set proper values
+    if ( $tmp_config->exists("v3_req","subjectAltName") )
+    {
+        # Overwrite the current value
+        $tmp_config->setval("v3_req","subjectAltName","DNS:".$ldap_vip_name);
+    } else
+    {
+        # Create the attribute req_extension with appropriate value
+        $tmp_config->newval("v3_req","subjectAltName","DNS:".$ldap_vip_name);
+    }
+
+    # Finally write the changes to the file:
+    $tmp_config->RewriteConfig();
+
+    # Get the correct cert name 
+    my $ldap_host_name = "";
+    if ( $modus eq "primary-master" )
+    {
+        $ldap_host_name = "ldapm-01.".$domain_name;
+    } else
+    {
+        $ldap_host_name = "ldapm-02.".$domain_name;
+    }
+
+    # Now we can finally create the certificate
+#    openssl req \
+#    -config /etc/ssl/openssl-subjectAltName.cnf \
+#    -out ldapm-01.example.com.req.pem \
+#    -nodes \
+#    -keyout keys/ldapm-01.example.com.key.pem \
+#    -newkey rsa:2048 \
+#    -sha1 \
+#    -subj "/DC=org/DC=foss-cloud/OU=Certificate Authority/OU=Local FOSS-Cloud Certificate Authority/OU=<UUID>/OU=domains/CN=ldapm-01.example.com" \
+#    -new
+#    -passout pass:""
+    my $subject = "/DC=org/DC=foss-cloud/OU=Certificate Authority/OU=Local "
+                 ."FOSS-Cloud Certificate Authority/OU=".$foss_cloud_uuid
+                 ."/OU=domains/CN=".$ldap_host_name;
+
+    my @args = ( "openssl","req",
+                 "-config","/etc/ssl/FOSS-Cloud_CA/openssl-subjectAltName.cnf",
+                 "-out","/etc/openldap/ssl/".$ldap_host_name.".req.pem",
+                 "-nodes",
+                 "-keyout","/etc/openldap/ssl/keys/".$ldap_host_name.".key.pem",
+                 "-newkey","rsa:2048",
+                 "-sha1",
+                 "-subj","'".$subject."'",
+                 "-new",
+                 "-passout",'pass:""',
+               );
+    system( join( " ", @args ) );
+
+    # Remove the temporary config file
+    unlink("/etc/ssl/FOSS-Cloud_CA/openssl-subjectAltName.cnf");
+
+    # Copy the request to the FOSS-Cloud CA directory to sign it
+    my $ssh;
+    if ( $modus eq "primary-master" )
+    {
+        copy("/etc/openldap/ssl/".$ldap_host_name.".req.pem",
+             "/etc/ssl/FOSS-Cloud_CA/requests/".$ldap_host_name.".req.pem");
+    } else
+    {
+        
+        # Establish the ssh connection to the remote host $host
+        $ssh = Net::OpenSSH->new($primary_master_host,
+                              user => $primary_master_user,
+			      password => $primary_master_password,
+			      master_stderr_discard => 1 # quiet
+                             );
+
+        # Copy the request to the primary master to be able to sign it
+        my $rv = $ssh->scp_put("/etc/openldap/ssl/".$ldap_host_name.".req.pem",
+                "/etc/ssl/FOSS-Cloud_CA/requests/".$ldap_host_name.".req.pem" );
+        unless ( $rv )
+        {
+            print "Copy to primary master node failed: ".$ssh->error."\n";
+            exit 1;
+        }
+    }
+
+    # Sign the request
+#    openssl ca -config /etc/ssl/FOSS-Cloud_CA/openssl.cnf \
+#           -in /etc/ssl/FOSS-Cloud_CA/requests/ldapm-01.example.com.req.pem \
+#           -out /etc/ssl/FOSS-Cloud_CA/certs/ldapm-01.example.com.cert.pem
+#           -passin file:/etc/ssl/FOSS-Cloud_CA/private/passphrase.txt
+    
+    @args = ( "openssl","ca",
+              "-config","/etc/ssl/FOSS-Cloud_CA/openssl.cnf",
+              "-in","/etc/ssl/FOSS-Cloud_CA/requests/".$ldap_host_name.".req.pem",
+              "-out","/etc/ssl/FOSS-Cloud_CA/certs/".$ldap_host_name.".cert.pem",
+              "-passin","file:/etc/ssl/FOSS-Cloud_CA/private/passphrase.txt",
+              "-batch"
+            );
+    if ( $modus eq "primary-master" )
+    {
+        # Execute the commands locally
+        system( join( " ", @args ) );
+    } else
+    {
+        # Execute the command on the primary master node
+        unless ( $ssh->system(join( " ", @args ) ) )
+        {
+            print "Could not execute sign command on remote host: ";
+            print $ssh->error."\n";
+            exit 1;
+        }
+    }
+
+    # And copy the cert back the the openldap directory
+    if ( $modus eq "primary-master" )
+    {
+        copy( "/etc/ssl/FOSS-Cloud_CA/certs/".$ldap_host_name.".cert.pem",
+              "/etc/openldap/ssl/".$ldap_host_name.".cert.pem");
+    } else
+    {
+        # Get the signed cert from the primary master
+        my $rv = $ssh->scp_get("/etc/ssl/FOSS-Cloud_CA/certs/".$ldap_host_name.".cert.pem",
+                             "/etc/openldap/ssl/".$ldap_host_name.".cert.pem");
+        unless ( $rv )
+        {
+            print "Copy from primary master node failed: ".$ssh->error."\n";
+            exit 1;
+        }
+    }
+
+    # And finally set correct file permission
+    my $uid_root = $cfg->val("General","uid_root"); # root
+    my $gid_root = $cfg->val("General","gid_root"); # root
+    my $uid_ldap = $cfg->val("General","uid_ldap"); # ldap
+    my $gid_ldap = $cfg->val("General","gid_ldap"); # ldap
+
+    @args = ("chown","-R","root:ldap","/etc/openldap/ssl");
+    system( join( " ", @args ) );
+
+    setSingleFilePermissions("directory",$uid_root,$gid_ldap,0750,"/etc/openldap/ssl");
+    setSingleFilePermissions("directory",$uid_root,$gid_ldap,0750,"/etc/openldap/ssl/keys");
+    setSingleFilePermissions("file",$uid_root,$gid_ldap,0440, "/etc/openldap/ssl/".$ldap_host_name.".cert.pem");
+    setSingleFilePermissions("file",$uid_ldap,$gid_ldap,0400, "/etc/openldap/ssl/keys/".$ldap_host_name.".key.pem");
+
+}
 
 ######################################################################################################
 # header
