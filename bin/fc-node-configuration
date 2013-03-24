@@ -500,14 +500,17 @@ sub primaryMasterNode{
   # Asks the user, if the installation should really proceed
   proceed("primary-master-node");
 
+  # Start with step one and check the network configuration
+  my $localNetworkHash = checkLocalNetwork();
+
   # Ask for the VIPs
-  my @vips = askVIP();
+  my @vips = askVIP( $localNetworkHash->{'pub'}->{'domain'} );
 
   # Add the vips to the network config
   addVIPsToNetworkConfig( @vips );
 
   # Start with step one and check the network configuration
-  my $localNetworkHash = checkLocalNetwork();
+  $localNetworkHash = checkLocalNetwork();
 
   # Tell the user, that we need to collect the data of the storage Nodes.
   header("Collecting data from the Storage-Nodes");
@@ -523,6 +526,9 @@ sub primaryMasterNode{
 
   # Retreive the network information of the second Storage-Node
   my $remoteNetworkHash2 = checkRemoteNetwork($host2,$user2,$password2);
+
+  # Write to the hosts file
+  wirteVIPToHosts($localNetworkHash);
 
   # Start the ksm daemon and add it to the default runlevel
   startDaemon("ksm");
@@ -552,9 +558,6 @@ sub primaryMasterNode{
   # Configure the slapd daemon
   my $unencrypted_password = configureOpenLDAP($localNetworkHash,0,$password);
 
-  # Create the certificate for the LDAP 
-  createLDAPCertificate($localNetworkHash);
-
   # Configure the VM-Manger
   configureVMManager($localNetworkHash,$unencrypted_password);
 
@@ -566,9 +569,6 @@ sub primaryMasterNode{
 
   # Create the certificate for the apache
   createApacheCertificate($localNetworkHash);
-
-  # Write to the hosts file
-  wirteVIPToHosts($localNetworkHash);
 
   # Configure ucarp
   configureUcarp($localNetworkHash);
@@ -1852,14 +1852,30 @@ sub configureOpenLDAP {
   my @dns_hosts = ();
   my $dns_host_string = "";
   my $ntp_host_string = "";
+  my $ldap_server;
 
   # Check if the modus is demo-system, if yes change the vip to the internal 
   # interface ip
   $int_vip = $localIntIP if ( $modus eq "demo-system" );
 
+  # Check what is the ldap server name
+  if ( $modus eq "primary-master" )
+  {
+    $ldap_server = "ldapm-01.".$localNetworkHash->{"pub"}->{"domain"};
+  } elsif ( $modus eq "secondary-master" )
+  {
+    $ldap_server = "ldapm-02.".$localNetworkHash->{"pub"}->{"domain"};
+  } elsif ( $modus eq "demo-system" )
+  {
+    $ldap_server = $localIntIP;
+  }
+
   # Used for commands later
   my $search;
   my $replace;
+
+  # Create the certificate for the LDAP 
+  createLDAPCertificate($localNetworkHash);
 
   # Nicer Output
   print "\n";
@@ -1932,6 +1948,21 @@ sub configureOpenLDAP {
           print "Replacing with: $replace_string\n";
           $error = 0;
         } # End of if ($line =~ "listen_addr")
+
+        if ($line =~ m/<FOSS-CLOUD-LDAP-CA-CERTIFICATE-FILE>/ ) {
+          print "Found:          $line";
+          $line = $cert_file."\n";
+          print "Replacing with: $cert_file\n";
+          $error = 0;
+        } # End of if ($line =~ "listen_addr")
+
+        if ($line =~ m/#TLS_REQCERT\sdemand/) {
+          print "Found:          $line";
+          $line = $req_cert."\n";
+          print "Replacing with: $req_cert\n";
+          $error = 0;
+        } # End of if ($line =~ "listen_addr")
+
       } # End of foreach $line (@output)
 
       if (!$dryrun) {
@@ -1997,8 +2028,10 @@ sub configureOpenLDAP {
             # LDAPS
             $syncrepl_provider = "ldaps://";
         }
+
         $syncrepl_provider .= $localNetworkHash->{'int'}->{'secondary_master_ip'};
         $syncrepl_provider .= "127.0.0.2" if ( $modus eq "demo-system" );
+
       } else
       {
         # If its the secondary storage node, its the remote networks int ip
@@ -2094,6 +2127,30 @@ sub configureOpenLDAP {
             print "Replacing <FOSS-CLOUD-SLAPD-SYNCREPL-CREDENTIALS> with: $syncrepl_password\n";
             $error = 0;
         }
+        if ( $line =~ m/<FOSS-CLOUD-SLAPD-CERTIFICATE>/ && $modus ne "demo-system" )
+        {
+            # Replace the syncrepl password
+            $line = "TLSCertificateFile     /etc/openldap/ssl/$ldap_server.cert.pem\n";
+            print "Replacing <FOSS-CLOUD-SLAPD-CERTIFICATE> with: $ldap_server.cert.pem\n";
+            $error = 0;
+        }
+        if ( $line =~ m/<FOSS-CLOUD-SLAPD-KEY>/ && $modus ne "demo-system" )
+        {
+            # Replace the syncrepl password
+            $line = "TLSCertificateKeyFile     /etc/openldap/ssl/keys/$ldap_server.key.pem\n";
+            print "Replacing <FOSS-CLOUD-SLAPD-KEY> with: $ldap_server.key.pem\n";
+            $error = 0;
+        }
+
+        if ( $line =~ m/<FOSS-CLOUD-SLAPD-CA-CERTIFICATE-FILE>/ && $modus ne "demo-system" )
+        {
+            # Replace the syncrepl password
+            $line = "TLSCACertificateFile   /etc/ssl/certs/FOSS-Cloud_CA.cert.pem\n";
+            print "Replacing <FOSS-CLOUD-SLAPD-CA-CERTIFICATE-FILE> with: /etc/ssl/certs/FOSS-Cloud_CA.cert.pem\n";
+            $error = 0;
+        }
+
+
       } # End of foreach $line (@output)
 
       if (!$dryrun) {
@@ -2386,9 +2443,9 @@ sub configureOpenLDAP {
 
 
   header("Adding data ...");
-  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_00_directory);
-  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_01_administration_nextfreeuid);
-  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_02_group_mapping_administration);
+  loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_00_directory);
+  loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_01_administration_nextfreeuid);
+  loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_02_group_mapping_administration);
 
   ##############################################################################
   # Working on /etc/openldap/data/02_services-administration.ldif
@@ -2432,13 +2489,13 @@ sub configureOpenLDAP {
 
       print "\n";
 
-      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_02_administration_services);
+      loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_02_administration_services);
 
   } # End of if ( ( $local_modus eq "primary-master" ) || ( $local_modus eq "vm-node" ) )
   # Worked on /etc/openldap/data/02_services-administration.ldif
 
-  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_03_reseller);
-  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_04_customers);
+  loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_03_reseller);
+  loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_04_customers);
 
   ##############################################################################
   # Working on /etc/openldap/data/05_people.ldif
@@ -2608,9 +2665,9 @@ sub configureOpenLDAP {
 
   }
 
-  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_05_people);
-  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_06_groups);
-  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_06_services_virtualization);
+  loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_05_people);
+  loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_06_groups);
+  loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_06_services_virtualization);
 
 
   ##############################################################################
@@ -2650,7 +2707,7 @@ sub configureOpenLDAP {
 
       print "\n";
 
-      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_07_authentication_services_virtualization);
+      loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_07_authentication_services_virtualization);
 
   } # End of if ( $local_modus eq "primary-master" )
   # Worked on /etc/openldap/data/07_services_virtualization_authentication.ldif
@@ -2755,7 +2812,7 @@ sub configureOpenLDAP {
                        );
 
       # Load the created ldif into the LDAP
-      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_08_configuration_services_virtualization);
+      loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_08_configuration_services_virtualization);
 
 
   } # End of ( $local_modus eq "primary-master" )
@@ -2841,7 +2898,7 @@ sub configureOpenLDAP {
                        );
 
       # Load the created ldif into the ldap
-      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_09_networks_services_virtualization);
+      loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_09_networks_services_virtualization);
 
   }# End of if ( $local_modus eq "primary-master" )
   # Working on /etc/openldap/data/09_networks_services_virtualization.ldif
@@ -2854,9 +2911,9 @@ sub configureOpenLDAP {
        -r $file_12_vm_profiles_services_virtualization
      )
   {
-      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_10_nodes_services_virtualization);
-      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_11_storage_services_virtualization);
-      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_12_vm_profiles_services_virtualization);
+      loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_10_nodes_services_virtualization);
+      loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_11_storage_services_virtualization);
+      loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_12_vm_profiles_services_virtualization);
       
   } else
   {
@@ -2895,7 +2952,7 @@ sub configureOpenLDAP {
                        );
 
       # Load the created ldif into the LDAP
-      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_14_vm_pools_services_virtualization);
+      loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_14_vm_pools_services_virtualization);
 
 
   } # End of if ( $local_modus eq "primary-master" )
@@ -2906,7 +2963,7 @@ sub configureOpenLDAP {
   # Load the ldif into the LDAP to be able to continue
   if ( -r $file_15_vms_services_virtualization )
   {
-    loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_15_vms_services_virtualization);
+    loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_15_vms_services_virtualization);
   } else
   {
       returnError(ERROR_MISSING_FILE_CODE,ERROR_MISSING_FILE_STRING,
@@ -2957,7 +3014,7 @@ sub configureOpenLDAP {
                        );
 
       # Load the created ldif into the LDAP
-      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_16_primary_master_node);
+      loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_16_primary_master_node);
 
 
   } # End of if ( $local_modus eq "primary-master" )
@@ -2972,12 +3029,12 @@ sub configureOpenLDAP {
   if ( $modus eq "demo-system" )
   {
       # Load the ranges into the LDAP
-      loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_17_ranges_networks_services_virtualization);
+      loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_17_ranges_networks_services_virtualization);
   }
   # Worked on 17_ranges_networks_services_virtualization
 
   # And finally load the monitoring services into the ldap
-  loadOpenLDAPsingleLDIF($localIntIP,$unencrypted_password,$file_18_services_monitoring);
+  loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_18_services_monitoring);
 
   print "\n";
 
@@ -3074,6 +3131,15 @@ sub configureDHCP {
     # Working on the file /var/www/localhost/htdocs/vm-manager/vm_config.php ...
     print "\n";
     print "Working on $file_dhcp_conf ...\n";
+
+    # If the port is 636 then we need to add some more attributes to the config
+    # file
+    if ( $ldap_port eq "636" )
+    {
+        $ldap_port = "636;\n";
+        $ldap_port .= "ldap-ssl ldaps;\n";
+        $ldap_port .= "ldap-tls-ca-file \"/etc/ssl/certs/FOSS-Cloud_CA.cert.pem\"";
+    }
 
     # Generate the search and replace commands to replace the placeholders in
     # template
@@ -3888,9 +3954,16 @@ sub createRootCA
         or die "Copy failed: $!";
     setSingleFilePermissions("file",$uid_root,$gid_root,0444,"/etc/ssl/certs/FOSS-Cloud_CA.cert.pem");
     
-    # Rehash
+    # Rehash1
     @args = ("c_rehash","/etc/ssl/certs/");
     system( join( " ", @args ) );
+
+    # And finally create a symlink the the htdocs/ca directory to be able to 
+    # download this certificate
+    @args = ("ln","-s","/etc/ssl/certs/FOSS-Cloud_CA.cert.pem","/var/www/localhost/htdocs/ca/FOSS-Cloud_CA.cert.pem");
+
+    # Execute the commands
+    system( join(' ', @args) );
 
 }
 
@@ -4550,10 +4623,19 @@ sub loadOpenLDAPsingleLDIF {
   my $output;
   my $errorCode;
 
+  my $ldap_protocol;
+  if ( $modus eq "demo-system" )
+  {
+    $ldap_protocol = "ldap://";
+  } else
+  {
+    $ldap_protocol = "ldaps://";
+  }
+
   # Load the given LDIF into the directory server with ldapadd
   if (!$dryrun) {
     print "Working on $ldif ...\n";
-    $output = `/usr/bin/ldapadd -M -H "ldap://$server" -w $password -x -D "cn=Manager,dc=foss-cloud,dc=org" -f $ldif`;
+    $output = `/usr/bin/ldapadd -M -H "$ldap_protocol$server" -w $password -x -D "cn=Manager,dc=foss-cloud,dc=org" -f $ldif`;
     $errorCode = $? >> 8;
 
     if($errorCode != 0) {
@@ -4762,6 +4844,7 @@ sub createBackupDirectorySymlink
 
 sub askVIP
 {
+    my $localPubDomain =  shift;
 
     # define the iterfaces and vlans
     my @interfaces = ("pub","admin","data","int");
@@ -4840,6 +4923,19 @@ sub askVIP
 
         # add a hash to the ask the user array
         $vips[$i++] = ( {VIP => $vip, SECONDARY_IP => $secondary_ip } );   
+    }
+
+    # Also ask for the apache vip name
+    while ( $apache_vip_name !~ m/.+\..+\..{2,3}/ )
+    {
+        # Ask for the apache2 VIP name
+        print "\nPlease enter the apache VIP name (default: foss-cloud."
+             .$localPubDomain."): ";
+        chomp( $apache_vip_name = <STDIN> );
+
+        # If no name is entered take default one
+        $apache_vip_name = "foss-cloud.".$localPubDomain unless ( $apache_vip_name );
+
     }
 
     return @vips;
@@ -5215,6 +5311,7 @@ sub wirteVIPToHosts
     my $int_vip_line_number = 0;
     my $int_second_ip_line_number = 0;
     my $pub_vip_line_number = 0;
+    my $int_current_ip_line_number = 0;
 
     # If the hosts file is not writable we cannot continue
     if ( ! open( HOSTS, "$hosts_file" ) )
@@ -5256,6 +5353,11 @@ sub wirteVIPToHosts
                 $pub_vip_line_number = $line_number + 1;
             }
 
+            if ( $host_line eq "# This hosts int IP for LDAP\n" )
+            {
+                $int_current_ip_line_number = $line_number + 1;
+            }
+
             # Increase the line number
             $line_number++;
         }
@@ -5272,8 +5374,23 @@ sub wirteVIPToHosts
         # Write the secondary ldap ip and name to the hosts file
         my $second_ldap_ip = $local_network_hash->{'int'}->{'secondary_master_ip'};
         my $second_ldap_name = $cfg->val($modus,"ldap_domaim_name_for_hosts_file");
+        my $my_ldap_name;
+        my $my_ldap_ip = $local_network_hash->{'int'}->{'ip'};
+
+        # Write the ldap name and ip for the current host
+        if ( $second_ldap_name eq $cfg->val("primary-master","ldap_domaim_name_for_hosts_file") )
+        {
+            # We are on the primary master node
+            $my_ldap_name = $cfg->val("secondary-master","ldap_domaim_name_for_hosts_file")
+        } else
+        {
+            # We are on the secondary master
+            $my_ldap_name = $cfg->val("primary-master","ldap_domaim_name_for_hosts_file")
+        }
+
         $second_ldap_name .= ".".$local_network_hash->{'pub'}->{'domain'};
-  
+        $my_ldap_name .= ".".$local_network_hash->{'pub'}->{'domain'};
+
 #        # Write the secondary ldap name and the ip to the hosts file
 #        print HOSTS "# Seconadary master IP for LDAP\n";
 #        print HOSTS "$second_ldap_ip\t$second_ldap_name\n";        
@@ -5315,6 +5432,16 @@ sub wirteVIPToHosts
         {
             push ( @hosts, "# Public VIP for apache\n" );
             push ( @hosts, "$apache_vip\t$apache_vip_name\n" );
+        }
+
+        # Test the current int ip
+        if ( $int_current_ip_line_number > 0 )
+        {
+            $hosts[$int_current_ip_line_number] = "$my_ldap_ip\t$my_ldap_name\n";
+        } else
+        {
+            push ( @hosts, "# This hosts int IP for LDAP\n" );
+            push ( @hosts, "$my_ldap_ip\t$my_ldap_name\n" );
         }
 
         # Open the hosts file again for writing
