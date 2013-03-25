@@ -1865,7 +1865,7 @@ sub configureOpenLDAP {
   } elsif ( $modus eq "demo-system" )
   {
     $ldap_server = $localIntIP;
-  }
+  } 
 
   # Used for commands later
   my $search;
@@ -3330,9 +3330,9 @@ sub configurePhpLDAPadmin {
 
   # Generate the search-and-replace commands:
   # Take care of port and address ldap:// => 389 ldaps:// => 636
-  my $ldap_vip_uri = "ldapm".$localNetworkHash->{'pub'}->{'domain'};
-  my $ldap_rip1_uri = "ldapm-01".$localNetworkHash->{'pub'}->{'domain'};
-  my $ldap_rip2_uri = "ldapm-02".$localNetworkHash->{'pub'}->{'domain'};
+  my $ldap_vip_uri = "ldapm.".$localNetworkHash->{'pub'}->{'domain'};
+  my $ldap_rip1_uri = "ldapm-01.".$localNetworkHash->{'pub'}->{'domain'};
+  my $ldap_rip2_uri = "ldapm-02.".$localNetworkHash->{'pub'}->{'domain'};
 
   if ( $modus eq "demo-system" )
   {
