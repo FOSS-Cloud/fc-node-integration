@@ -669,13 +669,13 @@ sub secondaryMasterNode{
   # Configure the libvirtd daemon
   configureLibvirt($localNetworkHash);
 
+  # Create the Root CA
+  createRootCA();
+
   # Configure the openldap directory
   my $unencrypted_password = configureOpenLDAP($localNetworkHash,
                                                $remoteNetworkHash,
                                                $password);
-
-  # Create the certicate for the LDAP
-  createLDAPCertificate($localNetworkHash);
 
   # Configure the VM-Manger
   configureVMManager($localNetworkHash,$unencrypted_password);
@@ -688,9 +688,6 @@ sub secondaryMasterNode{
 
   # Create / get the apache certificate
   createApacheCertificate($localNetworkHash);
-
-  # Write to the hosts file
-  wirteVIPToHosts($localNetworkHash);
 
   # Configure ucarp
   configureUcarp($localNetworkHash);
@@ -1875,7 +1872,7 @@ sub configureOpenLDAP {
   my $replace;
 
   # Create the certificate for the LDAP 
-  createLDAPCertificate($localNetworkHash);
+  createLDAPCertificate($localNetworkHash) unless ( $modus eq "demo-system" );
 
   # Nicer Output
   print "\n";
@@ -1937,7 +1934,7 @@ sub configureOpenLDAP {
         $ldap_cert_name = "ldapm-01." if ( $modus eq "primary-master");
         $ldap_cert_name = "ldapm-02." if ( $modus eq "secondary-master");
         $ldap_cert_name .= $localNetworkHash->{'pub'}->{'domain'}.".cert.pem";
-        $cert_file = "TLS_CACERT /etc/openldap/ssl/".$ldap_cert_name;
+        $cert_file = "TLS_CACERT /etc/ssl/certs/FOSS-Cloud_CA.cert.pem";
         $req_cert = "TLS_REQCERT demand"; 
       }
 
@@ -2012,30 +2009,30 @@ sub configureOpenLDAP {
 
       # Get the syncrepl provider
       my $syncrepl_provider;
+      # Check if ldaps or ldap
+      if ( $modus eq "demo-system" )
+      {
+          # LDAP
+          $syncrepl_provider = "ldap://";
+      } else
+      {
+          # LDAPS
+          $syncrepl_provider = "ldaps://";
+      }
 
       # Check what modus we have
       if ( $local_modus eq "primary-master" )
       {
         # Its the secondary ip from the int-interface (we asked this information 
         # at the start of the script when asking for the VIPs)
-        # Check if ldaps or ldap
-        if ( $modus eq "demo-system" )
-        {
-            # LDAP
-            $syncrepl_provider = "ldap://";
-        } else
-        {
-            # LDAPS
-            $syncrepl_provider = "ldaps://";
-        }
 
-        $syncrepl_provider .= $localNetworkHash->{'int'}->{'secondary_master_ip'};
+        $syncrepl_provider .= $cfg->val("primary-master","ldap_domaim_name_for_hosts_file").".".$localNetworkHash->{'pub'}->{'domain'};
         $syncrepl_provider .= "127.0.0.2" if ( $modus eq "demo-system" );
 
       } else
       {
         # If its the secondary storage node, its the remote networks int ip
-        $syncrepl_provider = $remoteNetworkHash->{'int'}->{'ip'};
+        $syncrepl_provider .= $cfg->val("secondary-master","ldap_domaim_name_for_hosts_file").".".$localNetworkHash->{'pub'}->{'domain'};
         ($syncrepl_password, 
          $dhcp_unencrypted_password,
          $prov_backup_kvm_unencrypted_password,
@@ -2043,6 +2040,10 @@ sub configureOpenLDAP {
          $apache_vip_name,
          $ucarp_pub_password,
          $ucarp_int_password ) = getRemoteConfiguration();
+
+        # Write to the hosts file
+        wirteVIPToHosts($localNetworkHash);
+
       }
 
 
@@ -2360,7 +2361,8 @@ sub configureOpenLDAP {
                        );
 
       # Load the created ldif into the LDAP
-      loadOpenLDAPsingleLDIF($int_vip,$unencrypted_password,$file_16_secondary_master_node);
+      my $ldap_vip_server = $cfg->val("General","ldap_vip_name").".".$localNetworkHash->{'pub'}->{'domain'};
+      loadOpenLDAPsingleLDIF($ldap_vip_server,$unencrypted_password,$file_16_secondary_master_node);
 
       # Create the cronjob for the backup
 
@@ -2421,7 +2423,7 @@ sub configureOpenLDAP {
           setSingleFilePermissions("file",$uid_root,$gid_root,0644,"$directory_hdb_data/.version-tag");
       }
 
-    return $unencrypted_password;
+      return $unencrypted_password;
   }
 
   ##############################################################################
@@ -3890,6 +3892,36 @@ sub createRootCA
     setSingleFilePermissions("file",$uid_root,$gid_root,0644,"/etc/ssl/FOSS-Cloud_CA/openssl.cnf");
     setSingleFilePermissions("file",$uid_root,$gid_root,0600,"/etc/ssl/FOSS-Cloud_CA/index.txt");
 
+    # If it is the secondary master, just copy the root certificate from the 
+    # primary master
+    if ( $modus eq "secondary-master" )
+    {
+        # Create ssh connection and copy the root certificate
+        my $ssh = Net::OpenSSH->new($primary_master_host,
+                              user => $primary_master_user,
+			      password => $primary_master_password,
+			      master_stderr_discard => 1 # quiet
+                             );
+
+        # Copy the request to the primary master to be able to sign it
+        my $rv = $ssh->scp_get("/etc/ssl/certs/FOSS-Cloud_CA.cert.pem",
+                               "/etc/ssl/certs/FOSS-Cloud_CA.cert.pem");
+        unless ( $rv )
+        {
+            print "Copy from primary master node failed: ".$ssh->error."\n";
+            exit 1;
+        }
+
+        setSingleFilePermissions("file",$uid_root,$gid_root,0444,"/etc/ssl/certs/FOSS-Cloud_CA.cert.pem");
+        
+        # Rehash1
+        @args = ("c_rehash","/etc/ssl/certs/");
+        system( join( " ", @args ) );
+
+        return;
+    }
+
+
     # Now create the password file
     my $password_file = "/etc/ssl/FOSS-Cloud_CA/private/passphrase.txt";
     open(PASSWDFILE,">$password_file") or die "Cannot open $password_file for writting";
@@ -4002,7 +4034,22 @@ sub createApacheCertificate
             print "Copy from primary master node failed: ".$ssh->error."\n";
             exit 1;
         }
-        
+
+        # Copy the request to the primary master to be able to sign it
+        $rv = $ssh->scp_get("/etc/ssl/apache2/".$apache_vip_name.".key.pem",
+                "/etc/ssl/apache2/".$apache_vip_name.".key.pem" );
+        unless ( $rv )
+        {
+            print "Copy from primary master node failed: ".$ssh->error."\n";
+            exit 1;
+        }
+
+        # And finally set the correct permissions
+        my $uid_root = $cfg->val("General","uid_root"); # root
+        my $gid_root = $cfg->val("General","gid_root"); # root
+        setSingleFilePermissions("file",$uid_root,$gid_root,0400,"/etc/ssl/apache2/".$apache_vip_name.".cert.pem");
+        setSingleFilePermissions("file",$uid_root,$gid_root,0400,"/etc/ssl/apache2/".$apache_vip_name.".key.pem");
+
         return;
     }
 
@@ -5218,7 +5265,7 @@ sub getRemoteConfiguration
         }
 
         # Get the apache vip name
-        my $apache_conf = $cfg->val("primary-master","file_localhost_conf");
+        my $apache_conf = "/etc/apache2/vhosts.d/localhost.conf";
         $cmd = "cat '$apache_conf'";
 
         # Execute the command on the remote host
