@@ -1028,8 +1028,8 @@ sub singleServer{
   my $localNetworkHash = checkLocalNetwork();
 
   # Add the hosts entries
-  my $ldapm01 = $localNetworkHas->{'int'}->{'ip'}."\tldapm-01.".$localNetworkHas->{'pub'}->{'domain'};
-  my $ldapm = $localNetworkHas->{'int'}->{'ip'}."\tldapm.".$localNetworkHas->{'pub'}->{'domain'};
+  my $ldapm01 = $localNetworkHash->{'int'}->{'ip'}."\tldapm-01.".$localNetworkHash->{'pub'}->{'domain'};
+  my $ldapm = $localNetworkHash->{'int'}->{'ip'}."\tldapm.".$localNetworkHash->{'pub'}->{'domain'};
   system("echo $ldapm01 >> /etc/hosts");
   system("echo $ldapm >> /etc/hosts");
 
