@@ -324,6 +324,11 @@ SWITCH: {
     demoSystem( $password );
     last;
   };
+  $opts{'node-type'} eq "single-server" and do {
+    $modus = "single-server";
+    singleServer( );
+    last;
+  };
 
   # If we reach this point we have a non valid type.
   returnError(ERROR_UNKNOWN_NODETYPE_CODE,ERROR_UNKNOWN_NODETYPE_STRING);
@@ -1003,6 +1008,95 @@ sub demoSystem{
 
 } # End of sub demoSystem
 
+
+
+######################################################################################################
+# primaryMasterNode
+######################################################################################################
+# Description:
+#   Performs the necessary tasks to set up the primary-master-node.
+######################################################################################################
+sub singleServer{
+
+  # Display a nice title
+  header("Single-Server-Node Installation");
+
+  # Asks the user, if the installation should really proceed
+  proceed("single-server-node");
+
+  # Start with step one and check the network configuration
+  my $localNetworkHash = checkLocalNetwork();
+
+  # Add the hosts entries
+  my $ldapm01 = $localNetworkHas->{'int'}->{'ip'}."\tldapm-01.".$localNetworkHas->{'pub'}->{'domain'};
+  my $ldapm = $localNetworkHas->{'int'}->{'ip'}."\tldapm.".$localNetworkHas->{'pub'}->{'domain'};
+  system("echo $ldapm01 >> /etc/hosts");
+  system("echo $ldapm >> /etc/hosts");
+
+  # Start the ksm daemon and add it to the default runlevel
+  startDaemon("ksm");
+  rcUpdate("ksm","default");
+
+  # Start the ksmtuned daemon and add it to the default runlevel
+  startDaemon("ksmtuned");
+  rcUpdate("ksmtuned","default");
+
+  # Unpack virtualization data tarball and test if it's ok
+  my $tarball = $cfg->val($modus,"file_tarball_source");
+  my $destination = $cfg->val($modus,"file_tarball_destination");
+  if ( unpackVirtualizationDataTarball($tarball, $destination) )
+  {
+      returnError(ERROR_UNPACKING_TARBALL_CODE,ERROR_UNPACKING_TARBALL_STRING);
+  }
+
+  # Configure the libvirtd daemon
+  configureLibvirt($localNetworkHash);
+
+  # Create the Root CA
+  createRootCA();
+
+  # Configure the slapd daemon
+  my $unencrypted_password = configureOpenLDAP($localNetworkHash,0,$password);
+
+  # Configure the VM-Manger
+  configureVMManager($localNetworkHash,$unencrypted_password);
+
+  # Configure phpLDAPadmin
+  configurePhpLDAPadmin($localNetworkHash);
+
+  # Configure the apache2 daemon
+  configureApache2($localNetworkHash);
+
+  # Start the apache2 daemon and add it to the default runlevel
+  startDaemon("apache2");
+  rcUpdate("apache2","default");
+
+  # Create the certificate for the apache
+  createApacheCertificate($localNetworkHash);
+
+  # Configure DHCP
+  configureDHCP($localNetworkHash);
+
+  # Start the dhcp daemon and add it to the default runlevel
+  startDaemon("dhcpd");
+  rcUpdate("dhcpd","default");
+
+  # Configure the fc-brockerd daemon
+  configureFcBrokerd($localNetworkHash,$unencrypted_password);
+
+  # Start the daemon and add it to de default runlevel
+  startDaemon("fc-brokerd");
+  rcUpdate("fc-brokerd","default");
+
+  configureProvBackupKVM($localNetworkHash, $localNetworkHash->{'int'}->{'vip'}, $prov_backup_kvm_unencrypted_password);
+
+  # Create the backup directory symlink
+  createBackupDirectorySymlink();
+
+  # Tell the administrator, that the installation and configuration of this node is complete.
+  print "\nCongratulations, you have finished the installation and configuration of this Node!\n\n"
+
+} # End of sub primaryMasterNode
 
 ######################################################################################################
 # checkLocalNetwork
@@ -1787,7 +1881,7 @@ sub configureOpenLDAP {
   # overwrite the local_modus, so we can perform the same actions with the same
   # templates (there is only one little exeption, but to handle this we stil
   # the original $modus
-  if ( $modus eq "demo-system" )
+  if ( $modus eq "demo-system" || $modus eq "single-server" )
   {
       $local_modus = "primary-master";
   }
@@ -1853,10 +1947,10 @@ sub configureOpenLDAP {
 
   # Check if the modus is demo-system, if yes change the vip to the internal 
   # interface ip
-  $int_vip = $localIntIP if ( $modus eq "demo-system" );
+  $int_vip = $localIntIP if ( $modus eq "demo-system" || $modus eq "single-server");
 
   # Check what is the ldap server name
-  if ( $modus eq "primary-master" )
+  if ( $modus eq "primary-master" || $modus eq "single-server" )
   {
     $ldap_server = "ldapm-01.".$localNetworkHash->{"pub"}->{"domain"};
   } elsif ( $modus eq "secondary-master" )
@@ -1931,7 +2025,7 @@ sub configureOpenLDAP {
         # LDAPS
         $replace_string = "URI             ldaps:\/\/$int_vip:636";
         my $ldap_cert_name;
-        $ldap_cert_name = "ldapm-01." if ( $modus eq "primary-master");
+        $ldap_cert_name = "ldapm-01." if ( $modus eq "primary-master" || $modus eq "single-server" );
         $ldap_cert_name = "ldapm-02." if ( $modus eq "secondary-master");
         $ldap_cert_name .= $localNetworkHash->{'pub'}->{'domain'}.".cert.pem";
         $cert_file = "TLS_CACERT /etc/ssl/certs/FOSS-Cloud_CA.cert.pem";
@@ -2840,7 +2934,7 @@ sub configureOpenLDAP {
       my $ntp;
 
       # Here we need to differ the global $modus, demo-system != primary-master
-      if ( $modus eq "primary-master" )
+      if ( $modus eq "primary-master" || $modus eq "single-server")
       {
           # Again create the NTP information for writing to the LDIF. We have already
           # collected the host as we were working on 08_configuration_services_
@@ -3383,7 +3477,7 @@ sub configureApache2 {
   my $localPubDomain =  $localNetworkHash->{"pub"}->{"domain"};
   my $pub_vip = $localNetworkHash->{"pub"}->{"vip"};
 
-  $pub_vip = $localNetworkHash->{"pub"}->{"ip"} if ( $modus eq "demo-system" );
+  $pub_vip = $localNetworkHash->{"pub"}->{"ip"} if ( $modus eq "demo-system" || $modus eq "single-server");
 
   # Configuring the apache2 daemon
   print "\n";
@@ -4204,7 +4298,7 @@ sub createLDAPCertificate
 
     # Get the correct cert name 
     my $ldap_host_name = "";
-    if ( $modus eq "primary-master" )
+    if ( $modus eq "primary-master" || $modus eq "single-server" )
     {
         $ldap_host_name = "ldapm-01.".$domain_name;
     } else
@@ -4245,7 +4339,7 @@ sub createLDAPCertificate
 
     # Copy the request to the FOSS-Cloud CA directory to sign it
     my $ssh;
-    if ( $modus eq "primary-master" )
+    if ( $modus eq "primary-master" || $modus eq "single-server" )
     {
         copy("/etc/openldap/ssl/".$ldap_host_name.".req.pem",
              "/etc/ssl/FOSS-Cloud_CA/requests/".$ldap_host_name.".req.pem");
@@ -4282,7 +4376,7 @@ sub createLDAPCertificate
               "-passin","file:/etc/ssl/FOSS-Cloud_CA/private/passphrase.txt",
               "-batch"
             );
-    if ( $modus eq "primary-master" )
+    if ( $modus eq "primary-master" || $modus eq "single-server" )
     {
         # Execute the commands locally
         system( join( " ", @args ) );
@@ -4298,7 +4392,7 @@ sub createLDAPCertificate
     }
 
     # And copy the cert back the the openldap directory
-    if ( $modus eq "primary-master" )
+    if ( $modus eq "primary-master" || $modus eq "single-server" )
     {
         copy( "/etc/ssl/FOSS-Cloud_CA/certs/".$ldap_host_name.".cert.pem",
               "/etc/openldap/ssl/".$ldap_host_name.".cert.pem");
