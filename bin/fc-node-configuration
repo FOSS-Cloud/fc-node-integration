@@ -1067,12 +1067,12 @@ sub singleServer{
   # Configure the apache2 daemon
   configureApache2($localNetworkHash);
 
+  # Create the certificate for the apache web server
+  createApacheCertificate($localNetworkHash);
+
   # Start the apache2 daemon and add it to the default runlevel
   startDaemon("apache2");
   rcUpdate("apache2","default");
-
-  # Create the certificate for the apache
-  createApacheCertificate($localNetworkHash);
 
   # Configure DHCP
   configureDHCP($localNetworkHash);
