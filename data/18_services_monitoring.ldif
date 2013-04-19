@@ -37,3 +37,9 @@ objectclass: top
 objectclass: organizationalUnit
 ou: monitoring
 description: The sub tree for the monitoring service.
+
+dn: ou=configuration,ou=monitoring,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: configuration
+description: The sub tree for the configuration of the monitoring service.
