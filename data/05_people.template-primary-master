@@ -63,3 +63,9 @@ objectclass: top
 objectclass: sstRoles
 sstRole: Admin Virtualization
 sstProduct: 0
+
+dn: sstRole=Monitoring Administrator,uid=4000002,ou=people,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstRoles
+sstRole: Monitoring Administrator
+sstProduct: 0

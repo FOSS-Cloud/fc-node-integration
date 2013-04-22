@@ -1,4 +1,4 @@
-# Copyright (C) 2012 FOSS-Group
+# Copyright (C) 2013 FOSS-Group
 #                    Germany
 #                    http://www.foss-group.de
 #                    support@foss-group.de
@@ -26,37 +26,37 @@
 # 
 #
 #
-################################################################################
+#####################################################################################################################
 # /etc/openldap/data/03_reseller.ldif
-################################################################################
+#####################################################################################################################
 # Description:
 #  Initialises the organisational data like resellers, customers and people.
-################################################################################
+#####################################################################################################################
 
-################################################################################
+#####################################################################################################################
 # reseller
-################################################################################
+#####################################################################################################################
 dn: uid=4000000,ou=reseller,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstReseller
 uid: 4000000
-organizationName: Acme Corporation (Switzerland)
+organizationName: Reseller Ltd.
 
 dn: ou=address,uid=4000000,ou=reseller,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
 objectclass: sstAddressCompany
 ou: address
-organizationName: Acme Corporation (Switzerland)
+organizationName: Reseller Ltd.
 sstGender: m
 surname: Surname
-givenName: Forename
+givenName: Name
 postalAddress: Street Number
 countryName: CH
 postalCode: Postal Code
 localityName: Locality
 preferredLanguage: en-GB
-mail: forename.surname@example.com
+mail: name.surname@example.com
 telephoneNumber: +41 00 000 00 00
 mobileTelephoneNumber: +41 00 000 00 00
 
