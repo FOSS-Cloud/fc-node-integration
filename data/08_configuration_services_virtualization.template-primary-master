@@ -465,6 +465,111 @@ sstDisplayName: Storage-Node
 
 
 #####################################################################################################################
+# ou=operating system, ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org 
+#####################################################################################################################
+# Description
+#  This sub tree contains the operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+#  They can be extended by the administrator.
+#####################################################################################################################
+dn: ou=operating system, ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: operating system
+description: This sub tree contains the operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+
+# This sub tree contains the Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+dn: ou=Linux,ou=operating system, ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: Linux
+description: This sub tree contains the Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+
+# This sub tree contains the Debian Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+dn: ou=Debian,ou=Linux,ou=operating system, ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstOperatingSystemVersionObjectClass
+ou: Debian
+description: This sub tree contains the Debian Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+sstOperatingSystemVersion: 5
+sstOperatingSystemVersion: 6
+sstOperatingSystemVersion: 7
+
+# This sub tree contains the Fedora Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+dn: ou=Fedora,ou=Linux,ou=operating system, ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstOperatingSystemVersionObjectClass
+ou: Fedora
+description: This sub tree contains the Fedora Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+sstOperatingSystemVersion: 12
+sstOperatingSystemVersion: 13
+sstOperatingSystemVersion: 14
+sstOperatingSystemVersion: 15
+sstOperatingSystemVersion: 16
+sstOperatingSystemVersion: 17
+sstOperatingSystemVersion: 18
+sstOperatingSystemVersion: 19
+
+# This sub tree contains the Gentoo Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+dn: ou=Gentoo,ou=Linux,ou=operating system, ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstOperatingSystemVersionObjectClass
+ou: Gentoo
+description: This sub tree contains the Gentoo Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+sstOperatingSystemVersion: 2012.0
+sstOperatingSystemVersion: 2013.0
+
+# This sub tree contains the Windows based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+dn: ou=Windows,ou=operating system, ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: Windows
+description: This sub tree contains the Windows based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+
+# This sub tree contains the Windows Server 2008 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+dn: ou=Server 2008,ou=Windows,ou=operating system, ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstOperatingSystemVersionObjectClass
+ou: Server 2008
+description: This sub tree contains the Windows Server 2008 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+sstOperatingSystemVersion: Foundation
+sstOperatingSystemVersion: Datacenter
+sstOperatingSystemVersion: Enterprise
+sstOperatingSystemVersion: Itanium
+sstOperatingSystemVersion: Standard
+
+# This sub tree contains the Windows Server 2008 R2 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+dn: ou=Server 2008 R2,ou=Windows,ou=operating system, ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstOperatingSystemVersionObjectClass
+ou: Server 2008 R2
+description: This sub tree contains the Windows Server 2008 R2 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+sstOperatingSystemVersion: Datacenter
+sstOperatingSystemVersion: Enterprise
+sstOperatingSystemVersion: Foundation
+sstOperatingSystemVersion: HPC
+sstOperatingSystemVersion: Itanium
+sstOperatingSystemVersion: Standard
+sstOperatingSystemVersion: Web
+
+# This sub tree contains the Windows Server 2012 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+dn: ou=Server 2012,ou=Windows,ou=operating system, ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstOperatingSystemVersionObjectClass
+ou: Server 2012
+description: This sub tree contains the Windows Server 2012 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+sstOperatingSystemVersion: Datacenter
+sstOperatingSystemVersion: Essentials
+sstOperatingSystemVersion: Foundation
+sstOperatingSystemVersion: Standard
+
+
+#####################################################################################################################
 # ou=settings,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 #####################################################################################################################
 # Description
@@ -524,6 +629,8 @@ objectclass: sstVirtualizationSettingsObjectClass
 ou: usb
 description: This sub tree contains the USB related default settings of the FOSS-Cloud.
 sstAllowUSB: FALSE
+
+# This is where the global VNC related settings for the FOSS-Cloud environment are stored.
 
 # This is where the global VNC related settings for the FOSS-Cloud environment are stored.
 dn: ou=vnc,ou=settings,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
@@ -607,8 +714,6 @@ sstStoragePoolURI: file:///var/virtualization/vm-templates/
 sstStoragePoolType: template
 sstSelfService: TRUE
 
-
-#####################################################################################################################
 # ou=version,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 #####################################################################################################################
 # Description
