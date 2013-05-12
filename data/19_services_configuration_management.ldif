@@ -1,0 +1,52 @@
+# Copyright (C) 2013 stepping stone GmbH
+#                    Switzerland
+#                    http://www.stepping-stone.ch
+#                    support@stepping-stone.ch
+#
+# Authors:
+#  Michael Eichenberger <michael.eichenberger@stepping-stone.ch>
+#  
+# Licensed under the EUPL, Version 1.1.
+#
+# You may not use this work except in compliance with the
+# Licence.
+# You may obtain a copy of the Licence at:
+#
+# http://www.osor.eu/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+#
+# $Id$
+#
+#
+#####################################################################################################################
+# /etc/openldap/data/19_services_configuration_management.ldif
+#####################################################################################################################
+# Description:
+#  This LDIF defines the sub tree for the configuration service. 
+#####################################################################################################################
+dn: ou=configuration management,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: configuration management
+description: The sub tree for the configuration management service.
+
+dn: ou=configuration,ou=configuration management,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: configuration
+description: The sub tree for the configuration of the configuration management service.
+
+dn: ou=prov-configuration-management-puppet,ou=configuration,ou=configuration management,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstServiceConfigurationConfigurationManagementObjectClass
+ou: prov-configuration-management-puppet
+description: The sub tree for the configuration of the prov-configuration-management-puppet daemon.
+sstIsActive: TRUE
