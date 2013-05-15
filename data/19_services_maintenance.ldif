@@ -26,27 +26,27 @@
 #
 #
 #####################################################################################################################
-# /etc/openldap/data/19_services_configuration_management.ldif
+# /etc/openldap/data/19_services_maintenance.ldif
 #####################################################################################################################
 # Description:
-#  This LDIF defines the sub tree for the configuration service. 
+#  This LDIF defines the sub tree for the maintenance service. 
 #####################################################################################################################
-dn: ou=configuration management,ou=services,dc=foss-cloud,dc=org
+dn: ou=maintenance,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
-ou: configuration management
+ou: maintenance
 description: The sub tree for the configuration management service.
 
-dn: ou=configuration,ou=configuration management,ou=services,dc=foss-cloud,dc=org
+dn: ou=configuration,ou=maintenance,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
 ou: configuration
 description: The sub tree for the configuration of the configuration management service.
 
-dn: ou=prov-configuration-management-puppet,ou=configuration,ou=configuration management,ou=services,dc=foss-cloud,dc=org
+dn: ou=prov-maintenance-puppet,ou=configuration,ou=maintenance,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
-objectclass: sstServiceConfigurationConfigurationManagementObjectClass
-ou: prov-configuration-management-puppet
-description: The sub tree for the configuration of the prov-configuration-management-puppet daemon.
+objectclass: sstServiceConfigurationMaintenanceObjectClass
+ou: prov-maintenance-puppet
+description: The sub tree for the configuration of the prov-maintenance-puppet daemon.
 sstIsActive: TRUE
