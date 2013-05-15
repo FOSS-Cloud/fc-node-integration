@@ -29,19 +29,19 @@
 # /etc/openldap/data/19_services_maintenance.ldif
 #####################################################################################################################
 # Description:
-#  This LDIF defines the sub tree for the maintenance service. 
+#  This LDIF defines the sub tree for the maintenance (configuration management) service. 
 #####################################################################################################################
 dn: ou=maintenance,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
 ou: maintenance
-description: The sub tree for the configuration management service.
+description: The sub tree for the maintenance (configuration management) service.
 
 dn: ou=configuration,ou=maintenance,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
 ou: configuration
-description: The sub tree for the configuration of the configuration management service.
+description: The sub tree for the configuration of the maintenance (configuration management) service.
 
 dn: ou=prov-maintenance-puppet,ou=configuration,ou=maintenance,ou=services,dc=foss-cloud,dc=org
 objectclass: top
