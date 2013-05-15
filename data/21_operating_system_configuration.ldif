@@ -39,92 +39,209 @@ ou: operating system
 description: This sub tree contains the operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
 
 # This sub tree contains the Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
-dn: ou=Linux,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+dn: uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
 objectclass: top
-objectclass: organizationalUnit
-ou: Linux
+objectclass: sstGroupObjectClass
+uid: 4000019
+sstDisplayName: Linux
 description: This sub tree contains the Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
 
 # This sub tree contains the Debian Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
-dn: ou=Debian,ou=Linux,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+dn: uid=4000020,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
 objectclass: top
-objectclass: organizationalUnit
-objectclass: sstOperatingSystemVersionObjectClass
-ou: Debian
+objectclass: sstGroupObjectClass
+uid: 4000020
+sstDisplayName: Debian
 description: This sub tree contains the Debian Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
-sstOperatingSystemVersion: 5
-sstOperatingSystemVersion: 6
-sstOperatingSystemVersion: 7
+
+dn: uid=4000021,uid=4000020,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000021
+sstDisplayName: 5
+
+dn: uid=4000022,uid=4000020,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000022
+sstDisplayName: 5
+
+dn: uid=4000023,uid=4000020,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000023
+sstDisplayName: 7
 
 # This sub tree contains the Fedora Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
-dn: ou=Fedora,ou=Linux,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+dn: uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
 objectclass: top
-objectclass: organizationalUnit
-objectclass: sstOperatingSystemVersionObjectClass
-ou: Fedora
+objectclass: sstGroupObjectClass
+uid: 4000024
+sstDisplayName: Fedora
 description: This sub tree contains the Fedora Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
-sstOperatingSystemVersion: 12
-sstOperatingSystemVersion: 13
-sstOperatingSystemVersion: 14
-sstOperatingSystemVersion: 15
-sstOperatingSystemVersion: 16
-sstOperatingSystemVersion: 17
-sstOperatingSystemVersion: 18
-sstOperatingSystemVersion: 19
+
+dn: uid=4000025,uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000025
+sstDisplayName: 12
+
+dn: uid=4000026,uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000026
+sstDisplayName: 13
+
+dn: uid=4000027,uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000027
+sstDisplayName: 14
+
+dn: uid=4000028,uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000028
+sstDisplayName: 15
+
+dn: uid=4000029,uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000029
+sstDisplayName: 16
+
+dn: uid=4000030,uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000030
+sstDisplayName: 17
+
+dn: uid=4000031,uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000031
+sstDisplayName: 18
+
+dn: uid=4000032,uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000032
+sstDisplayName: 19
 
 # This sub tree contains the Gentoo Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
-dn: ou=Gentoo,ou=Linux,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+dn: uid=4000033,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
 objectclass: top
-objectclass: organizationalUnit
-objectclass: sstOperatingSystemVersionObjectClass
-ou: Gentoo
+objectclass: sstGroupObjectClass
+uid: 4000033
+sstDisplayName: Gentoo
 description: This sub tree contains the Gentoo Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
-sstOperatingSystemVersion: 2012.0
-sstOperatingSystemVersion: 2013.0
+
+dn: uid=4000034,uid=4000033,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000034
+sstDisplayName: 2012.0
+
+dn: uid=4000035,uid=4000033,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000035
+sstDisplayName: 2013.0
 
 # This sub tree contains the Windows based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
-dn: ou=Windows,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+dn: uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
 objectclass: top
-objectclass: organizationalUnit
-ou: Windows
+objectclass: sstGroupObjectClass
+uid: 4000036
+sstDisplayName: Windows
 description: This sub tree contains the Windows based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
 
 # This sub tree contains the Windows Server 2008 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
-dn: ou=Server 2008,ou=Windows,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+dn: uid=4000037,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
 objectclass: top
-objectclass: organizationalUnit
-objectclass: sstOperatingSystemVersionObjectClass
-ou: Server 2008
+objectclass: sstGroupObjectClass
+uid: 4000037
+sstDisplayName: Server 2008
 description: This sub tree contains the Windows Server 2008 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
-sstOperatingSystemVersion: Foundation
-sstOperatingSystemVersion: Datacenter
-sstOperatingSystemVersion: Enterprise
-sstOperatingSystemVersion: Itanium
-sstOperatingSystemVersion: Standard
+
+dn: uid=4000038,uid=4000037,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000038
+sstDisplayName: Datacenter
+
+dn: uid=4000039,uid=4000037,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000039
+sstDisplayName: Enterprise
+
+dn: uid=4000040,uid=4000037,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000040
+sstDisplayName: Foundation
+
+dn: uid=4000041,uid=4000037,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000041
+sstDisplayName: Standard
 
 # This sub tree contains the Windows Server 2008 R2 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
-dn: ou=Server 2008 R2,ou=Windows,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+dn: uid=4000042,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
 objectclass: top
-objectclass: organizationalUnit
-objectclass: sstOperatingSystemVersionObjectClass
-ou: Server 2008 R2
+objectclass: sstGroupObjectClass
+uid: 4000042
+sstDisplayName: Server 2008 R2
 description: This sub tree contains the Windows Server 2008 R2 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
-sstOperatingSystemVersion: Datacenter
-sstOperatingSystemVersion: Enterprise
-sstOperatingSystemVersion: Foundation
-sstOperatingSystemVersion: HPC
-sstOperatingSystemVersion: Itanium
-sstOperatingSystemVersion: Standard
-sstOperatingSystemVersion: Web
+
+dn: uid=4000043,uid=4000042,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000043
+sstDisplayName: Datacenter
+
+dn: uid=4000044,uid=4000042,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000044
+sstDisplayName: Enterprise
+
+dn: uid=4000045,uid=4000042,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000045
+sstDisplayName: Foundation
+
+dn: uid=4000046,uid=4000042,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000046
+sstDisplayName: Standard
+
+dn: uid=4000047,uid=4000042,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000047
+sstDisplayName: Web
 
 # This sub tree contains the Windows Server 2012 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
-dn: ou=Server 2012,ou=Windows,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+dn: uid=4000048,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
 objectclass: top
-objectclass: organizationalUnit
-objectclass: sstOperatingSystemVersionObjectClass
-ou: Server 2012
+objectclass: sstGroupObjectClass
+uid: 4000048
+sstDisplayName: Server 2012
 description: This sub tree contains the Windows Server 2012 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
-sstOperatingSystemVersion: Datacenter
-sstOperatingSystemVersion: Essentials
-sstOperatingSystemVersion: Foundation
-sstOperatingSystemVersion: Standard
+
+dn: uid=4000049,uid=4000048,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000049
+sstDisplayName: Datacenter
+
+dn: uid=4000050,uid=4000048,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+uid: 4000050
+sstDisplayName: Standard
