@@ -1,14 +1,19 @@
+#
 # Copyright (C) 2013 FOSS-Group
 #                    Germany
 #                    http://www.foss-group.de
 #                    support@foss-group.de
 #
+# Copyright (C) 2013 stepping stone GmbH
+#                    Switzerland
+#                    http://www.stepping-stone.ch
+#                    support@stepping-stone.ch
+#
 # Authors:
 #  Michael Eichenberger <michael.eichenberger@stepping-stone.ch>
 #  
-# Licensed under the EUPL, Version 1.1 or – as soon they
-# will be approved by the European Commission - subsequent
-# versions of the EUPL (the "Licence");
+# Licensed under the EUPL, Version 1.1.
+#
 # You may not use this work except in compliance with the
 # Licence.
 # You may obtain a copy of the Licence at:
@@ -23,40 +28,31 @@
 # See the Licence for the specific language governing
 # permissions and limitations under the Licence.
 #
-# 
+# $Id$
 #
 #
 #####################################################################################################################
-# /etc/openldap/data/18_services_monitoring.ldif
+# /etc/openldap/data/19_services_maintenance.ldif
 #####################################################################################################################
 # Description:
-#  This LDIF defines the sub tree for the monitoring service. 
+#  This LDIF defines the sub tree for the maintenance (configuration management) service. 
 #####################################################################################################################
-dn: ou=monitoring,ou=services,dc=foss-cloud,dc=org
+dn: ou=maintenance,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
-ou: monitoring
-description: The sub tree for the monitoring service.
+ou: maintenance
+description: The sub tree for the maintenance (configuration management) service.
 
-dn: ou=configuration,ou=monitoring,ou=services,dc=foss-cloud,dc=org
+dn: ou=configuration,ou=maintenance,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
 ou: configuration
-description: The sub tree for the configuration of the monitoring service.
+description: The sub tree for the configuration of the maintenance (configuration management) service.
 
-dn: uid=4000016,ou=monitoring,ou=services,dc=foss-cloud,dc=org
+dn: ou=prov-maintenance-puppet,ou=configuration,ou=maintenance,ou=services,dc=foss-cloud,dc=org
 objectclass: top
-objectclass: sstRelationship
-objectclass: sstServiceObjectClass
-objectclass: sstProvisioning
-uid: 4000016
-sstServiceProvisioningDaemon: prov-monitoring-zabbix
-sstServiceName: Monitoring E-Mail [per Customer]
-sstServiceDescription: Monitoring E-Mail, without SMS. 
-sstServicePriority: 1
-sstProvisioningMode: add
-sstProvisioningExecutionDate: 0
-sstProvisioningState: 0
-sstBelongsToResellerUID: 4000000
-sstBelongsToCustomerUID: 4000001
-sstBelongsToPersonUID: 4000002
+objectclass: organizationalUnit
+objectclass: sstServiceConfigurationMaintenanceObjectClass
+ou: prov-maintenance-puppet
+description: The sub tree for the configuration of the prov-maintenance-puppet daemon.
+sstIsActive: TRUE

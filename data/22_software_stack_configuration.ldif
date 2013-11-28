@@ -1,0 +1,77 @@
+#
+# Copyright (C) 2013 FOSS-Group
+#                    Germany
+#                    http://www.foss-group.de
+#                    support@foss-group.de
+#
+# Copyright (C) 2013 stepping stone GmbH
+#                    Switzerland
+#                    http://www.stepping-stone.ch
+#                    support@stepping-stone.ch
+#
+# Authors:
+#  Michael Eichenberger <michael.eichenberger@stepping-stone.ch>
+#  
+# Licensed under the EUPL, Version 1.1.
+#
+# You may not use this work except in compliance with the
+# Licence.
+# You may obtain a copy of the Licence at:
+#
+# https://joinup.ec.europa.eu/software/page/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+#
+# $Id$
+#
+#
+#####################################################################################################################
+# /etc/openldap/data/22_software_stack_configuration.ldif
+#####################################################################################################################
+# Description:
+#  This sub tree contains the software stack choices for the whole FOSS-Cloud installation (since version 1.4.0).
+#  They can be extended by the administrator.
+#####################################################################################################################
+dn: ou=software stack,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: software stack
+description: This sub tree contains the software stack choices for the whole FOSS-Cloud installation (since version 1.4.0).
+
+dn: uid=4000051,ou=software stack,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+objectclass: labeledURIObject
+uid: 4000051
+sstDisplayName: Django (Version 1)
+description: Django Python Web Framework Version 1.
+labeledURI: ldap://uid=4000034,uid=4000033,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+labeledURI: ldap://uid=4000035,uid=4000033,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000052,ou=software stack,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+objectclass: labeledURIObject
+uid: 4000052
+sstDisplayName: Django (Version 2)
+description: Django Python Web Framework Version 2. 
+labeledURI: ldap://uid=4000034,uid=4000033,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+labeledURI: ldap://uid=4000035,uid=4000033,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0

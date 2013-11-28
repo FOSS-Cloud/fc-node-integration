@@ -1,0 +1,445 @@
+#
+# Copyright (C) 2013 FOSS-Group
+#                    Germany
+#                    http://www.foss-group.de
+#                    support@foss-group.de
+#
+# Copyright (C) 2013 stepping stone GmbH
+#                    Switzerland
+#                    http://www.stepping-stone.ch
+#                    support@stepping-stone.ch
+#
+# Authors:
+#  Michael Eichenberger <michael.eichenberger@stepping-stone.ch>
+#  
+# Licensed under the EUPL, Version 1.1.
+#
+# You may not use this work except in compliance with the
+# Licence.
+# You may obtain a copy of the Licence at:
+#
+# https://joinup.ec.europa.eu/software/page/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+#
+# $Id$
+#
+#
+#####################################################################################################################
+# /etc/openldap/data/21_operating_system_configuration.ldif
+#####################################################################################################################
+# Description:
+#  This sub tree contains the operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+#  They can be extended by the administrator.
+#####################################################################################################################
+dn: ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: operating system
+description: This sub tree contains the operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+
+# This sub tree contains the Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+dn: uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000019
+sstDisplayName: Linux
+description: This sub tree contains the Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+# This sub tree contains the Debian Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+dn: uid=4000020,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000020
+sstDisplayName: Debian
+description: This sub tree contains the Debian Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000021,uid=4000020,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000021
+sstDisplayName: 5
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000022,uid=4000020,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000022
+sstDisplayName: 5
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000023,uid=4000020,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000023
+sstDisplayName: 7
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+# This sub tree contains the Fedora Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+dn: uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000024
+sstDisplayName: Fedora
+description: This sub tree contains the Fedora Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000025,uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000025
+sstDisplayName: 12
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000026,uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000026
+sstDisplayName: 13
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000027,uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000027
+sstDisplayName: 14
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000028,uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000028
+sstDisplayName: 15
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000029,uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000029
+sstDisplayName: 16
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000030,uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000030
+sstDisplayName: 17
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000031,uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000031
+sstDisplayName: 18
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000032,uid=4000024,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000032
+sstDisplayName: 19
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+# This sub tree contains the Gentoo Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+dn: uid=4000033,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000033
+sstDisplayName: Gentoo
+description: This sub tree contains the Gentoo Linux based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000034,uid=4000033,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000034
+sstDisplayName: 2012.0
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000035,uid=4000033,uid=4000019,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000035
+sstDisplayName: 2013.0
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+# This sub tree contains the Windows based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+dn: uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000036
+sstDisplayName: Windows
+description: This sub tree contains the Windows based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+# This sub tree contains the Windows Server 2008 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+dn: uid=4000037,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000037
+sstDisplayName: Server 2008
+description: This sub tree contains the Windows Server 2008 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000038,uid=4000037,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000038
+sstDisplayName: Datacenter
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000039,uid=4000037,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000039
+sstDisplayName: Enterprise
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000040,uid=4000037,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000040
+sstDisplayName: Foundation
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000041,uid=4000037,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000041
+sstDisplayName: Standard
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+# This sub tree contains the Windows Server 2008 R2 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+dn: uid=4000042,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000042
+sstDisplayName: Server 2008 R2
+description: This sub tree contains the Windows Server 2008 R2 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000043,uid=4000042,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000043
+sstDisplayName: Datacenter
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000044,uid=4000042,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000044
+sstDisplayName: Enterprise
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000045,uid=4000042,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000045
+sstDisplayName: Foundation
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000046,uid=4000042,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000046
+sstDisplayName: Standard
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000047,uid=4000042,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000047
+sstDisplayName: Web
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+# This sub tree contains the Windows Server 2012 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+dn: uid=4000048,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000048
+sstDisplayName: Server 2012
+description: This sub tree contains the Windows Server 2012 based operating system choices for the whole FOSS-Cloud installation (since version 1.4.0).
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000049,uid=4000048,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000049
+sstDisplayName: Datacenter
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
+
+dn: uid=4000050,uid=4000048,uid=4000036,ou=operating system,ou=configuration,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: sstGroupObjectClass
+objectclass: sstRelationship
+uid: 4000050
+sstDisplayName: Standard
+sstBelongsToResellerUID: 4000000
+sstBelongsToCustomerUID: 4000001
+sstAllowResellerUID: 0
+sstAllowCustomerUID: 0
+sstAllowPersonUID: 0
