@@ -609,7 +609,7 @@ sstStoragePoolURI: file:///var/virtualization/vm-templates/
 sstStoragePoolType: template
 sstSelfService: TRUE
 
-# This is where the user uploads his or her ISO-files into the FOSS-Cloud environment.
+# This is the base directory of storage in the FOSS-Cloud environment.
 dn: ou=basedir,ou=storage pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
