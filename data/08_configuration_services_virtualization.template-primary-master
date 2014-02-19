@@ -541,7 +541,7 @@ sstAllowVNC: FALSE
 # ou=storage pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 #####################################################################################################################
 # Description
-#  This entry contains the storage pools configuration information of the FOSS-Cloud (since version 1.0.0).
+#  This entry contains the storage pools configuration information of the FOSS-Cloud (since version 1.2.20).
 #####################################################################################################################
 dn: ou=storage pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
@@ -608,6 +608,16 @@ ou: vm-templates
 sstStoragePoolURI: file:///var/virtualization/vm-templates/
 sstStoragePoolType: template
 sstSelfService: TRUE
+
+# This is where the user uploads his or her ISO-files into the FOSS-Cloud environment.
+dn: ou=basedir,ou=storage pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
+objectclass: top
+objectclass: organizationalUnit
+objectclass: sstStoragePoolConfigurationObjectClass
+ou: basedir
+sstStoragePoolURI: file:///var/virtualization/
+sstStoragePoolType: none
+sstSelfService: FALSE
 
 # ou=version,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 #####################################################################################################################
