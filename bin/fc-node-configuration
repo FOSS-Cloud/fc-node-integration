@@ -175,9 +175,9 @@ Incorporated code with use:
 ######################################################################################################
 my $location=dirname(abs_path($0));
 
-my $config_file_path = "$location/../etc/foss-cloud";
+my $config_file_path = "/etc/foss-cloud";
 
-my $cfg = Config::IniFiles->new( -file => "$config_file_path/node-configuration.conf");
+my $cfg = Config::IniFiles->new( -file => "$config_file_path/node-configuration.conf" , -nomultiline => 1 );
 
 ######################################################################################################
 # Process the single character or long command line arguments.
@@ -214,7 +214,7 @@ my $apache_vip_name = "";
 my $ucarp_int_password = "";
 my $ucarp_pub_password = "";
 
-my $helper_scripts_path = $location;
+my $helper_scripts_path = "/usr/libexec/foss-cloud";
 my $remote_helper_scripts_path = $cfg->val("General","remote_helper_script_location");
 
 ######################################################################################################
@@ -270,6 +270,8 @@ use constant ERROR_NETWORK_CONF_MISSING_CODE        => 23;
 use constant ERROR_NETWORK_CONF_MISSING_STRING      => "The specified network configuration is not writable";
 use constant ERROR_PASSWORD_NOT_FOUND_CODE          => 24;
 use constant ERROR_PASSWORD_NOT_FOUND_STRING        => "Could not get all necessary passwords form primary master node";
+use constant ERROR_GLUSTER_PEER_STATUS_FAILED_CODE  => 25;
+use constant ERROR_GLUSTER_PEER_STATUS_FAILED_STRING => "The gluster peer status command did not succeed";
 
 use constant VIP            => 'vip';
 use constant SECONDARY_IP   => 'secondary_ip';
@@ -1425,11 +1427,43 @@ sub configureGlusterFS {
     $output = `gluster peer status`;
     $errorCode = $? >> 8;
 
-    if($errorCode == 0) {
-      print "$output\n";
-    } else {
-      returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
-    } # End of if($errorCode == 0)
+    # Parse the output to see wether or not the peers state is "Peer in Cluster (Connected)"
+    my $retry_status = 0;
+    if ( $errorCode == 0 && $output =~ m/State\:\s(.+)\n/ )
+    {
+        # Check if the matched part is "Peer in Cluster (Connected)", then everything is ok
+        if ( $1 ne "Peer in Cluster (Connected)" )
+        {
+            print "Peer is not yet in cluster, retry in 5 seconds\n";
+            $retry_status = 1;
+        }
+    } else
+    {
+        print "The command \"gluster peer status\" did not return a state value";
+        print ", retry in 5 seconds\n";
+        $retry_status = 1;
+    }
+    
+    # If we need to re-execute the gluster peer status command, wait 5 seconds and retry
+    if ( $retry_status )
+    {
+        sleep 5;
+        $output = `gluster peer status`;
+        $errorCode = $? >> 8;
+
+        # Parse the output to see wether or not the peers state is "Peer in Cluster (Connected)"
+        if ( $errorCode == 0 && $output =~ m/State\:\s(.+)\n/ )
+        {
+            # Check if the matched part is "Peer in Cluster (Connected)", then everything is ok
+            if ( $1 ne "Peer in Cluster (Connected)" )
+            {
+                returnError(ERROR_GLUSTER_PEER_STATUS_FAILED_CODE,ERROR_GLUSTER_PEER_STATUS_FAILED_STRING );
+            }
+        } else
+        {
+            returnError(ERROR_GLUSTER_PEER_STATUS_FAILED_CODE,ERROR_GLUSTER_PEER_STATUS_FAILED_STRING );
+        } 
+    }
 
     # Creating the distributed replicated volume
     print "Creating the distributed replicated volume ...\n";
@@ -1456,8 +1490,9 @@ sub configureGlusterFS {
       $output = `$glusterCmd`;
       $errorCode = $? >> 8;
 
-      # Another command that needs to be executed
-      $glusterCmdTwo = "gluster volume set $gluster_volume_name server.allow-insecure Off";
+
+      # Permit access from unprivileged source ports for direct gluster file access via the API
+      $glusterCmdTwo = "gluster volume set $gluster_volume_name server.allow-insecure On";
       print "Executing: $glusterCmdTwo ...\n";
       $output = `$glusterCmdTwo`;
       $errorCodeTwo = $? >> 8;
@@ -1716,7 +1751,10 @@ sub restartDaemon {
 
   # Test if the daemon is the mount_glusterFS_daemon, this one we do not have to 
   # restart
-  if ( $daemon eq $cfg->val($modus,"mount_glusterFS_daemon") )
+  # 
+  # BST old version 
+  # if ( $daemon eq $cfg->val($modus,"mount_glusterFS_daemon") )
+  if ( $daemon eq $cfg->val("General","mount_glusterFS_daemon") )
   {
       print "We do not have to restart the daemon $daemon\n";
       return;
