@@ -30,7 +30,7 @@
 
 sed -i -e 's/TLS_REQCERT demand/TLS_REQCERT never/' /etc/openldap/ldap.conf
 
-#ask user for LDAP Password
+# Ask user for LDAP Password
 clear
 echo ""
 echo ""
@@ -40,7 +40,7 @@ read -s -p "Password: " ldappasswd
 echo ""
 echo ""
 
-#Evaluating LDAP URI
+# Evaluating LDAP URI
 rawldapuri="$(cat /etc/openldap/ldap.conf | grep 'URI.*ldaps:/')"
 ldapuri=${rawldapuri:13:30}
 
@@ -54,6 +54,7 @@ if [ "$?" = "1" ]; then
     echo "Wrong password. Try again to start the script!" 1>&2
     exit 1
 fi
+
 # Cat the UID out of the resultat of the search
 NextFreeUID=${rawNextFreeUID:5:7}
 echo "Actual NestFreeUID = $NextFreeUID"
@@ -61,10 +62,10 @@ echo ""
 
 # Increase nextfreeuid + value
 COUNTER=$[${NextFreeUID} + 3]
-echo "New NestFreeUID = $COUNTER"
+echo "New NextFreeUID = $COUNTER"
 echo ""
 
-# to modify the nextfreeuid in ldap we need an ldif file
+# To load up the new nextfreeuuid into the LDAP, we need a tempfile to store the datas.
 # Create tempfile
 TEMPFILE=/tmp/$$.tmp
 # Store new nextfreeuid in tempfile
@@ -96,3 +97,4 @@ ldapadd -xv -H "$ldapuri" -D "cn=Manager,dc=foss-cloud,dc=org" -w $ldappasswd -f
 # set back security
 sed -i -e  's/TLS_REQCERT never/TLS_REQCERT demand/' /etc/openldap/ldap.conf
 
+# EOF
