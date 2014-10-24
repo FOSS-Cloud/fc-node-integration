@@ -1967,6 +1967,7 @@ sub configureOpenLDAP {
   my $file_16_secondary_master_node_template         = $directory_data."/16_secondary-master-node.template-$local_modus";
   my $file_17_ranges_networks_services_virtualization = $directory_data."/17_ranges_networks_services_virtualization.ldif";
   my $file_18_services_monitoring                    = $directory_data."/18_services_monitoring.ldif";
+  my $file_23_roles                                  = $directory_data."/23_roles.ldif";
   my $file;
   my $line;
   my $unencrypted_password;

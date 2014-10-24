@@ -1,10 +1,11 @@
-# Copyright (C) 2013 FOSS-Group
+# Copyright (C) 2006 - 2014 FOSS-Group
 #                    Germany
 #                    http://www.foss-group.de
 #                    support@foss-group.de
 #
 # Authors:
 #  Michael Eichenberger <michael.eichenberger@stepping-stone.ch>
+#  Beat Stebler <beat.stebler@foss-group.de>
 #  
 # Licensed under the EUPL, Version 1.1 or – as soon they
 # will be approved by the European Commission - subsequent
@@ -38,10 +39,10 @@
 # ou=nextfreeuid,ou=administration,dc=foss-cloud,dc=org
 #####################################################################################################################
 # Description:
-#  The the next free uid administrative section of the stepping stone directory.
+#  The the next free uid administrative section of the FOSS-Cloud directory.
 #####################################################################################################################
 dn: cn=nextfreeuid,ou=administration,dc=foss-cloud,dc=org
 objectClass: inetOrgPerson
-uid: 4000017
+uid: 4000020
 cn: nextFreeUID
 sn: nextFreeUID
