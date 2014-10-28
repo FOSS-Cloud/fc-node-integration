@@ -2581,6 +2581,7 @@ sub configureOpenLDAP {
   loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_00_directory);
   loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_01_administration_nextfreeuid);
   loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_02_group_mapping_administration);
+  loadOpenLDAPsingleLDIF($ldap_server,$unencrypted_password,$file_23_roles);
 
   ##############################################################################
   # Working on /etc/openldap/data/02_services-administration.ldif
