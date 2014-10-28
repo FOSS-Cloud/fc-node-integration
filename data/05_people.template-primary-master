@@ -51,21 +51,4 @@ cn: admin
 sstTimeZoneOffset: <FOSS-CLOUD-PEOPLE-TIMEZONE>
 sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
-
-dn: sstRole=User,uid=4000002,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstRoles
-sstRole: User
-sstProduct: 0
-
-dn: sstRole=Admin Virtualization,uid=4000002,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstRoles
-sstRole: Admin Virtualization
-sstProduct: 0
-
-dn: sstRole=Monitoring Administrator,uid=4000002,ou=people,dc=foss-cloud,dc=org
-objectclass: top
-objectclass: sstRoles
-sstRole: Monitoring Administrator
-sstProduct: 0
+sstRoleUID: 4000017
