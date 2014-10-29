@@ -99,12 +99,12 @@ objectClass: sstUserRightSetting
 sstUserRightSectionAction: dynamicVM.manage
 sstUserRightValue: all
 
-# dynamicVM.Use, 4000017, roles, foss-cloud.org
-dn: sstUserRightSectionAction=dynamicVM.Use,uid=4000017,ou=roles,dc=foss-cloud
+# dynamicVM.use, 4000017, roles, foss-cloud.org
+dn: sstUserRightSectionAction=dynamicVM.use,uid=4000017,ou=roles,dc=foss-cloud
  ,dc=org
 objectClass: top
 objectClass: sstUserRightSetting
-sstUserRightSectionAction: dynamicVM.Use
+sstUserRightSectionAction: dynamicVM.use
 sstUserRightValue: all
 
 # dynamicVM.view, 4000017, roles, foss-cloud.org
@@ -283,12 +283,12 @@ objectClass: sstUserRightSetting
 sstUserRightSectionAction: persistentVM.manage
 sstUserRightValue: all
 
-# persistentVM.Use, 4000017, roles, foss-cloud.org
-dn: sstUserRightSectionAction=persistentVM.Use,uid=4000017,ou=roles,dc=foss-cl
+# persistentVM.use, 4000017, roles, foss-cloud.org
+dn: sstUserRightSectionAction=persistentVM.use,uid=4000017,ou=roles,dc=foss-cl
  oud,dc=org
 objectClass: top
 objectClass: sstUserRightSetting
-sstUserRightSectionAction: persistentVM.Use
+sstUserRightSectionAction: persistentVM.use
 sstUserRightValue: all
 
 # persistentVM.view, 4000017, roles, foss-cloud.org
@@ -427,12 +427,12 @@ objectClass: sstUserRightSetting
 sstUserRightSectionAction: templateVM.manage
 sstUserRightValue: all
 
-# templateVM.Use, 4000017, roles, foss-cloud.org
-dn: sstUserRightSectionAction=templateVM.Use,uid=4000017,ou=roles,dc=foss-clou
+# templateVM.use, 4000017, roles, foss-cloud.org
+dn: sstUserRightSectionAction=templateVM.use,uid=4000017,ou=roles,dc=foss-clou
  d,dc=org
 objectClass: top
 objectClass: sstUserRightSetting
-sstUserRightSectionAction: templateVM.Use
+sstUserRightSectionAction: templateVM.use
 sstUserRightValue: all
 
 # templateVM.view, 4000017, roles, foss-cloud.org
@@ -627,12 +627,12 @@ objectClass: sstUserRightSetting
 sstUserRightSectionAction: templateVM.manage
 sstUserRightValue: all
 
-# templateVM.Use, 4000018, roles, foss-cloud.org
-dn: sstUserRightSectionAction=templateVM.Use,uid=4000018,ou=roles,dc=foss-clou
+# templateVM.use, 4000018, roles, foss-cloud.org
+dn: sstUserRightSectionAction=templateVM.use,uid=4000018,ou=roles,dc=foss-clou
  d,dc=org
 objectClass: top
 objectClass: sstUserRightSetting
-sstUserRightSectionAction: templateVM.Use
+sstUserRightSectionAction: templateVM.use
 sstUserRightValue: all
 
 # vmPool.access, 4000018, roles, foss-cloud.org
@@ -675,12 +675,12 @@ objectClass: sstUserRightSetting
 sstUserRightSectionAction: persistentVM.view
 sstUserRightValue: owner
 
-# persistentVM.Use, 4000018, roles, foss-cloud.org
-dn: sstUserRightSectionAction=persistentVM.Use,uid=4000018,ou=roles,dc=foss-cl
+# persistentVM.use, 4000018, roles, foss-cloud.org
+dn: sstUserRightSectionAction=persistentVM.use,uid=4000018,ou=roles,dc=foss-cl
  oud,dc=org
 objectClass: top
 objectClass: sstUserRightSetting
-sstUserRightSectionAction: persistentVM.Use
+sstUserRightSectionAction: persistentVM.use
 sstUserRightValue: all
 
 # persistentVM.edit, 4000018, roles, foss-cloud.org
