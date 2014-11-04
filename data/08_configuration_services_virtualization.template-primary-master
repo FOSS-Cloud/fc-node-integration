@@ -5,6 +5,7 @@
 #
 # Authors:
 #  Michael Eichenberger <michael.eichenberger@stepping-stone.ch>
+#  Beat Stebler <beat.stebler@foss-group.ch>
 #  
 # Licensed under the EUPL, Version 1.1 or – as soon they
 # will be approved by the European Commission - subsequent
@@ -121,7 +122,7 @@ sstCronHour: 3
 sstCronDay: *
 sstCronMonth: *
 sstCronDayOfWeek: *
-sstCronActive: TRUE
+sstCronActive: FALSE
 sstBackupRootDirectory: file:///var/backup/virtualization
 sstBackupRetainDirectory: file:///var/virtualization/retain
 sstVirtualizationDiskImageFormat: qcow2
