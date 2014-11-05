@@ -657,15 +657,20 @@ ou: dynamic
 sstBrokerMinimalNumberOfVirtualMachines: 5
 sstBrokerMaximalNumberOfVirtualMachines: 20
 sstBrokerPreStartNumberOfVirtualMachines: 3
+sstNumberOfScreens: 2
 
 # The persistent entry is defined as follows.
 dn: ou=persistent,ou=virtual machine pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
+objectclass: sstVirtualMachinePoolConfigurationObjectClass
 ou: persistent
+sstNumberOfScreens: 2
 
 # The template entry is defined as follows.
 dn: ou=template,ou=virtual machine pools,ou=configuration,ou=virtualization,ou=services,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: organizationalUnit
+objectclass: sstVirtualMachinePoolConfigurationObjectClass
 ou: template
+sstNumberOfScreens: 2
