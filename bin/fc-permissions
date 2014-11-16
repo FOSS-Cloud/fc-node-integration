@@ -1,0 +1,82 @@
+#!/bin/bash
+#
+# Copyright (C) 2006 - 2014 FOSS-Group
+#                    Germany
+#                    http://www.foss-group.de
+#                    support@foss-group.de
+# Authors:
+# Beat Stebler <beat.stebler@foss-group.ch>
+#  
+# Licensed under the EUPL, Version 1.1 or higher as soon they
+# will be approved by the European Commission - subsequent
+# versions of the EUPL (the "Licence"); You may not use this
+# work except in compliance with the Licence.
+# 
+# You may obtain a copy of the Licence at:
+# https://joinup.ec.europa.eu/software/page/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+#
+
+######################################################################################################
+# Description:
+#   Check variables of user entered with the call of this script
+#   autobuild.sh pre  or autobuild.sh final
+######################################################################################################
+
+logoFOSS-Cloud ()  {
+clear
+
+cat << \EOF >&1
+
+                     __________  __________       ________                __
+                    / ____/ __ \/ ___/ ___/      / ____/ /___  __  ______/ /
+                   / /_  / / / /\__ \\__ \______/ /   / / __ \/ / / / __  /
+                  / __/ / /_/ /___/ /__/ /_____/ /___/ / /_/ / /_/ / /_/ /
+                 /_/    \____//____/____/      \____/_/\____/\__,_/\__,_/
+EOF
+}
+logoFOSS-Cloud
+echo ""
+echo "-----------------------------------------------------------------------------------------------"
+echo "   Setting permissions. Please be patient..."
+echo "-----------------------------------------------------------------------------------------------"
+echo ""
+echo "   Setting permitions on portage-overlay" 
+chmod -R 755 /var/lib/layman/foss-cloud/
+chown -R portage:portage /var/lib/layman/foss-cloud/
+
+echo "   Setting permitions on portage" 
+chmod -R 755 /usr/portage/
+chown -R portage:portage /usr/portage/
+
+echo "   Setting permitions for virtualization" 
+chown -R root:vm-storage /var/virtualization
+chmod -R 644 /var/virtualization/iso/
+chmod -R 644 /var/virtualization/iso-choosable/
+chmod -R 664 /var/virtualization/vm-templates/
+chmod -R 664 /var/virtualization/vm-dynamic/
+chmod -R 664 /var/virtualization/vm-persistent/
+chmod -R 664 /var/virtualization/tmp/
+chmod -R 664 /var/virtualization/backup/
+
+chmod 2770 /var/virtualization
+chmod 2770 /var/virtualization/iso
+chmod 2770 /var/virtualization/iso-choosable
+chmod 2770 /var/virtualization/vm-templates
+chmod 2770 /var/virtualization/vm-dynamic
+chmod 2770 /var/virtualization/vm-persistent
+chmod 2770 /var/virtualization/backup
+chmod 2770 /var/virtualization/tmp
+
+echo ""
+echo "-----------------------------------------------------------------------------------------------"
+echo "   Permissions are set now"
+echo "-----------------------------------------------------------------------------------------------"
+
