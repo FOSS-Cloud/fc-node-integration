@@ -82,14 +82,13 @@ ldapmodify -v -H "$ldapuri" -D "cn=Manager,dc=foss-cloud,dc=org" -w $ldappasswd 
 unlink ${TEMPFILE}
 
 # Find out what is the UID in the File
-rawFileUID="$(grep uid: /etc/openldap/data/23_roles.ldif)"
+rawFileUID="$(grep -m 1 uid: /etc/openldap/data/23_roles.ldif)"
 FileUID=${rawFileUID:5:7}
 
-
 # set appropriate uid in /etc/openldap/data/23_roles.ldiff
-sed -i -e  's/'${FileUID}'/'${NextFreeUID}'/' /etc/openldap/data/23_roles.ldif
-sed -i -e  's/'$[${FileUID} +1]'/'$[${NextFreeUID} + 1]'/' /etc/openldap/data/23_roles.ldif
 sed -i -e  's/'$[${FileUID} +2]'/'$[${NextFreeUID} + 2]'/' /etc/openldap/data/23_roles.ldif
+sed -i -e  's/'$[${FileUID} +1]'/'$[${NextFreeUID} + 1]'/' /etc/openldap/data/23_roles.ldif
+sed -i -e  's/'${FileUID}'/'${NextFreeUID}'/' /etc/openldap/data/23_roles.ldif
 
 # Add the values into the LDAP
 ldapadd -xv -H "$ldapuri" -D "cn=Manager,dc=foss-cloud,dc=org" -w $ldappasswd -f /etc/openldap/data/23_roles.ldif 
