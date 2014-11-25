@@ -25,13 +25,26 @@
 # permissions and limitations under the Licence.
 #
 #
-#
-# Change the security to be able to run the script
 
+logoFOSSCloud ()  {
+clear
+cat << \EOF >&1
+
+                     __________  __________       ________                __
+                    / ____/ __ \/ ___/ ___/      / ____/ /___  __  ______/ /
+                   / /_  / / / /\__ \\__ \______/ /   / / __ \/ / / / __  /
+                  / __/ / /_/ /___/ /__/ /_____/ /___/ / /_/ / /_/ / /_/ /
+                 /_/    \____//____/____/      \____/_/\____/\__,_/\__,_/
+
+EOF
+}
+
+
+# Change the security to be able to run the script
 sed -i -e 's/TLS_REQCERT demand/TLS_REQCERT never/' /etc/openldap/ldap.conf
 
 # Ask user for LDAP Password
-clear
+logoFOSSCloud
 echo ""
 echo ""
 echo "Please enter your ADMIN password of the LDAP"
