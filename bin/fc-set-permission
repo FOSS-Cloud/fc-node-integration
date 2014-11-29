@@ -48,16 +48,16 @@ echo "--------------------------------------------------------------------------
 echo "   Setting permissions. Please be patient..."
 echo "-----------------------------------------------------------------------------------------------"
 echo ""
-echo "   Setting permition portage-overlay" 
+echo "   Setting permission portage-overlay" 
 chmod 2755 /var/lib/layman/foss-cloud
 chmod -R 755 /var/lib/layman/foss-cloud/
 chown -R portage:portage /var/lib/layman/foss-cloud/
 
-echo "   Setting permition portage" 
+echo "   Setting permission portage" 
 chmod -R 2755 /usr/portage
 chown -R portage:portage /usr/portage/
 
-echo "   Setting permition  /var/virtualization" 
+echo "   Setting permission  /var/virtualization" 
 chown -R root:vm-storage /var/virtualization
 chmod -R 644 /var/virtualization/iso/
 chmod -R 644 /var/virtualization/iso-choosable/
@@ -79,6 +79,7 @@ chmod 2770 /var/virtualization/tmp
 echo "   Setting permission /usr/local"
 chmod  2755 /usr/local/
 chmod -R 755 /usr/local/
+
 echo ""
 echo "-----------------------------------------------------------------------------------------------"
 echo "   Permissions are set now"
