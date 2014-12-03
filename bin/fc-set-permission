@@ -80,6 +80,11 @@ echo "   Setting permission /usr/local"
 chmod  2755 /usr/local/
 chmod -R 755 /usr/local/
 
+echo "   Setting permission /var/www/localhost/htdocs/vm-manager/protected/runtime/"
+chmod -R 755 /var/www/localhost/htdocs/vm-manager/protected/runtime/
+chmod -R 765 /var/www/localhost/htdocs/vm-manager/protected/runtime/patches/
+chown -R root:apache /var/www/localhost/htdocs/vm-manager/protected/runtime/patches/
+
 echo ""
 echo "-----------------------------------------------------------------------------------------------"
 echo "   Permissions are set now"
