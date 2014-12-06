@@ -82,7 +82,7 @@ chmod -R 755 /usr/local/
 
 echo "   Setting permission /var/www/localhost/htdocs/vm-manager/protected/runtime/"
 chmod -R 755 /var/www/localhost/htdocs/vm-manager/protected/runtime/
-chmod -R 765 /var/www/localhost/htdocs/vm-manager/protected/runtime/patches/
+chmod -R 775 /var/www/localhost/htdocs/vm-manager/protected/runtime/patches/
 chown -R root:apache /var/www/localhost/htdocs/vm-manager/protected/runtime/patches/
 
 echo ""
