@@ -1471,8 +1471,8 @@ sub configureGlusterFS {
     # Creating the distributed replicated volume
     print "Creating the distributed replicated volume ...\n";
     if (!$dryrun) {
-      print "Executing: gluster volume create $gluster_volume_name replica 2 transport tcp $localDataIP:/var/data/ $remoteDataIP:/var/data/ ...\n";
-      $output = `gluster volume create $gluster_volume_name replica 2 transport tcp $localDataIP:/var/data/ $remoteDataIP:/var/data/`;
+      print "Executing: gluster volume create $gluster_volume_name replica 2 transport tcp $localDataIP:/var/data/fc-storage $remoteDataIP:/var/data/fc-storage ...\n";
+      $output = `gluster volume create $gluster_volume_name replica 2 transport tcp $localDataIP:/var/data/gluster-volume-01/fc-storage force $remoteDataIP:/var/data/gluster-volume-01/fc-storage;
       $errorCode = $? >> 8;
 
       if($errorCode == 0) {
@@ -1481,7 +1481,7 @@ sub configureGlusterFS {
         returnError(ERROR_UNDEFINED_CODE,ERROR_UNDEFINED_STRING);
       }
     } else {
-      print "--dry-run: gluster volume create $gluster_volume_name replica 2 transport tcp $localDataIP:/var/data/gluster-volume-01 $remoteDataIP:/var/data/gluster-volume-01\n";
+      print "--dry-run: gluster volume create $gluster_volume_name replica 2 transport tcp $localDataIP:/var/data/gluster-volume-01/fc-storage $remoteDataIP:/var/data/gluster-volume-01/fc-storage\n";
     } # End of if (!$dryrun)
 
 
