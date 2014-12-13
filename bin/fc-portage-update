@@ -1,0 +1,106 @@
+#!/bin/bash
+#
+# Copyright (C) 2006 - 2014 FOSS-Group
+#                    Germany
+#                    http://www.foss-group.de
+#                    support@foss-group.de
+# Authors:
+# Beat Stebler <beat.stebler@foss-group.ch>
+#  
+# Licensed under the EUPL, Version 1.1 or higher as soon they
+# will be approved by the European Commission - subsequent
+# versions of the EUPL (the "Licence"); You may not use this
+# work except in compliance with the Licence.
+# 
+# You may obtain a copy of the Licence at:
+# https://joinup.ec.europa.eu/software/page/eupl
+#
+# Unless required by applicable law or agreed to in
+# writing, software distributed under the Licence is
+# distributed on an "AS IS" basis,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+# express or implied.
+# See the Licence for the specific language governing
+# permissions and limitations under the Licence.
+#
+
+######################################################################################################
+# Description:
+#   Check variables of user entered with the call of this script
+#   autobuild.sh pre  or autobuild.sh final
+######################################################################################################
+
+######################################################################################################
+# Variables
+######################################################################################################
+
+# current folder 
+currentPwd=$(pwd)
+
+# branch on portage
+cd /usr/portage
+portageBranch=$(git branch | tr -d '* ')
+
+# branch on portage overlay
+cd /var/lib/layman/foss-cloud
+portageOverlayBranch=$(git branch | tr -d '* ')
+
+
+logoFOSS-Cloud ()  {
+clear
+
+cat << \EOF >&1
+
+                     __________  __________       ________                __
+                    / ____/ __ \/ ___/ ___/      / ____/ /___  __  ______/ /
+                   / /_  / / / /\__ \\__ \______/ /   / / __ \/ / / / __  /
+                  / __/ / /_/ /___/ /__/ /_____/ /___/ / /_/ / /_/ / /_/ /
+                 /_/    \____//____/____/      \____/_/\____/\__,_/\__,_/
+EOF
+}
+
+logoFOSS-Cloud
+echo ""
+echo "-----------------------------------------------------------------------------------------------"
+echo "   Updating portage and portage-overlays..."
+echo "-----------------------------------------------------------------------------------------------"
+echo ""
+
+echo "RUN       : Update DB portage-overlay"
+layman -s foss-cloud
+
+echo "RUN       : Reset portage"
+cd /usr/portage
+git reset --hard
+
+echo "RUN       : Reset portage-overlay foss-cloud"
+cd /var/lib/layman/foss-cloud
+git reset --hard
+
+echo "RUN       : Setting permission portage-overlay" 
+chmod 2755 /var/lib/layman/foss-cloud
+chmod -R 755 /var/lib/layman/foss-cloud/
+chown -R portage:portage /var/lib/layman/foss-cloud/
+
+echo "RUN       : Setting permission portage" 
+chmod -R 755 /usr/portage
+chown -R portage:portage /usr/portage/
+
+echo "RUN       : emerge --sync" 
+emerge --sync
+
+echo "RUN       : Checkout branch on portage" 
+cd /usr/portage
+git checkout $portageBranch
+
+echo "RUN       : Checkout branch on portage-overlay" 
+cd /var/lib/layman/foss-cloud
+git checkout $portageOverlayBranch
+
+cd $currentPwd
+
+echo ""
+echo "-----------------------------------------------------------------------------------------------"
+echo "   Portage and portage-overlay are up to date now"
+echo "-----------------------------------------------------------------------------------------------"
+
