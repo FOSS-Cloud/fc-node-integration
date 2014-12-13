@@ -138,7 +138,7 @@ Note, that the exit code 0 means success. 1 or larger means failure.
 
 =item 2011-12-04 michael.eichenberger@stepping-stone.ch updated
  
-=item 2014-12-07 beat.stebler@foss-group update create gluster volume
+=item 2014-12-07 08 beat.stebler@foss-group update create gluster volume
 
 =back
  
@@ -2650,8 +2650,9 @@ sub configureOpenLDAP {
     my $gender = "";
     my $mail = "";
     my $timezone = "";
-    my $language = "";
     my $password;
+    $language = "EN";
+
 
     # Gives the user the possibility to reenter all information
     my $correct = 0;
@@ -2664,7 +2665,7 @@ sub configureOpenLDAP {
         $gender = "n";
         $mail = 'info@foss-cloud.org';
         $timezone = "UTC+01";
-        $language = "en-GB";
+        $language = "EN";
         $password = `/usr/sbin/slappasswd -s admin`;
         chomp($password);
         $correct = 1; 
@@ -2702,16 +2703,16 @@ sub configureOpenLDAP {
         }
 
         # Local language validation
-        while ( $language !~ m/^\w{2}\-\w{2}$/ )
-        {
-            print "\n";
-            print "Language, in the form of 'en-GB' (default: en-GB): ";
-            chomp( $language = <STDIN> );
+        # while ( $language !~ m/^\w{2}\-\w{2}$/ )
+        # {
+        #     print "\n";
+        #     print "Language, in the form of 'en-GB' (default: en-GB): ";
+        #     chomp( $language = <STDIN> );
 
             # Assign default if nothing was entered
-            $language = "en-GB" unless ( $language );
+        #     $language = "en-GB" unless ( $language );
 
-        }
+        # }
 
         # Get the systems timezone in the form +0100
         $timezone = strftime "%z",localtime();
@@ -2781,7 +2782,6 @@ sub configureOpenLDAP {
             $gender = "";
             $mail = "";
             $timezone = "";
-            $language = "";
         }
 
     }
