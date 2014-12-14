@@ -2651,8 +2651,8 @@ sub configureOpenLDAP {
     my $mail = "";
     my $timezone = "";
     my $password;
-    $language = "EN";
-
+    my $language = "";
+    $language = "en";
 
     # Gives the user the possibility to reenter all information
     my $correct = 0;
@@ -2665,7 +2665,7 @@ sub configureOpenLDAP {
         $gender = "n";
         $mail = 'info@foss-cloud.org';
         $timezone = "UTC+01";
-        $language = "EN";
+        $language = "en";
         $password = `/usr/sbin/slappasswd -s admin`;
         chomp($password);
         $correct = 1; 
@@ -2701,18 +2701,6 @@ sub configureOpenLDAP {
             print "Mail address: ";
             chomp( $mail = <STDIN> );
         }
-
-        # Local language validation
-        # while ( $language !~ m/^\w{2}\-\w{2}$/ )
-        # {
-        #     print "\n";
-        #     print "Language, in the form of 'en-GB' (default: en-GB): ";
-        #     chomp( $language = <STDIN> );
-
-            # Assign default if nothing was entered
-        #     $language = "en-GB" unless ( $language );
-
-        # }
 
         # Get the systems timezone in the form +0100
         $timezone = strftime "%z",localtime();
