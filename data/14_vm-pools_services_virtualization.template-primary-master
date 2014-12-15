@@ -278,7 +278,6 @@ sstVirtualMachinePoolType: dynamic
 sstBrokerMinimalNumberOfVirtualMachines: 3
 sstBrokerMaximalNumberOfVirtualMachines: 14
 sstBrokerPreStartNumberOfVirtualMachines: 2
-sstBrokerPreStartInterval 30
 sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
 
