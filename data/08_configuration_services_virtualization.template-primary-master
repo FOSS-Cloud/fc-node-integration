@@ -654,9 +654,10 @@ objectclass: top
 objectclass: organizationalUnit
 objectclass: sstVirtualMachinePoolConfigurationObjectClass
 ou: dynamic
-sstBrokerMinimalNumberOfVirtualMachines: 5
-sstBrokerMaximalNumberOfVirtualMachines: 20
-sstBrokerPreStartNumberOfVirtualMachines: 3
+sstBrokerMinimalNumberOfVirtualMachines: 3
+sstBrokerMaximalNumberOfVirtualMachines: 14
+sstBrokerPreStartNumberOfVirtualMachines: 2
+sstBrokerPreStartInterval 30
 sstNumberOfScreens: 2
 
 # The persistent entry is defined as follows.
