@@ -275,9 +275,10 @@ sstVirtualMachinePool: dbd81080-d9f8-42e2-a261-d56b80c9c528
 sstDisplayName: dynamic-virtual-machine-pool-01
 description: This is the default dynamic virtual machine pool dynamic-virtual-machine-pool-01.
 sstVirtualMachinePoolType: dynamic
-sstBrokerMinimalNumberOfVirtualMachines: 5
-sstBrokerMaximalNumberOfVirtualMachines: 20
-sstBrokerPreStartNumberOfVirtualMachines: 3
+sstBrokerMinimalNumberOfVirtualMachines: 3
+sstBrokerMaximalNumberOfVirtualMachines: 14
+sstBrokerPreStartNumberOfVirtualMachines: 2
+sstBrokerPreStartInterval 30
 sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
 
