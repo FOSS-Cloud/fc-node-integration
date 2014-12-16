@@ -39,11 +39,11 @@ currentPwd=$(pwd)
 
 # branch on portage
 cd /usr/portage
-portageBranch=$(git branch | tr -d '* ')
+portageBranch=$(git status | grep branch -m 1 | cut -d " " -f 3)
 
 # branch on portage overlay
 cd /var/lib/layman/foss-cloud
-portageOverlayBranch=$(git branch | tr -d '* ')
+portageOverlayBranch=$(git status | grep branch -m 1 | cut -d " " -f 3)
 
 
 logoFOSS-Cloud ()  {
@@ -86,8 +86,8 @@ echo "RUN       : Setting permission portage"
 chmod -R 755 /usr/portage
 chown -R portage:portage /usr/portage/
 
-echo "RUN       : emerge --sync" 
-emerge --sync
+# echo "RUN       : emerge --sync" 
+# emerge --sync
 
 echo "RUN       : Checkout branch on portage" 
 cd /usr/portage
