@@ -59,31 +59,41 @@ chown -R portage:portage /usr/portage/
 
 echo "   Setting permission  /var/virtualization" 
 chown -R root:vm-storage /var/virtualization
-chmod -R 644 /var/virtualization/iso/
-chmod -R 644 /var/virtualization/iso-choosable/
-chmod -R 664 /var/virtualization/vm-templates/
-chmod -R 664 /var/virtualization/vm-dynamic/
-chmod -R 664 /var/virtualization/vm-persistent/
-chmod -R 664 /var/virtualization/tmp/
-chmod -R 664 /var/virtualization/backup/
+chmod -R 644 /var/virtualization/iso
+chmod -R 644 /var/virtualization/iso-choosable
+chmod -R 664 /var/virtualization/vm-templates
+chmod -R 664 /var/virtualization/vm-dynamic
+chmod -R 664 /var/virtualization/vm-persistent
+chmod -R 664 /var/virtualization/tmp
+chmod -R 664 /var/virtualization/backup
 
-chmod 2770 /var/virtualization
-chmod 2770 /var/virtualization/iso
-chmod 2770 /var/virtualization/iso-choosable
-chmod 2770 /var/virtualization/vm-templates
-chmod 2770 /var/virtualization/vm-dynamic
-chmod 2770 /var/virtualization/vm-persistent
-chmod 2770 /var/virtualization/backup
-chmod 2770 /var/virtualization/tmp
+cd /var/virtualization/
+chmod 0770 *
+cd /var/virtualization/iso/
+chmod 0770 *
+cd /var/virtualization/iso-choosable/
+chmod 0770 *
+cd /var/virtualization/vm-templates/
+chmod 0770 *
+cd /var/virtualization/vm-dynamic/
+chmod 0770 *
+cd /var/virtualization/vm-persistent/
+chmod 0770 *
+cd /var/virtualization/backup/
+chmod 0770 *
+cd /var/virtualization/tmp/
+chmod 0770 *
 
 echo "   Setting permission /usr/local"
-chmod  2755 /usr/local/
+chmod  0755 /usr/local/
 chmod -R 755 /usr/local/
 
 echo "   Setting permission /var/www/localhost/htdocs/vm-manager/protected/runtime/"
 chmod -R 755 /var/www/localhost/htdocs/vm-manager/protected/runtime/
 chmod -R 775 /var/www/localhost/htdocs/vm-manager/protected/runtime/patches/
 chown -R root:apache /var/www/localhost/htdocs/vm-manager/protected/runtime/patches/
+
+cd ${currentPwd}
 
 echo ""
 echo "-----------------------------------------------------------------------------------------------"
