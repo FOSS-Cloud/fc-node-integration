@@ -69,33 +69,42 @@ echo ""
 echo "RUN       : Update DB portage-overlay"
 layman -s foss-cloud
 
-echo "RUN       : Reset portage"
-cd /usr/portage
-git reset --hard
-
 echo "RUN       : Reset portage-overlay foss-cloud"
 cd /var/lib/layman/foss-cloud
-git reset --hard
+if [ $1  == hard ] ; then
+    git reset --hard
+  else
+    git pull -f
+fi
 
 echo "RUN       : Setting permission portage-overlay" 
 chmod 2755 /var/lib/layman/foss-cloud
 chmod -R 755 /var/lib/layman/foss-cloud/
 chown -R portage:portage /var/lib/layman/foss-cloud/
 
-echo "RUN       : Setting permission portage" 
-chmod -R 755 /usr/portage
-chown -R portage:portage /usr/portage/
-
 # echo "RUN       : emerge --sync" 
 # emerge --sync
-
-echo "RUN       : Checkout branch on portage" 
-cd /usr/portage
-git checkout $portageBranch
 
 echo "RUN       : Checkout branch on portage-overlay" 
 cd /var/lib/layman/foss-cloud
 git checkout $portageOverlayBranch
+
+
+echo "RUN       : Reset portage"
+cd /usr/portage
+if [ $1  == hard ] ; then
+    git reset --hard
+  else
+    git pull -f
+fi
+
+echo "RUN       : Setting permission portage" 
+chmod -R 755 /usr/portage
+chown -R portage:portage /usr/portage/
+
+echo "RUN       : Checkout branch on portage" 
+cd /usr/portage
+git checkout $portageBranch
 
 cd $currentPwd
 
