@@ -45,6 +45,11 @@ portageBranch=$(git status | grep branch -m 1 | cut -d " " -f 3)
 cd /var/lib/layman/foss-cloud
 portageOverlayBranch=$(git status | grep branch -m 1 | cut -d " " -f 3)
 
+updateMode=$1
+
+######################################################################################################
+# FOSS-Cloud logo
+######################################################################################################
 
 logoFOSS-Cloud ()  {
 clear
@@ -59,6 +64,11 @@ cat << \EOF >&1
 EOF
 }
 
+######################################################################################################
+# Update portage and Overlay
+######################################################################################################
+
+
 logoFOSS-Cloud
 echo ""
 echo "-----------------------------------------------------------------------------------------------"
@@ -69,42 +79,38 @@ echo ""
 echo "RUN       : Update DB portage-overlay"
 layman -s foss-cloud
 
-echo "RUN       : Reset portage-overlay foss-cloud"
 cd /var/lib/layman/foss-cloud
-if [ $1  == hard ] ; then
+if [[ $updateMode == "hard" ]] ; then
+    echo "RUN       : Reset portage-overlay foss-cloud"
     git reset --hard
-  else
-    git pull -f
 fi
 
-echo "RUN       : Setting permission portage-overlay" 
-chmod 2755 /var/lib/layman/foss-cloud
-chmod -R 755 /var/lib/layman/foss-cloud/
-chown -R portage:portage /var/lib/layman/foss-cloud/
-
-# echo "RUN       : emerge --sync" 
-# emerge --sync
+git pull -f
 
 echo "RUN       : Checkout branch on portage-overlay" 
 cd /var/lib/layman/foss-cloud
 git checkout $portageOverlayBranch
 
+echo "RUN       : Setting permission portage-overlay" 
+chmod -R 755 /var/lib/layman/foss-cloud/
+chown -R portage:portage /var/lib/layman/foss-cloud/
 
-echo "RUN       : Reset portage"
 cd /usr/portage
-if [ $1  == hard ] ; then
+if [[ $updateMode == "hard" ]] ; then
+    echo "RUN       : Reset portage"
     git reset --hard
-  else
-    git pull -f
 fi
+
+git pull -f
+
+echo "RUN       : Checkout branch on portage" 
+cd /usr/portage
+git checkout $portageBranch
 
 echo "RUN       : Setting permission portage" 
 chmod -R 755 /usr/portage
 chown -R portage:portage /usr/portage/
 
-echo "RUN       : Checkout branch on portage" 
-cd /usr/portage
-git checkout $portageBranch
 
 cd $currentPwd
 
