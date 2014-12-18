@@ -37,14 +37,6 @@
 # current folder 
 currentPwd=$(pwd)
 
-# branch on portage
-cd /usr/portage
-portageBranch=$(git status | grep branch -m 1 | cut -d " " -f 3)
-
-# branch on portage overlay
-cd /var/lib/layman/foss-cloud
-portageOverlayBranch=$(git status | grep branch -m 1 | cut -d " " -f 3)
-
 updateMode=$1
 
 ######################################################################################################
@@ -64,6 +56,33 @@ cat << \EOF >&1
 EOF
 }
 
+
+######################################################################################################
+# Check if entry is ok
+######################################################################################################
+
+if [ $updateMode == "--hard" -o $updateMode == "--sync" ] ; then
+    echo ""
+  else
+    logoFOSS-Cloud
+    echo ""
+    echo ""
+    echo "-----------------------------------------------------------------------------------------------"
+    echo "   Please use this script as followed:"
+    echo "-----------------------------------------------------------------------------------------------"
+    echo ""
+    echo "   $0 --sync"
+    echo "     - This will do a synchronization of your portage tree and portage overlay"
+    echo ""
+    echo "   $0 --hard"
+    echo "     - This will do a hard reset of your portage tree and portage overlay"
+    echo "       Use --hard only, when --sync do not work."
+    echo ""
+    echo "-----------------------------------------------------------------------------------------------"
+    exit
+fi
+
+
 ######################################################################################################
 # Update portage and Overlay
 ######################################################################################################
@@ -76,46 +95,57 @@ echo "   Updating portage and portage-overlays..."
 echo "-----------------------------------------------------------------------------------------------"
 echo ""
 
-echo "RUN       : Update DB portage-overlay"
-layman -s foss-cloud
+if [[ $updateMode == "--hard" ]] ; then
+    
+    # branch on portage
+    cd /usr/portage
+    portageBranch=$(git status | grep branch -m 1 | cut -d " " -f 3)
 
-cd /var/lib/layman/foss-cloud
-if [[ $updateMode == "hard" ]] ; then
+    # branch on portage overlay
+    cd /var/lib/layman/foss-cloud
+    portageOverlayBranch=$(git status | grep branch -m 1 | cut -d " " -f 3)
+
+    cd /var/lib/layman/foss-cloud
     echo "RUN       : Reset portage-overlay foss-cloud"
     git reset --hard
-fi
 
-git pull -f
+    git pull -f
 
-echo "RUN       : Checkout branch on portage-overlay" 
-cd /var/lib/layman/foss-cloud
-git checkout $portageOverlayBranch
+    echo "RUN       : Checkout branch on portage-overlay" 
+    cd /var/lib/layman/foss-cloud
+    git checkout $portageOverlayBranch
 
-echo "RUN       : Setting permission portage-overlay" 
-chmod -R 755 /var/lib/layman/foss-cloud/
-chown -R portage:portage /var/lib/layman/foss-cloud/
-
-cd /usr/portage
-if [[ $updateMode == "hard" ]] ; then
+    cd /usr/portage
     echo "RUN       : Reset portage"
     git reset --hard
+
+    git pull -f
+
+    echo "RUN       : Checkout branch on portage" 
+    cd /usr/portage
+    git checkout $portageBranch
+
+    echo "RUN       : Update DB portage-overlay"
+    layman -s foss-cloud
+
+
+    echo "RUN       : Setting permission portage-overlay" 
+    chmod 2755 /var/lib/layman/foss-cloud
+    chmod -R 755 /var/lib/layman/foss-cloud/
+    chown -R portage:portage /var/lib/layman/foss-cloud/
+
+    echo "RUN       : Setting permission portage" 
+    chmod 2755 /usr/portage
+    chmod -R 755 /usr/portage/
+    chown -R portage:portage /usr/portage/
+    echo ""
+  else
+
+    emerge --sync
 fi
 
-git pull -f
-
-echo "RUN       : Checkout branch on portage" 
-cd /usr/portage
-git checkout $portageBranch
-
-echo "RUN       : Setting permission portage" 
-chmod -R 755 /usr/portage
-chown -R portage:portage /usr/portage/
-
+eselect news read all &>/dev/null
 
 cd $currentPwd
-
+echo "-----------------------------------------------------------------------------------------------"
 echo ""
-echo "-----------------------------------------------------------------------------------------------"
-echo "   Portage and portage-overlay are up to date now"
-echo "-----------------------------------------------------------------------------------------------"
-
