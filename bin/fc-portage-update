@@ -72,13 +72,16 @@ if [ $updateMode == "--hard" -o $updateMode == "--sync" ] ; then
     echo "-----------------------------------------------------------------------------------------------"
     echo ""
     echo "   $0 --sync"
-    echo "     - This will do a synchronization of your portage tree and portage overlay"
+    echo ""
+    echo "          - This will do a synchronization of your portage tree and portage overlay."
     echo ""
     echo "   $0 --hard"
-    echo "     - This will do a hard reset of your portage tree and portage overlay"
-    echo "       Use --hard only, when --sync do not work."
+    echo ""
+    echo "          - This will do a hard reset of your portage tree and portage overlay."
+    echo "            Use --hard only, when --sync do not work."
     echo ""
     echo "-----------------------------------------------------------------------------------------------"
+    echo ""
     exit
 fi
 
