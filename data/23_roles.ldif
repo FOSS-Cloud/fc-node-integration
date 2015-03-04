@@ -27,504 +27,441 @@ sstdisplayname: Admin
 uid: 4000017
 
 # Entry 3: sstUserRightSectionAction=configuration.access,uid=4000017,ou=...
-dn: sstUserRightSectionAction=configuration.access,uid=4000017,ou=roles,dc=f
- oss-cloud,dc=org
+dn: sstUserRightSectionAction=configuration.access,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: configuration.access
 sstuserrightvalue: all
 
 # Entry 4: sstUserRightSectionAction=diagnostic.access,uid=4000017,ou=rol...
-dn: sstUserRightSectionAction=diagnostic.access,uid=4000017,ou=roles,dc=foss
- -cloud,dc=org
+dn: sstUserRightSectionAction=diagnostic.access,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: diagnostic.access
 sstuserrightvalue: all
 
 # Entry 5: sstUserRightSectionAction=diagnostic.manage,uid=4000017,ou=rol...
-dn: sstUserRightSectionAction=diagnostic.manage,uid=4000017,ou=roles,dc=foss
- -cloud,dc=org
+dn: sstUserRightSectionAction=diagnostic.manage,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: diagnostic.manage
 sstuserrightvalue: all
 
 # Entry 6: sstUserRightSectionAction=diagnostic.view,uid=4000017,ou=roles...
-dn: sstUserRightSectionAction=diagnostic.view,uid=4000017,ou=roles,dc=foss-c
- loud,dc=org
+dn: sstUserRightSectionAction=diagnostic.view,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: diagnostic.view
 sstuserrightvalue: all
 
 # Entry 7: sstUserRightSectionAction=dynamicVM.access,uid=4000017,ou=role...
-dn: sstUserRightSectionAction=dynamicVM.access,uid=4000017,ou=roles,dc=foss-
- cloud,dc=org
+dn: sstUserRightSectionAction=dynamicVM.access,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: dynamicVM.access
 sstuserrightvalue: all
 
 # Entry 8: sstUserRightSectionAction=dynamicVM.create,uid=4000017,ou=role...
-dn: sstUserRightSectionAction=dynamicVM.create,uid=4000017,ou=roles,dc=foss-
- cloud,dc=org
+dn: sstUserRightSectionAction=dynamicVM.create,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: dynamicVM.create
 sstuserrightvalue: all
 
 # Entry 9: sstUserRightSectionAction=dynamicVM.delete,uid=4000017,ou=role...
-dn: sstUserRightSectionAction=dynamicVM.delete,uid=4000017,ou=roles,dc=foss-
- cloud,dc=org
+dn: sstUserRightSectionAction=dynamicVM.delete,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: dynamicVM.delete
 sstuserrightvalue: all
 
 # Entry 10: sstUserRightSectionAction=dynamicVM.edit,uid=4000017,ou=roles...
-dn: sstUserRightSectionAction=dynamicVM.edit,uid=4000017,ou=roles,dc=foss-cl
- oud,dc=org
+dn: sstUserRightSectionAction=dynamicVM.edit,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: dynamicVM.edit
 sstuserrightvalue: all
 
 # Entry 11: sstUserRightSectionAction=dynamicVM.manage,uid=4000017,ou=rol...
-dn: sstUserRightSectionAction=dynamicVM.manage,uid=4000017,ou=roles,dc=foss-
- cloud,dc=org
+dn: sstUserRightSectionAction=dynamicVM.manage,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: dynamicVM.manage
 sstuserrightvalue: all
 
 # Entry 12: sstUserRightSectionAction=dynamicVM.use,uid=4000017,ou=roles,...
-dn: sstUserRightSectionAction=dynamicVM.use,uid=4000017,ou=roles,dc=foss-clo
- ud,dc=org
+dn: sstUserRightSectionAction=dynamicVM.use,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: dynamicVM.use
 sstuserrightvalue: all
 
 # Entry 13: sstUserRightSectionAction=dynamicVM.view,uid=4000017,ou=roles...
-dn: sstUserRightSectionAction=dynamicVM.view,uid=4000017,ou=roles,dc=foss-cl
- oud,dc=org
+dn: sstUserRightSectionAction=dynamicVM.view,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: dynamicVM.view
 sstuserrightvalue: all
 
 # Entry 14: sstUserRightSectionAction=group.access,uid=4000017,ou=roles,d...
-dn: sstUserRightSectionAction=group.access,uid=4000017,ou=roles,dc=foss-clou
- d,dc=org
+dn: sstUserRightSectionAction=group.access,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: group.access
 sstuserrightvalue: all
 
 # Entry 15: sstUserRightSectionAction=group.create,uid=4000017,ou=roles,d...
-dn: sstUserRightSectionAction=group.create,uid=4000017,ou=roles,dc=foss-clou
- d,dc=org
+dn: sstUserRightSectionAction=group.create,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: group.create
 sstuserrightvalue: all
 
 # Entry 16: sstUserRightSectionAction=group.delete,uid=4000017,ou=roles,d...
-dn: sstUserRightSectionAction=group.delete,uid=4000017,ou=roles,dc=foss-clou
- d,dc=org
+dn: sstUserRightSectionAction=group.delete,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: group.delete
 sstuserrightvalue: all
 
 # Entry 17: sstUserRightSectionAction=group.edit,uid=4000017,ou=roles,dc=...
-dn: sstUserRightSectionAction=group.edit,uid=4000017,ou=roles,dc=foss-cloud,
- dc=org
+dn: sstUserRightSectionAction=group.edit,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: group.edit
 sstuserrightvalue: all
 
 # Entry 18: sstUserRightSectionAction=group.manage,uid=4000017,ou=roles,d...
-dn: sstUserRightSectionAction=group.manage,uid=4000017,ou=roles,dc=foss-clou
- d,dc=org
+dn: sstUserRightSectionAction=group.manage,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: group.manage
 sstuserrightvalue: all
 
 # Entry 19: sstUserRightSectionAction=group.view,uid=4000017,ou=roles,dc=...
-dn: sstUserRightSectionAction=group.view,uid=4000017,ou=roles,dc=foss-cloud,
- dc=org
+dn: sstUserRightSectionAction=group.view,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: group.view
 sstuserrightvalue: all
 
 # Entry 20: sstUserRightSectionAction=network.access,uid=4000017,ou=roles...
-dn: sstUserRightSectionAction=network.access,uid=4000017,ou=roles,dc=foss-cl
- oud,dc=org
+dn: sstUserRightSectionAction=network.access,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: network.access
 sstuserrightvalue: all
 
 # Entry 21: sstUserRightSectionAction=network.create,uid=4000017,ou=roles...
-dn: sstUserRightSectionAction=network.create,uid=4000017,ou=roles,dc=foss-cl
- oud,dc=org
+dn: sstUserRightSectionAction=network.create,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: network.create
 sstuserrightvalue: all
 
 # Entry 22: sstUserRightSectionAction=network.delete,uid=4000017,ou=roles...
-dn: sstUserRightSectionAction=network.delete,uid=4000017,ou=roles,dc=foss-cl
- oud,dc=org
+dn: sstUserRightSectionAction=network.delete,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: network.delete
 sstuserrightvalue: all
 
 # Entry 23: sstUserRightSectionAction=network.edit,uid=4000017,ou=roles,d...
-dn: sstUserRightSectionAction=network.edit,uid=4000017,ou=roles,dc=foss-clou
- d,dc=org
+dn: sstUserRightSectionAction=network.edit,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: network.edit
 sstuserrightvalue: all
 
 # Entry 24: sstUserRightSectionAction=network.view,uid=4000017,ou=roles,d...
-dn: sstUserRightSectionAction=network.view,uid=4000017,ou=roles,dc=foss-clou
- d,dc=org
+dn: sstUserRightSectionAction=network.view,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: network.view
 sstuserrightvalue: all
 
 # Entry 25: sstUserRightSectionAction=node.access,uid=4000017,ou=roles,dc...
-dn: sstUserRightSectionAction=node.access,uid=4000017,ou=roles,dc=foss-cloud
- ,dc=org
+dn: sstUserRightSectionAction=node.access,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: node.access
 sstuserrightvalue: all
 
 # Entry 26: sstUserRightSectionAction=node.create,uid=4000017,ou=roles,dc...
-dn: sstUserRightSectionAction=node.create,uid=4000017,ou=roles,dc=foss-cloud
- ,dc=org
+dn: sstUserRightSectionAction=node.create,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: node.create
 sstuserrightvalue: all
 
 # Entry 27: sstUserRightSectionAction=node.delete,uid=4000017,ou=roles,dc...
-dn: sstUserRightSectionAction=node.delete,uid=4000017,ou=roles,dc=foss-cloud
- ,dc=org
+dn: sstUserRightSectionAction=node.delete,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: node.delete
 sstuserrightvalue: all
 
 # Entry 28: sstUserRightSectionAction=node.edit,uid=4000017,ou=roles,dc=f...
-dn: sstUserRightSectionAction=node.edit,uid=4000017,ou=roles,dc=foss-cloud,d
- c=org
+dn: sstUserRightSectionAction=node.edit,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: node.edit
 sstuserrightvalue: all
 
 # Entry 29: sstUserRightSectionAction=node.view,uid=4000017,ou=roles,dc=f...
-dn: sstUserRightSectionAction=node.view,uid=4000017,ou=roles,dc=foss-cloud,d
- c=org
+dn: sstUserRightSectionAction=node.view,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: node.view
 sstuserrightvalue: all
 
 # Entry 30: sstUserRightSectionAction=persistentVM.access,uid=4000017,ou=...
-dn: sstUserRightSectionAction=persistentVM.access,uid=4000017,ou=roles,dc=fo
- ss-cloud,dc=org
+dn: sstUserRightSectionAction=persistentVM.access,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: persistentVM.access
 sstuserrightvalue: all
 
 # Entry 31: sstUserRightSectionAction=persistentVM.create,uid=4000017,ou=...
-dn: sstUserRightSectionAction=persistentVM.create,uid=4000017,ou=roles,dc=fo
- ss-cloud,dc=org
+dn: sstUserRightSectionAction=persistentVM.create,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: persistentVM.create
 sstuserrightvalue: all
 
 # Entry 32: sstUserRightSectionAction=persistentVM.delete,uid=4000017,ou=...
-dn: sstUserRightSectionAction=persistentVM.delete,uid=4000017,ou=roles,dc=fo
- ss-cloud,dc=org
+dn: sstUserRightSectionAction=persistentVM.delete,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: persistentVM.delete
 sstuserrightvalue: all
 
 # Entry 33: sstUserRightSectionAction=persistentVM.edit,uid=4000017,ou=ro...
-dn: sstUserRightSectionAction=persistentVM.edit,uid=4000017,ou=roles,dc=foss
- -cloud,dc=org
+dn: sstUserRightSectionAction=persistentVM.edit,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: persistentVM.edit
 sstuserrightvalue: all
 
 # Entry 34: sstUserRightSectionAction=persistentVM.manage,uid=4000017,ou=...
-dn: sstUserRightSectionAction=persistentVM.manage,uid=4000017,ou=roles,dc=fo
- ss-cloud,dc=org
+dn: sstUserRightSectionAction=persistentVM.manage,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: persistentVM.manage
 sstuserrightvalue: all
 
 # Entry 35: sstUserRightSectionAction=persistentVM.use,uid=4000017,ou=rol...
-dn: sstUserRightSectionAction=persistentVM.use,uid=4000017,ou=roles,dc=foss-
- cloud,dc=org
+dn: sstUserRightSectionAction=persistentVM.use,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: persistentVM.use
 sstuserrightvalue: all
 
 # Entry 36: sstUserRightSectionAction=persistentVM.view,uid=4000017,ou=ro...
-dn: sstUserRightSectionAction=persistentVM.view,uid=4000017,ou=roles,dc=foss
- -cloud,dc=org
+dn: sstUserRightSectionAction=persistentVM.view,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: persistentVM.view
 sstuserrightvalue: all
 
 # Entry 37: sstUserRightSectionAction=profile.access,uid=4000017,ou=roles...
-dn: sstUserRightSectionAction=profile.access,uid=4000017,ou=roles,dc=foss-cl
- oud,dc=org
+dn: sstUserRightSectionAction=profile.access,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: profile.access
 sstuserrightvalue: all
 
 # Entry 38: sstUserRightSectionAction=profile.create,uid=4000017,ou=roles...
-dn: sstUserRightSectionAction=profile.create,uid=4000017,ou=roles,dc=foss-cl
- oud,dc=org
+dn: sstUserRightSectionAction=profile.create,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: profile.create
 sstuserrightvalue: all
 
 # Entry 39: sstUserRightSectionAction=profile.delete,uid=4000017,ou=roles...
-dn: sstUserRightSectionAction=profile.delete,uid=4000017,ou=roles,dc=foss-cl
- oud,dc=org
+dn: sstUserRightSectionAction=profile.delete,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: profile.delete
 sstuserrightvalue: all
 
 # Entry 40: sstUserRightSectionAction=profile.edit,uid=4000017,ou=roles,d...
-dn: sstUserRightSectionAction=profile.edit,uid=4000017,ou=roles,dc=foss-clou
- d,dc=org
+dn: sstUserRightSectionAction=profile.edit,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: profile.edit
 sstuserrightvalue: all
 
 # Entry 41: sstUserRightSectionAction=profile.manage,uid=4000017,ou=roles...
-dn: sstUserRightSectionAction=profile.manage,uid=4000017,ou=roles,dc=foss-cl
- oud,dc=org
+dn: sstUserRightSectionAction=profile.manage,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: profile.manage
 sstuserrightvalue: all
 
 # Entry 42: sstUserRightSectionAction=profile.view,uid=4000017,ou=roles,d...
-dn: sstUserRightSectionAction=profile.view,uid=4000017,ou=roles,dc=foss-clou
- d,dc=org
+dn: sstUserRightSectionAction=profile.view,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: profile.view
 sstuserrightvalue: all
 
 # Entry 43: sstUserRightSectionAction=storagePool.access,uid=4000017,ou=r...
-dn: sstUserRightSectionAction=storagePool.access,uid=4000017,ou=roles,dc=fos
- s-cloud,dc=org
+dn: sstUserRightSectionAction=storagePool.access,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: storagePool.access
 sstuserrightvalue: all
 
 # Entry 44: sstUserRightSectionAction=storagePool.create,uid=4000017,ou=r...
-dn: sstUserRightSectionAction=storagePool.create,uid=4000017,ou=roles,dc=fos
- s-cloud,dc=org
+dn: sstUserRightSectionAction=storagePool.create,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: storagePool.create
 sstuserrightvalue: all
 
 # Entry 45: sstUserRightSectionAction=storagePool.delete,uid=4000017,ou=r...
-dn: sstUserRightSectionAction=storagePool.delete,uid=4000017,ou=roles,dc=fos
- s-cloud,dc=org
+dn: sstUserRightSectionAction=storagePool.delete,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: storagePool.delete
 sstuserrightvalue: all
 
 # Entry 46: sstUserRightSectionAction=storagePool.edit,uid=4000017,ou=rol...
-dn: sstUserRightSectionAction=storagePool.edit,uid=4000017,ou=roles,dc=foss-
- cloud,dc=org
+dn: sstUserRightSectionAction=storagePool.edit,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: storagePool.edit
 sstuserrightvalue: all
 
 # Entry 47: sstUserRightSectionAction=storagePool.view,uid=4000017,ou=rol...
-dn: sstUserRightSectionAction=storagePool.view,uid=4000017,ou=roles,dc=foss-
- cloud,dc=org
+dn: sstUserRightSectionAction=storagePool.view,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: storagePool.view
 sstuserrightvalue: all
 
 # Entry 48: sstUserRightSectionAction=templateVM.access,uid=4000017,ou=ro...
-dn: sstUserRightSectionAction=templateVM.access,uid=4000017,ou=roles,dc=foss
- -cloud,dc=org
+dn: sstUserRightSectionAction=templateVM.access,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: templateVM.access
 sstuserrightvalue: all
 
 # Entry 49: sstUserRightSectionAction=templateVM.create,uid=4000017,ou=ro...
-dn: sstUserRightSectionAction=templateVM.create,uid=4000017,ou=roles,dc=foss
- -cloud,dc=org
+dn: sstUserRightSectionAction=templateVM.create,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: templateVM.create
 sstuserrightvalue: all
 
 # Entry 50: sstUserRightSectionAction=templateVM.delete,uid=4000017,ou=ro...
-dn: sstUserRightSectionAction=templateVM.delete,uid=4000017,ou=roles,dc=foss
- -cloud,dc=org
+dn: sstUserRightSectionAction=templateVM.delete,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: templateVM.delete
 sstuserrightvalue: all
 
 # Entry 51: sstUserRightSectionAction=templateVM.edit,uid=4000017,ou=role...
-dn: sstUserRightSectionAction=templateVM.edit,uid=4000017,ou=roles,dc=foss-c
- loud,dc=org
+dn: sstUserRightSectionAction=templateVM.edit,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: templateVM.edit
 sstuserrightvalue: all
 
 # Entry 52: sstUserRightSectionAction=templateVM.manage,uid=4000017,ou=ro...
-dn: sstUserRightSectionAction=templateVM.manage,uid=4000017,ou=roles,dc=foss
- -cloud,dc=org
+dn: sstUserRightSectionAction=templateVM.manage,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: templateVM.manage
 sstuserrightvalue: all
 
 # Entry 53: sstUserRightSectionAction=templateVM.use,uid=4000017,ou=roles...
-dn: sstUserRightSectionAction=templateVM.use,uid=4000017,ou=roles,dc=foss-cl
- oud,dc=org
+dn: sstUserRightSectionAction=templateVM.use,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: templateVM.use
 sstuserrightvalue: all
 
 # Entry 54: sstUserRightSectionAction=templateVM.view,uid=4000017,ou=role...
-dn: sstUserRightSectionAction=templateVM.view,uid=4000017,ou=roles,dc=foss-c
- loud,dc=org
+dn: sstUserRightSectionAction=templateVM.view,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: templateVM.view
 sstuserrightvalue: all
 
 # Entry 55: sstUserRightSectionAction=user.access,uid=4000017,ou=roles,dc...
-dn: sstUserRightSectionAction=user.access,uid=4000017,ou=roles,dc=foss-cloud
- ,dc=org
+dn: sstUserRightSectionAction=user.access,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: user.access
 sstuserrightvalue: all
 
 # Entry 56: sstUserRightSectionAction=user.create,uid=4000017,ou=roles,dc...
-dn: sstUserRightSectionAction=user.create,uid=4000017,ou=roles,dc=foss-cloud
- ,dc=org
+dn: sstUserRightSectionAction=user.create,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: user.create
 sstuserrightvalue: all
 
 # Entry 57: sstUserRightSectionAction=user.delete,uid=4000017,ou=roles,dc...
-dn: sstUserRightSectionAction=user.delete,uid=4000017,ou=roles,dc=foss-cloud
- ,dc=org
+dn: sstUserRightSectionAction=user.delete,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: user.delete
 sstuserrightvalue: all
 
 # Entry 58: sstUserRightSectionAction=user.edit,uid=4000017,ou=roles,dc=f...
-dn: sstUserRightSectionAction=user.edit,uid=4000017,ou=roles,dc=foss-cloud,d
- c=org
+dn: sstUserRightSectionAction=user.edit,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: user.edit
 sstuserrightvalue: all
 
 # Entry 59: sstUserRightSectionAction=user.manage,uid=4000017,ou=roles,dc...
-dn: sstUserRightSectionAction=user.manage,uid=4000017,ou=roles,dc=foss-cloud
- ,dc=org
+dn: sstUserRightSectionAction=user.manage,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: user.manage
 sstuserrightvalue: all
 
 # Entry 60: sstUserRightSectionAction=user.view,uid=4000017,ou=roles,dc=f...
-dn: sstUserRightSectionAction=user.view,uid=4000017,ou=roles,dc=foss-cloud,d
- c=org
+dn: sstUserRightSectionAction=user.view,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: user.view
 sstuserrightvalue: all
 
 # Entry 61: sstUserRightSectionAction=vmPool.access,uid=4000017,ou=roles,...
-dn: sstUserRightSectionAction=vmPool.access,uid=4000017,ou=roles,dc=foss-clo
- ud,dc=org
+dn: sstUserRightSectionAction=vmPool.access,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: vmPool.access
 sstuserrightvalue: all
 
 # Entry 62: sstUserRightSectionAction=vmPool.create,uid=4000017,ou=roles,...
-dn: sstUserRightSectionAction=vmPool.create,uid=4000017,ou=roles,dc=foss-clo
- ud,dc=org
+dn: sstUserRightSectionAction=vmPool.create,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: vmPool.create
 sstuserrightvalue: all
 
 # Entry 63: sstUserRightSectionAction=vmPool.delete,uid=4000017,ou=roles,...
-dn: sstUserRightSectionAction=vmPool.delete,uid=4000017,ou=roles,dc=foss-clo
- ud,dc=org
+dn: sstUserRightSectionAction=vmPool.delete,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: vmPool.delete
 sstuserrightvalue: all
 
 # Entry 64: sstUserRightSectionAction=vmPool.edit,uid=4000017,ou=roles,dc...
-dn: sstUserRightSectionAction=vmPool.edit,uid=4000017,ou=roles,dc=foss-cloud
- ,dc=org
+dn: sstUserRightSectionAction=vmPool.edit,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: vmPool.edit
 sstuserrightvalue: all
 
 # Entry 65: sstUserRightSectionAction=vmPool.view,uid=4000017,ou=roles,dc...
-dn: sstUserRightSectionAction=vmPool.view,uid=4000017,ou=roles,dc=foss-cloud
- ,dc=org
+dn: sstUserRightSectionAction=vmPool.view,uid=4000017,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: vmPool.view
@@ -541,152 +478,133 @@ sstdisplayname: VM-Admin
 uid: 4000018
 
 # Entry 67: sstUserRightSectionAction=diagnostic.access,uid=4000018,ou=ro...
-dn: sstUserRightSectionAction=diagnostic.access,uid=4000018,ou=roles,dc=foss
- -cloud,dc=org
+dn: sstUserRightSectionAction=diagnostic.access,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: diagnostic.access
 sstuserrightvalue: all
 
 # Entry 68: sstUserRightSectionAction=dynamicVM.access,uid=4000018,ou=rol...
-dn: sstUserRightSectionAction=dynamicVM.access,uid=4000018,ou=roles,dc=foss-
- cloud,dc=org
+dn: sstUserRightSectionAction=dynamicVM.access,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: dynamicVM.access
 sstuserrightvalue: all
 
 # Entry 69: sstUserRightSectionAction=dynamicVM.create,uid=4000018,ou=rol...
-dn: sstUserRightSectionAction=dynamicVM.create,uid=4000018,ou=roles,dc=foss-
- cloud,dc=org
+dn: sstUserRightSectionAction=dynamicVM.create,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: dynamicVM.create
 sstuserrightvalue: all
 
 # Entry 70: sstUserRightSectionAction=dynamicVM.edit,uid=4000018,ou=roles...
-dn: sstUserRightSectionAction=dynamicVM.edit,uid=4000018,ou=roles,dc=foss-cl
- oud,dc=org
+dn: sstUserRightSectionAction=dynamicVM.edit,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: dynamicVM.edit
 sstuserrightvalue: all
 
 # Entry 71: sstUserRightSectionAction=dynamicVM.manage,uid=4000018,ou=rol...
-dn: sstUserRightSectionAction=dynamicVM.manage,uid=4000018,ou=roles,dc=foss-
- cloud,dc=org
+dn: sstUserRightSectionAction=dynamicVM.manage,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: dynamicVM.manage
 sstuserrightvalue: all
 
 # Entry 72: sstUserRightSectionAction=dynamicVM.view,uid=4000018,ou=roles...
-dn: sstUserRightSectionAction=dynamicVM.view,uid=4000018,ou=roles,dc=foss-cl
- oud,dc=org
+dn: sstUserRightSectionAction=dynamicVM.view,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: dynamicVM.view
 sstuserrightvalue: owner
 
 # Entry 73: sstUserRightSectionAction=persistentVM.access,uid=4000018,ou=...
-dn: sstUserRightSectionAction=persistentVM.access,uid=4000018,ou=roles,dc=fo
- ss-cloud,dc=org
+dn: sstUserRightSectionAction=persistentVM.access,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: persistentVM.access
 sstuserrightvalue: all
 
 # Entry 74: sstUserRightSectionAction=persistentVM.edit,uid=4000018,ou=ro...
-dn: sstUserRightSectionAction=persistentVM.edit,uid=4000018,ou=roles,dc=foss
- -cloud,dc=org
+dn: sstUserRightSectionAction=persistentVM.edit,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: persistentVM.edit
 sstuserrightvalue: all
 
 # Entry 75: sstUserRightSectionAction=persistentVM.manage,uid=4000018,ou=...
-dn: sstUserRightSectionAction=persistentVM.manage,uid=4000018,ou=roles,dc=fo
- ss-cloud,dc=org
+dn: sstUserRightSectionAction=persistentVM.manage,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: persistentVM.manage
 sstuserrightvalue: all
 
 # Entry 76: sstUserRightSectionAction=persistentVM.use,uid=4000018,ou=rol...
-dn: sstUserRightSectionAction=persistentVM.use,uid=4000018,ou=roles,dc=foss-
- cloud,dc=org
+dn: sstUserRightSectionAction=persistentVM.use,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: persistentVM.use
 sstuserrightvalue: all
 
 # Entry 77: sstUserRightSectionAction=persistentVM.view,uid=4000018,ou=ro...
-dn: sstUserRightSectionAction=persistentVM.view,uid=4000018,ou=roles,dc=foss
- -cloud,dc=org
+dn: sstUserRightSectionAction=persistentVM.view,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: persistentVM.view
 sstuserrightvalue: owner
 
 # Entry 78: sstUserRightSectionAction=templateVM.access,uid=4000018,ou=ro...
-dn: sstUserRightSectionAction=templateVM.access,uid=4000018,ou=roles,dc=foss
- -cloud,dc=org
+dn: sstUserRightSectionAction=templateVM.access,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: templateVM.access
 sstuserrightvalue: all
 
 # Entry 79: sstUserRightSectionAction=templateVM.edit,uid=4000018,ou=role...
-dn: sstUserRightSectionAction=templateVM.edit,uid=4000018,ou=roles,dc=foss-c
- loud,dc=org
+dn: sstUserRightSectionAction=templateVM.edit,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: templateVM.edit
 sstuserrightvalue: all
 
 # Entry 80: sstUserRightSectionAction=templateVM.manage,uid=4000018,ou=ro...
-dn: sstUserRightSectionAction=templateVM.manage,uid=4000018,ou=roles,dc=foss
- -cloud,dc=org
+dn: sstUserRightSectionAction=templateVM.manage,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: templateVM.manage
 sstuserrightvalue: all
 
 # Entry 81: sstUserRightSectionAction=templateVM.use,uid=4000018,ou=roles...
-dn: sstUserRightSectionAction=templateVM.use,uid=4000018,ou=roles,dc=foss-cl
- oud,dc=org
+dn: sstUserRightSectionAction=templateVM.use,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: templateVM.use
 sstuserrightvalue: all
 
 # Entry 82: sstUserRightSectionAction=templateVM.view,uid=4000018,ou=role...
-dn: sstUserRightSectionAction=templateVM.view,uid=4000018,ou=roles,dc=foss-c
- loud,dc=org
+dn: sstUserRightSectionAction=templateVM.view,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: templateVM.view
 sstuserrightvalue: all
 
 # Entry 83: sstUserRightSectionAction=vmPool.access,uid=4000018,ou=roles,...
-dn: sstUserRightSectionAction=vmPool.access,uid=4000018,ou=roles,dc=foss-clo
- ud,dc=org
+dn: sstUserRightSectionAction=vmPool.access,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: vmPool.access
 sstuserrightvalue: all
 
 # Entry 84: sstUserRightSectionAction=vmPool.edit,uid=4000018,ou=roles,dc...
-dn: sstUserRightSectionAction=vmPool.edit,uid=4000018,ou=roles,dc=foss-cloud
- ,dc=org
+dn: sstUserRightSectionAction=vmPool.edit,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: vmPool.edit
 sstuserrightvalue: all
 
 # Entry 85: sstUserRightSectionAction=vmPool.view,uid=4000018,ou=roles,dc...
-dn: sstUserRightSectionAction=vmPool.view,uid=4000018,ou=roles,dc=foss-cloud
- ,dc=org
+dn: sstUserRightSectionAction=vmPool.view,uid=4000018,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: vmPool.view
@@ -703,24 +621,21 @@ sstdisplayname: VM-User
 uid: 4000019
 
 # Entry 87: sstUserRightSectionAction=dynamicVM.view,uid=4000019,ou=roles...
-dn: sstUserRightSectionAction=dynamicVM.view,uid=4000019,ou=roles,dc=foss-cl
- oud,dc=org
+dn: sstUserRightSectionAction=dynamicVM.view,uid=4000019,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: dynamicVM.view
 sstuserrightvalue: owner
 
 # Entry 88: sstUserRightSectionAction=persistentVM.view,uid=4000019,ou=ro...
-dn: sstUserRightSectionAction=persistentVM.view,uid=4000019,ou=roles,dc=foss
- -cloud,dc=org
+dn: sstUserRightSectionAction=persistentVM.view,uid=4000019,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: persistentVM.view
 sstuserrightvalue: owner
 
 # Entry 89: sstUserRightSectionAction=vmPool.view,uid=4000019,ou=roles,dc...
-dn: sstUserRightSectionAction=vmPool.view,uid=4000019,ou=roles,dc=foss-cloud
- ,dc=org
+dn: sstUserRightSectionAction=vmPool.view,uid=4000019,ou=roles,dc=foss-cloud,dc=org
 objectclass: top
 objectclass: sstUserRightSetting
 sstuserrightsectionaction: vmPool.view
