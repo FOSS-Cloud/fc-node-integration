@@ -76,6 +76,7 @@ sstVirtualMachinePool: 40fac639-c69d-43b0-817c-dbbf3fd161fc
 sstDisplayName: vm-template-virtual-machine-pool-01
 description: This is the default vm-template virtual machine pool vm-template-virtual-machine-pool-01.
 sstVirtualMachinePoolType: template
+sstNumberOfScreens: 1
 sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
 
@@ -175,6 +176,7 @@ sstVirtualMachinePool: d9c3cc0c-9ae7-40e5-8fb7-ba5297e835aa
 sstDisplayName: persistent-virtual-machine-pool-01
 description: This is the default persistent virtual machine pool persistent-virtual-machine-pool-01.
 sstVirtualMachinePoolType: persistent
+sstNumberOfScreens: 1
 sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
 
@@ -279,6 +281,7 @@ sstBrokerMinimalNumberOfVirtualMachines: 3
 sstBrokerMaximalNumberOfVirtualMachines: 14
 sstBrokerPreStartNumberOfVirtualMachines: 2
 sstBrokerPreStartInterval: 30
+sstNumberOfScreens: 1
 sstBelongsToResellerUID: 4000000
 sstBelongsToCustomerUID: 4000001
 
